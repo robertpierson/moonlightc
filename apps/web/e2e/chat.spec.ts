@@ -173,6 +173,7 @@ test("auto model sends each message to the model set for that kind of task", asy
   await page.getByRole("button", { name: "Auto model" }).click();
   await page.getByRole("combobox", { name: "Model for Everyday" }).click();
   await page.getByRole("option", { name: /mock-fast/ }).click();
+  await expect(page.getByRole("listbox")).toHaveCount(0);
   await page.getByRole("combobox", { name: "Model for Coding" }).click();
   await page.getByRole("option", { name: /mock-other/ }).click();
   await expect(page.getByText("Auto is ready")).toBeVisible();
