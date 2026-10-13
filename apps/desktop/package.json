@@ -1,0 +1,28 @@
+{
+  "name": "@moonc/desktop",
+  "productName": "MoonlightC",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Every AI in one place, with your own keys.",
+  "author": "MoonlightC contributors",
+  "license": "MIT",
+  "main": "src/main.mjs",
+  "scripts": {
+    "dev": "electron .",
+    "bundle-web": "node scripts/bundle-web.mjs",
+    "dist": "pnpm bundle-web && electron-builder --publish never",
+    "typecheck": "tsc --noEmit -p .",
+    "test": "node --test src/*.test.mjs"
+  },
+  "dependencies": {
+    "node-pty": "1.1.0",
+    "systeminformation": "5.33.15"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.0",
+    "@types/node": "^22.20.5",
+    "electron": "44.7.0",
+    "electron-builder": "26.15.3",
+    "typescript": "^5.9.3"
+  }
+}

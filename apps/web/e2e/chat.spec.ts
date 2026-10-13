@@ -247,3 +247,8 @@ test("deep research asks for a search key first", async ({ page }) => {
   await page.getByRole("button", { name: "Add a web search key" }).click();
   await expect(page.getByRole("region", { name: "Web search" })).toBeVisible();
 });
+
+test("other websites can't call the API from a visitor's browser", async ({ request }) => {
+  const res = await request.post("/api/models", { headers: { origin: "https://evil.example" }, data: { providerId: "openrouter", apiKey: "" } });
+  expect(res.status()).toBe(403);
+});

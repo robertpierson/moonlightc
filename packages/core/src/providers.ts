@@ -16,6 +16,8 @@ export interface ProviderDef {
   baseURL?: string;
   /** Model list URL when it differs from `${baseURL}/models`. */
   modelsURL?: string;
+  /** Runs on the user's computer; only offered in the desktop app. */
+  local?: boolean;
 }
 
 export const PROVIDERS: ProviderDef[] = [
@@ -30,6 +32,7 @@ export const PROVIDERS: ProviderDef[] = [
   { id: "together", name: "Together AI", kind: "compat", baseURL: "https://api.together.xyz/v1", keyUrl: "https://api.together.ai/settings/api-keys" },
   { id: "perplexity", name: "Perplexity", kind: "compat", baseURL: "https://api.perplexity.ai", modelsURL: "https://api.perplexity.ai/v1/models", keyUrl: "https://www.perplexity.ai/account/api/keys" },
   { id: "cohere", name: "Cohere", kind: "compat", baseURL: "https://api.cohere.ai/compatibility/v1", keyUrl: "https://dashboard.cohere.com/api-keys" },
+  { id: "ollama", name: "Ollama (on this computer)", kind: "compat", baseURL: "http://127.0.0.1:11434/v1", keyUrl: "", local: true },
   { id: "custom", name: "Custom (OpenAI-compatible URL)", kind: "compat", keyUrl: "" },
 ];
 

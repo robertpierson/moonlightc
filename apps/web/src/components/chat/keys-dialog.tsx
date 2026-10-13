@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { desktop } from "@/lib/desktop";
 import { update, useStore, type SavedConnection } from "@/lib/store";
 
 async function fetchModels(c: { providerId: string; apiKey: string; baseURL?: string }): Promise<ModelInfo[]> {
@@ -105,6 +106,7 @@ export function KeysDialog({ open, onOpenChange }: { open: boolean; onOpenChange
   const [refreshing, setRefreshing] = useState<string>();
   const provider = PROVIDERS.find((p) => p.id === providerId)!;
   const isCustom = providerId === "custom";
+  const keyless = isCustom || !!provider.local;
 
   async function add(e: React.FormEvent) {
     e.preventDefault();
@@ -192,7 +194,7 @@ export function KeysDialog({ open, onOpenChange }: { open: boolean; onOpenChange
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {PROVIDERS.map((p) => (
+                {PROVIDERS.filter((p) => !p.local || desktop()).map((p) => (
                   <SelectItem key={p.id} value={p.id}>
                     {p.name}
                     {p.id === "openrouter" ? " — one key, hundreds of models" : ""}
@@ -220,8 +222,8 @@ export function KeysDialog({ open, onOpenChange }: { open: boolean; onOpenChange
               id="apikey"
               type="password"
               autoComplete="off"
-              required={!isCustom}
-              placeholder={isCustom ? "Optional for open servers" : "Paste your key"}
+              required={!keyless}
+              placeholder={keyless ? "Not needed for local servers" : "Paste your key"}
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
             />

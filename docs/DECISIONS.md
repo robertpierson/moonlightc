@@ -25,3 +25,16 @@ Why: SPEC "never let unfinished phases leak visible UI into production".
 ## 2026-10-13 Voice typing: Whisper via the user's OpenAI or Groq key, browser speech as fallback
 What: fixed Whisper ids `whisper-1` (OpenAI) and `whisper-large-v3-turbo` (Groq); these are stable ids, not "latest" aliases.
 If neither key exists, use the browser's SpeechRecognition (audio goes to the browser vendor; the button tooltip says so). Hidden if neither works.
+
+## 2026-10-13 Desktop = Electron running the same Next.js app as a local server
+What: apps/desktop spawns the Next "standalone" build (DESKTOP_BUILD=1) on 127.0.0.1:<random port> using Electron's own
+Node, and opens it in a sandboxed window. Desktop-only features go through a small preload bridge (`window.moonc`).
+Why: one UI codebase, API routes work offline for local models, no duplicate chat engine. Alternative: static export (no
+API routes) or loading the hosted site (not offline).
+Security: contextIsolation + sandbox, no Node in pages, IPC checks the sender URL, navigation locked to the local origin,
+/api rejects cross-origin requests and non-loopback Host headers (DNS rebinding).
+
+## 2026-10-13 SQLite + sync deferred until accounts exist
+What: desktop keeps chats in Chromium localStorage (persisted on disk under userData) for now; keys go to the OS keychain
+via safeStorage. SQLite arrives with Supabase sync (needs the database first).
+Why: avoid a native module and a migration with nothing to sync against yet.

@@ -1,4 +1,4 @@
-import { ProviderError, type Connection } from "@moonc/core";
+import { getProvider, ProviderError, type Connection } from "@moonc/core";
 
 // ponytail: hostname check only; a public name that resolves to a private IP (DNS rebinding) passes. Resolve + check IPs if this proxy ever runs next to private services.
 /** Our servers must never be pointed at private networks (SSRF). Local servers are reached from the desktop app instead. */
@@ -25,6 +25,8 @@ export function isPublicURL(raw: string): boolean {
 
 export function assertPublicURL(c: Connection) {
   if (c.providerId !== "custom") return;
+  // The desktop app's server runs on the user's own computer, so their local and LAN servers are fair game there.
+  if (process.env.MOONC_DESKTOP === "1") return;
   if (!isPublicURL(c.baseURL ?? "")) {
     throw new ProviderError(
       "The web app can only reach public https:// servers. For a server on your own computer (LM Studio, Ollama), use the MoonlightC desktop app.",
@@ -38,6 +40,9 @@ export function readConnection(body: unknown): Connection {
     throw new ProviderError("Missing provider or key.");
   }
   const c: Connection = { providerId: b.providerId, apiKey: b.apiKey.trim(), baseURL: b.baseURL?.trim() || undefined };
+  if (getProvider(c.providerId).local && process.env.MOONC_DESKTOP !== "1") {
+    throw new ProviderError("Models on your own computer work in the MoonlightC desktop app.");
+  }
   assertPublicURL(c);
   return c;
 }
