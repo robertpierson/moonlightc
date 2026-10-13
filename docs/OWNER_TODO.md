@@ -41,3 +41,12 @@ These go live at moonlightc.vercel.app once sign-in (step 1 above) is done. Unti
 3. Click **Studio**, describe an image, click **Generate**. Then the **Video** tab, describe a short clip, **Generate** (takes 1–5 minutes).
 4. Click **Connections** > **Connect GitHub**. Make a token at https://github.com/settings/personal-access-tokens/new (Repository access: All repositories; Permissions: Contents, Issues, Pull requests = Read). Paste it and click **Connect**. Your real GitHub numbers appear.
 5. In a chat, turn on nothing extra and ask: "What are my open pull requests?" Click **Allow once** when it asks.
+
+---
+## Optional: publish a test version of the desktop app
+Installers for Windows, Mac and Linux are built and waiting in a **draft** (private) release. Nothing is public until you choose.
+1. Open https://github.com/robertpierson/moonlightc/releases
+2. Click **0.1.0** (marked Draft) and look at the files.
+3. If you want people to download it now: click the pencil (**Edit**), tick **Set as a pre-release**, click **Publish release**.
+   The download page on the website then shows the right button for each visitor automatically.
+   (Builds aren't code-signed yet, so Windows/Mac show a warning the first time; the download page explains how to open it.)

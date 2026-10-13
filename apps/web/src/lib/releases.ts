@@ -25,7 +25,8 @@ export interface Release {
 export function classify(name: string): Omit<Build, "name" | "url" | "size"> | undefined {
   const arm = /arm64|aarch64/i.test(name);
   const arch: Arch = arm ? "arm64" : "x64";
-  if (/\.exe$/i.test(name) && !/blockmap/i.test(name)) return { platform: "windows", arch, kind: "Installer (.exe)" };
+  // electron-builder also makes a combined x64+arm64 installer with no arch in its name; offer the smaller per-arch ones.
+  if (/\.exe$/i.test(name) && /(x64|arm64)\.exe$/i.test(name)) return { platform: "windows", arch, kind: "Installer (.exe)" };
   if (/\.dmg$/i.test(name)) return { platform: "mac", arch: /universal/i.test(name) ? "universal" : arch, kind: "Disk image (.dmg)" };
   if (/\.AppImage$/i.test(name)) return { platform: "linux", arch, kind: "AppImage" };
   if (/\.deb$/i.test(name)) return { platform: "linux", arch, kind: "Debian/Ubuntu (.deb)" };

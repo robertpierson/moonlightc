@@ -7,12 +7,12 @@ STATUS: BUILDING
 - [ ] 1 Accounts and metrics: sign-in methods, identity linking, onboarding, profiles, PostHog, /admin, privacy, terms
 - [ ] 2 Chat core: provider registry, key vault, model picker, streaming/stop, chats, projects, attachments, artifacts, memory, modes, compare, search
 - [x] 3 Marketing site, download page, PWA (built on branch phase-2-chat; ships to prod with Phase 1+2)
-- [~] 4 Desktop app: Electron, offline SQLite + sync, Ollama manager, Model Store, terminals, My AI Projects, tray/hotkey, CI release builds
+- [x] 4 Desktop app (on branch; SQLite+sync waits for Supabase): Electron, offline SQLite + sync, Ollama manager, Model Store, terminals, My AI Projects, tray/hotkey, CI release builds
 - [ ] 5 Devices and remote control (§8 safety)
 - [~] 6 Creative studio: images, video, audio, gallery
 - [~] 7 Connections and automations: MCP client, GitHub, Google, Discord, Spotify, Notion, Slack, YouTube, custom MCP, subscriptions, scheduled agents, deep research
 - [x] 8 Customization (on branch; drag/dock deferred): distros, themes/editor, layout, mods SDK and store
-- [ ] 9 Hardening: security review, RLS audit, perf, a11y, docs, v1.0 release
+- [~] 9 Hardening (a11y: 0 axe violations; SECURITY.md; rest after Phases 1/5): security review, RLS audit, perf, a11y, docs, v1.0 release
 
 ## Phase 0 tasks
 - [x] Check prerequisites (node 22, pnpm 11, git, gh logged in as robertpierson; Vercel + Supabase via MCP)
@@ -58,7 +58,7 @@ STATUS: BUILDING
 - [x] Keys in OS keychain (safeStorage), start at login, tray, Alt+Space quick ask, moonlightc:// protocol
 - [x] Windows installer built + silently installed + verified on this PC (server 200, foreign origin 403)
 - [x] Gate checks: one-click model download + local chat (e2e), Claude Code opens in terminal (e2e). Chat path is local-only (127.0.0.1 -> Ollama).
-- [ ] CI release builds (workflow desktop.yml -> draft release) — first run in progress
+- [x] CI release builds: Windows x64/arm64, macOS arm64/x64 (ad-hoc signed), Linux AppImage/deb/rpm x64/arm64 -> DRAFT release v0.1.0
 - [ ] Desktop SQLite + sync (needs Supabase)
 
 ## Phase 5 (remote control): BLOCKED on Supabase (pairing, relay, MFA). Nothing built yet.
