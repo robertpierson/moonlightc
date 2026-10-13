@@ -16,7 +16,9 @@ createServer(async (req, res) => {
     const last = body.messages.at(-1);
     const prompt = typeof last.content === "string" ? last.content : last.content.map((p) => p.text ?? "").join("");
     const slow = prompt.includes("slow");
-    const words = slow ? Array.from({ length: 100 }, (_, i) => `word${i} `) : ["Echo", " from ", body.model, ": ", prompt];
+    const sys = body.messages.find((m) => m.role === "system");
+    const prefix = sys ? `[sys: ${sys.content}] ` : "";
+    const words = slow ? Array.from({ length: 100 }, (_, i) => `word${i} `) : [prefix + "Echo", " from ", body.model, ": ", prompt];
     res.writeHead(200, { "content-type": "text/event-stream" });
     const chunk = (delta, finish = null) =>
       res.write(`data: ${JSON.stringify({ id: "x", object: "chat.completion.chunk", created: 0, model: body.model, choices: [{ index: 0, delta, finish_reason: finish }] })}\n\n`);

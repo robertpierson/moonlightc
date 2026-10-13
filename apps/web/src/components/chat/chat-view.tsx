@@ -7,7 +7,7 @@ import { ArrowUp, KeyRound, Square } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { findModel, getState, saveChat, type Chat, type ModelRef } from "@/lib/store";
+import { findModel, getState, saveChat, type Chat, type Mode, type ModelRef } from "@/lib/store";
 import { Message, textOf, type Usage } from "./message";
 
 function costLabel(m: UIMessage): string | undefined {
@@ -25,11 +25,15 @@ function costLabel(m: UIMessage): string | undefined {
 export function ChatView({
   chat,
   model,
+  mode,
+  modeSlot,
   onBranch,
   onOpenKeys,
 }: {
   chat: Chat;
   model?: ModelRef;
+  mode: Mode;
+  modeSlot: (started: boolean) => React.ReactNode;
   onBranch: (messages: UIMessage[]) => void;
   onOpenKeys: () => void;
 }) {
@@ -42,7 +46,14 @@ export function ChatView({
     const found = findModel(model);
     if (!found) return {};
     const { apiKey, providerId, baseURL } = found.conn;
-    return { body: { connection: { apiKey, providerId, baseURL }, modelId: found.model.id } };
+    return {
+      body: {
+        connection: { apiKey, providerId, baseURL },
+        modelId: found.model.id,
+        instructions: mode.instructions,
+        temperature: mode.temperature,
+      },
+    };
   };
 
   const { messages, sendMessage, status, stop, regenerate, error, clearError } = useChat({
@@ -55,13 +66,14 @@ export function ChatView({
 
   // Persist whenever a turn settles (including after Stop, which keeps the partial answer).
   useEffect(() => {
-    if (streaming || messages.length === 0) return;
+    if (streaming || messages.length === 0 || mode.private) return;
     const first = messages.find((m) => m.role === "user");
     const saved = getState().chats.find((c) => c.id === chat.id) ?? chat;
     saveChat({
       ...saved,
       title: saved.title || (first ? textOf(first).slice(0, 60) : "New chat"),
       model,
+      modeId: mode.id,
       messages,
       updatedAt: Date.now(),
     });
@@ -91,7 +103,8 @@ export function ChatView({
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6">
           {messages.length === 0 && (
             <div className="flex flex-col items-center gap-3 pt-[18vh] text-center">
-              <h2 className="text-2xl font-semibold tracking-tight">What can I help with?</h2>
+              <h2 className="text-2xl font-semibold tracking-tight">{mode.private ? "Private chat" : "What can I help with?"}</h2>
+              {mode.private && <p className="max-w-sm text-sm text-muted-foreground">Nothing in this chat is saved. Close it or start a new chat and it&apos;s gone.</p>}
               {!canSend && (
                 <Button onClick={onOpenKeys}>
                   <KeyRound /> Connect a model
@@ -114,7 +127,7 @@ export function ChatView({
                 clearError();
                 regenerate(request());
               }}
-              onBranch={() => onBranch(messages.slice(0, i + 1))}
+              onBranch={mode.private ? undefined : () => onBranch(messages.slice(0, i + 1))}
             />
           ))}
           {status === "submitted" && <div className="size-2.5 animate-pulse rounded-full bg-primary" aria-label="Waiting for the model" />}
@@ -131,7 +144,8 @@ export function ChatView({
       </div>
 
       <form onSubmit={submit} className="mx-auto w-full max-w-3xl px-4 pb-4">
-        <div className="flex items-end gap-2 rounded-2xl border bg-card p-2 shadow-sm focus-within:ring-2 focus-within:ring-ring/40">
+        <div className="rounded-2xl border bg-card p-2 shadow-sm focus-within:ring-2 focus-within:ring-ring/40">
+        <div className="flex items-end gap-2">
           <Textarea
             aria-label="Message"
             placeholder={canSend ? "Message MoonlightC…" : "Connect a model to start chatting"}
@@ -152,6 +166,8 @@ export function ChatView({
               <ArrowUp />
             </Button>
           )}
+        </div>
+        <div className="flex items-center">{modeSlot(messages.length > 0)}</div>
         </div>
       </form>
     </div>

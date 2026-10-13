@@ -9,6 +9,7 @@ interface Body {
   connection: unknown;
   modelId: string;
   instructions?: string;
+  temperature?: number;
 }
 
 // Thin streaming proxy: the key arrives with the request, is used for this one call, and is never stored or logged.
@@ -23,7 +24,8 @@ export async function POST(req: Request) {
 
     const result = streamText({
       model: languageModel(c, body.modelId),
-      instructions: body.instructions || undefined,
+      instructions: typeof body.instructions === "string" && body.instructions ? body.instructions.slice(0, 20000) : undefined,
+      temperature: typeof body.temperature === "number" ? Math.min(2, Math.max(0, body.temperature)) : undefined,
       messages: await convertToModelMessages(body.messages),
       abortSignal: req.signal,
     });

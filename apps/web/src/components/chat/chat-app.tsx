@@ -11,6 +11,7 @@ import { getState, patchChat, saveChat, useStore, type Chat, type ModelRef } fro
 import { ChatView } from "./chat-view";
 import { KeysDialog } from "./keys-dialog";
 import { ModelPicker } from "./model-picker";
+import { ModeSelect, useModes } from "./modes";
 import { Sidebar } from "./sidebar";
 
 const newChat = (): Chat => ({ id: crypto.randomUUID(), title: "", messages: [], updatedAt: Date.now() });
@@ -31,23 +32,27 @@ function Inner() {
   const [navOpen, setNavOpen] = useState(false);
   const [keysOpen, setKeysOpen] = useState(false);
   const [draftModel, setDraftModel] = useState<ModelRef>();
+  const [draftMode, setDraftMode] = useState("general");
+  const modes = useModes();
 
   const chat = chats.find((c) => c.id === activeId) ?? draft;
   const saved = chats.some((c) => c.id === chat.id);
   const valid = (r?: ModelRef) => !!r && connections.some((c) => c.id === r.connectionId && c.models.some((m) => m.id === r.modelId));
   const fallback = connections[0] && { connectionId: connections[0].id, modelId: connections[0].models[0]?.id };
-  const model = [chat.model, saved ? undefined : draftModel, lastModel, fallback].find(valid);
+  const mode = modes.find((m) => m.id === (saved ? chat.modeId : draftMode)) ?? modes[0];
+  const model = [chat.model, saved ? undefined : draftModel, mode.model, lastModel, fallback].find(valid);
 
   const start = (c: Chat = newChat()) => {
     setDraft(c);
     setActiveId(undefined);
     setDraftModel(undefined);
+    setDraftMode("general");
     setNavOpen(false);
   };
 
   const branch = (messages: UIMessage[]) => {
     const src = getState().chats.find((c) => c.id === chat.id) ?? chat;
-    const c: Chat = { ...newChat(), title: `${src.title || "Chat"} (branch)`, model, messages };
+    const c: Chat = { ...newChat(), title: `${src.title || "Chat"} (branch)`, model, modeId: mode.id, messages };
     saveChat(c);
     setActiveId(c.id);
   };
@@ -94,7 +99,21 @@ function Inner() {
               <ThemeToggle />
             </div>
           </header>
-          <ChatView key={chat.id} chat={chat} model={model} onBranch={branch} onOpenKeys={() => setKeysOpen(true)} />
+          <ChatView
+            key={chat.id}
+            chat={chat}
+            model={model}
+            mode={mode}
+            modeSlot={(started) => (
+              <ModeSelect
+                value={mode.id}
+                lockPrivate={saved || started}
+                onChange={(id) => (saved ? patchChat(chat.id, { modeId: id }) : setDraftMode(id))}
+              />
+            )}
+            onBranch={branch}
+            onOpenKeys={() => setKeysOpen(true)}
+          />
         </main>
       </div>
       <KeysDialog open={keysOpen} onOpenChange={setKeysOpen} />

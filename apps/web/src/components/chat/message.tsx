@@ -54,7 +54,7 @@ export function Message({
   costLabel?: string;
   onEdit: (text: string) => void;
   onRegenerate: () => void;
-  onBranch: () => void;
+  onBranch?: () => void;
 }) {
   const [copied, setCopied] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -153,9 +153,11 @@ export function Message({
               )}
             </>
           )}
-          <Action label="Branch into a new chat from here" onClick={onBranch}>
-            <GitBranch />
-          </Action>
+          {onBranch && (
+            <Action label="Branch into a new chat from here" onClick={onBranch}>
+              <GitBranch />
+            </Action>
+          )}
           {costLabel && <span className="px-1 text-xs text-muted-foreground">{costLabel}</span>}
         </div>
       )}

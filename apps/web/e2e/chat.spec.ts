@@ -90,3 +90,29 @@ test("private URLs are refused when not testing", async ({ request }) => {
   expect(res.status()).toBe(400);
   expect((await res.json()).error).toContain("public https://");
 });
+
+test("private mode never saves, custom modes send their instructions", async ({ page }) => {
+  await connectMock(page);
+  await page.getByRole("combobox", { name: "Mode", exact: true }).click();
+  await page.getByRole("option", { name: "Private" }).click();
+  await expect(page.getByRole("heading", { name: "Private chat" })).toBeVisible();
+  await send(page, "secret thing");
+  await expect(page.getByText("Echo from mock-fast: secret thing")).toBeVisible();
+  await page.reload();
+  if (await page.getByRole("button", { name: "Open chats" }).isVisible()) await page.getByRole("button", { name: "Open chats" }).click();
+  await expect(page.getByText("Your chats will appear here.").locator("visible=true")).toBeVisible();
+  await page.keyboard.press("Escape");
+
+  // Custom mode: the instructions reach the provider (the mock echoes "[sys]" when it sees a system message).
+  await page.getByRole("combobox", { name: "Mode", exact: true }).click();
+  await page.getByRole("option", { name: "Create or edit modes…" }).click();
+  await page.getByRole("button", { name: "New mode" }).click();
+  await page.getByLabel("Name").fill("Pirate");
+  await page.getByLabel("Instructions (system prompt)").fill("Talk like a pirate.");
+  await page.getByRole("button", { name: "Save mode" }).click();
+  await page.keyboard.press("Escape");
+  await page.getByRole("combobox", { name: "Mode", exact: true }).click();
+  await page.getByRole("option", { name: "Pirate" }).click();
+  await send(page, "ahoy");
+  await expect(page.getByText("[sys: Talk like a pirate.] Echo from mock-fast: ahoy")).toBeVisible();
+});

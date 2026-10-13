@@ -19,10 +19,57 @@ export interface ModelRef {
   modelId: string;
 }
 
+export interface Mode {
+  id: string;
+  name: string;
+  instructions: string;
+  temperature?: number;
+  model?: ModelRef;
+  /** Incognito: chats in this mode are never saved. */
+  private?: boolean;
+  builtIn?: boolean;
+}
+
+export const BUILT_IN_MODES: Mode[] = [
+  { id: "general", name: "General", instructions: "", builtIn: true },
+  {
+    id: "coder",
+    name: "Coder",
+    builtIn: true,
+    temperature: 0.2,
+    instructions:
+      "You are an expert software engineer. Give complete, working code with the file name above each block. Explain only what is non-obvious. Prefer simple, standard solutions.",
+  },
+  {
+    id: "writer",
+    name: "Writer",
+    builtIn: true,
+    temperature: 0.9,
+    instructions: "You are a skilled editor and writer. Match the user's voice, keep it clear and concrete, and offer one stronger alternative when useful.",
+  },
+  {
+    id: "researcher",
+    name: "Researcher",
+    builtIn: true,
+    temperature: 0.3,
+    instructions:
+      "You are a careful researcher. Separate facts from opinions, say how confident you are, name your sources when you know them, and flag anything that may be out of date.",
+  },
+  {
+    id: "tutor",
+    name: "Tutor",
+    builtIn: true,
+    instructions:
+      "You are a patient tutor. Teach step by step, ask one question at a time to check understanding, and quiz the user before moving on. Never just hand over answers to exercises.",
+  },
+  { id: "private", name: "Private", instructions: "", private: true, builtIn: true },
+];
+
 export interface Chat {
   id: string;
   title: string;
   model?: ModelRef;
+  modeId?: string;
   messages: UIMessage[];
   pinned?: boolean;
   updatedAt: number;
@@ -33,10 +80,11 @@ interface State {
   chats: Chat[];
   favorites: string[]; // `${connectionId}:${modelId}`
   lastModel?: ModelRef;
+  modes: Mode[]; // user-made; built-ins live in code
 }
 
 const KEY = "moonc:v1";
-const empty: State = { connections: [], chats: [], favorites: [] };
+const empty: State = { connections: [], chats: [], favorites: [], modes: [] };
 let state: State = empty;
 let loaded = false;
 const listeners = new Set<() => void>();
