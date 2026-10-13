@@ -20,7 +20,27 @@ interface Body {
   memory?: boolean;
   computer?: boolean;
   google?: { accessToken?: string };
+  code?: boolean;
 }
+
+// Code workspace: the browser holds the project, so these tools run there and report back.
+const codeTools: ToolSet = {
+  write_files: tool({
+    description: "Create or replace files in the user's project. Always send each file's complete content.",
+    inputSchema: jsonSchema({
+      type: "object",
+      properties: {
+        summary: { type: "string", description: "One sentence: what changed and why" },
+        files: { type: "array", items: { type: "object", properties: { path: { type: "string" }, content: { type: "string" } }, required: ["path", "content"] } },
+      },
+      required: ["summary", "files"],
+    }),
+  }),
+  delete_files: tool({
+    description: "Delete files from the user's project.",
+    inputSchema: jsonSchema({ type: "object", properties: { paths: { type: "array", items: { type: "string" } } }, required: ["paths"] }),
+  }),
+};
 
 const COMPUTER_INSTRUCTIONS = `You can use this person's computer with the computer tool. Start with a screenshot. Coordinates are pixels in the latest screenshot. Work step by step and take a screenshot after anything changes. Before any step that deletes, buys, sends a message or installs something, set destructive: true and explain why in reason; the person will be asked. If something looks wrong, stop and explain.`;
 
@@ -89,7 +109,7 @@ export async function POST(req: Request) {
       throw new ProviderError("Computer use needs a Claude, GPT or Gemini model connected with its own key (Anthropic, OpenAI, Google, Azure or Bedrock). Pick one in the model menu.");
     }
     const google = typeof body.google?.accessToken === "string" ? googleTools(body.google.accessToken) : undefined;
-    const tools = { ...builtIn, ...mcp?.tools, ...google?.tools, ...readModTools(body.modTools), ...memoryTool, ...(desktopComputer ? { computer: computerTool } : {}) };
+    const tools = { ...builtIn, ...mcp?.tools, ...google?.tools, ...readModTools(body.modTools), ...memoryTool, ...(desktopComputer ? { computer: computerTool } : {}), ...(body.code ? codeTools : {}) };
     const hasTools = Object.keys(tools).length > 0;
 
     const result = streamText({
@@ -99,7 +119,7 @@ export async function POST(req: Request) {
       temperature: typeof body.temperature === "number" ? Math.min(2, Math.max(0, body.temperature)) : undefined,
       messages: await convertToModelMessages(body.messages),
       abortSignal: req.signal,
-      ...(hasTools ? { tools, toolApproval: { ...mcp?.approval, ...google?.approval }, stopWhen: isStepCount(body.research || desktopComputer ? 40 : 8) } : {}),
+      ...(hasTools ? { tools, toolApproval: { ...mcp?.approval, ...google?.approval }, stopWhen: isStepCount(body.research || desktopComputer || body.code ? 40 : 8) } : {}),
       onEnd: async () => {
         await mcp?.close();
       },

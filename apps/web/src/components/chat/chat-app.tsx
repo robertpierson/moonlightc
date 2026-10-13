@@ -11,6 +11,7 @@ const Customize = dynamic(() => import("@/components/customize/customize").then(
 const Connections = dynamic(() => import("@/components/connections/connections").then((m) => m.Connections), { loading: () => <div className="flex-1" /> });
 const ModsView = dynamic(() => import("@/components/mods/mods-view").then((m) => m.ModsView), { loading: () => <div className="flex-1" /> });
 const Automations = dynamic(() => import("@/components/desktop/automations").then((m) => m.Automations), { loading: () => <div className="flex-1" /> });
+const CodeWorkspace = dynamic(() => import("@/components/code/code-workspace").then((m) => m.CodeWorkspace), { ssr: false, loading: () => <div className="flex-1" /> });
 const Library = dynamic(() => import("@/components/library/library").then((m) => m.Library), { loading: () => <div className="flex-1" /> });
 const Studio = dynamic(() => import("@/components/studio/studio").then((m) => m.Studio), { loading: () => <div className="flex-1" /> });
 const Projects = dynamic(() => import("@/components/desktop/projects").then((m) => m.Projects), { loading: () => <div className="flex-1" /> });
@@ -43,7 +44,7 @@ import { ModeSelect, ModesDialog, useModes } from "./modes";
 import { CommandPalette } from "./command-palette";
 import { Sidebar } from "./sidebar";
 
-const VIEW_TITLES: Record<View, string> = { chat: "Chat", library: "Projects & memory", studio: "Studio", connections: "Connections", models: "Local models", terminal: "Terminal", projects: "My AI Projects", automations: "Automations", mods: "Mods", customize: "Customize" };
+const VIEW_TITLES: Record<View, string> = { chat: "Chat", code: "Code", library: "Projects & memory", studio: "Studio", connections: "Connections", models: "Local models", terminal: "Terminal", projects: "My AI Projects", automations: "Automations", mods: "Mods", customize: "Customize" };
 
 function distroDefaultMode() {
   const s = getState();
@@ -236,6 +237,7 @@ function Inner() {
           {view === "connections" && <Connections />}
           {view === "customize" && <Customize availableViews={availableViews()} />}
           {view === "mods" && <ModsView />}
+          {view === "code" && <CodeWorkspace onConnectGitHub={() => go("connections")} />}
           {view === "automations" && (
             <Automations
               onOpenChat={(id) => {

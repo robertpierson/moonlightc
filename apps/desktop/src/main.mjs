@@ -212,6 +212,19 @@ handle("open-external", (_e, url) => {
   return shell.openExternal(url);
 });
 handle("open-path", (_e, p, editor) => projects.openPath(p, editor));
+handle("files:saveProject", async (_e, name, files) => {
+  const r = await dialog.showOpenDialog(win, { title: "Choose where to save the project", properties: ["openDirectory", "createDirectory"] });
+  if (r.canceled) return null;
+  const folder = path.join(r.filePaths[0], String(name).replace(/[^\w\- ]+/g, "").trim() || "project");
+  for (const [p, content] of Object.entries(files ?? {})) {
+    const target = path.resolve(folder, String(p).replace(/^\/+/, ""));
+    if (!target.startsWith(path.resolve(folder) + path.sep)) throw new Error(`Refused to write outside the project folder: ${p}`);
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.writeFileSync(target, String(content));
+  }
+  shell.openPath(folder);
+  return folder;
+});
 handle("notify", (_e, title, body) => new Notification({ title, body }).show());
 
 // ---------- Lifecycle ----------

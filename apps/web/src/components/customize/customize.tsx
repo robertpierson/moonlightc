@@ -23,7 +23,7 @@ import {
 } from "@/lib/customize";
 import { update, useStore } from "@/lib/store";
 
-const SECTION_LABEL: Record<ViewId, string> = { chat: "Chat", library: "Projects & memory", studio: "Studio", connections: "Connections", models: "Local models", terminal: "Terminal", projects: "My AI Projects", automations: "Automations", mods: "Mods", customize: "Customize" };
+const SECTION_LABEL: Record<ViewId, string> = { chat: "Chat", code: "Code", library: "Projects & memory", studio: "Studio", connections: "Connections", models: "Local models", terminal: "Terminal", projects: "My AI Projects", automations: "Automations", mods: "Mods", customize: "Customize" };
 
 function download(name: string, text: string) {
   const a = document.createElement("a");

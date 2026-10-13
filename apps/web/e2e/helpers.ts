@@ -1,10 +1,13 @@
-import type { Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 
 const isPhone = (page: Page) => (page.viewportSize()?.width ?? 1280) < 768;
 
-/** On phones the sections live in a slide-out menu; open it first (waiting for the app to load). */
+/** On phones the sections live in a slide-out menu. Wait for any previous menu to finish closing, open it, confirm. */
 export async function openMenu(page: Page) {
-  if (isPhone(page)) await page.getByRole("button", { name: "Open chats" }).click();
+  if (!isPhone(page)) return;
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page.getByRole("button", { name: "Open chats" }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
 }
 
 export async function nav(page: Page, name: string) {

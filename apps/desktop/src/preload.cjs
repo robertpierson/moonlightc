@@ -69,6 +69,7 @@ contextBridge.exposeInMainWorld("moonc", {
     ipcRenderer.on("deep-link", fn);
     return () => ipcRenderer.removeListener("deep-link", fn);
   },
+  files: { saveProject: (name, files) => invoke("files:saveProject", name, files) },
   notify: (title, body) => invoke("notify", title, body),
   openExternal: (url) => invoke("open-external", url),
   openPath: (p, editor) => invoke("open-path", p, editor),

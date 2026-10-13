@@ -101,6 +101,10 @@ export interface MooncBridge {
     /** Native "Allow this program?" dialog. Returns true if the user allowed it. */
     approve(command: string, args: string[]): Promise<boolean>;
   };
+  files: {
+    /** Pick a folder and write the project there (in a new subfolder). Returns the folder, or null if cancelled. */
+    saveProject(name: string, files: Record<string, string>): Promise<string | null>;
+  };
   notify(title: string, body: string): Promise<void>;
   /** moonlightc:// links opened on this computer (for example, returning from a sign-in in the browser). */
   onDeepLink(cb: (url: string) => void): () => void;

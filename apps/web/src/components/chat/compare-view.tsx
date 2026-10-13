@@ -22,7 +22,9 @@ function Column({ model, turns, onModel, onRemove, onStatus }: {
   const sent = useRef(0);
   const busy = status === "streaming" || status === "submitted";
 
-  useEffect(() => onStatus(busy), [busy, onStatus]);
+  useEffect(() => {
+    onStatus(busy);
+  }, [busy, onStatus]);
 
   useEffect(() => {
     if (turns.length <= sent.current) return;

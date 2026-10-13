@@ -93,6 +93,9 @@ STATUS: BUILDING
 - [x] Gate (local): switching distros restyles the app; installing the example mod adds a working tool (e2e)
 - [ ] Drag/dock/undock panels (deferred: no panel system worth docking yet)
 
+## Code workspace (SPEC §6, live)
+- [x] Describe an app -> AI edits files via write_files/delete_files (browser-executed), live Sandpack preview, Monaco editor, diff + undo per change, zip download, push to a new private GitHub repo + Deploy on Vercel link, Save to folder (desktop). Projects in IndexedDB.
+
 ## Owner steps completed
 (none yet)
 
@@ -103,6 +106,7 @@ STATUS: BUILDING
 - No Docker, so no local Supabase stack; test against the hosted project.
 
 ## Notes (last 10)
+- 2026-10-13: Code workspace; fixed effect-return bug (Chrome scrollIntoView now returns a Promise); 86 web e2e stable.
 - 2026-10-13: One-click MCP sign-in connectors; 84 web e2e.
 - 2026-10-13: PR #1 merged; production https://moonlightc.vercel.app serves phases 2-8 (39 deployed-site tests pass). Work continues on main.
 - 2026-10-13: Google connector + OAuth framework; 80 web e2e, 12 desktop e2e, 63 unit tests.
