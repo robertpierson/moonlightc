@@ -1,0 +1,42 @@
+name: Desktop builds
+# Builds installers for every platform and attaches them to a DRAFT GitHub release.
+# Publishing the release is a manual step for the owner.
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            args: --win nsis --x64 --arm64
+          - os: macos-latest
+            args: --mac dmg --universal
+          - os: ubuntu-latest
+            args: --linux AppImage deb rpm --x64 -c.npmRebuild=true
+          - os: ubuntu-24.04-arm
+            args: --linux AppImage deb rpm --arm64 -c.npmRebuild=true
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - if: startsWith(matrix.os, 'ubuntu')
+        run: sudo apt-get update && sudo apt-get install -y rpm libarchive-tools
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @moonc/desktop bundle-web
+      - run: pnpm --filter @moonc/desktop exec electron-builder ${{ matrix.args }} --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
