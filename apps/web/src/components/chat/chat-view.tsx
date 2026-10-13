@@ -67,7 +67,7 @@ export function ChatView({
   const [input, setInput] = useState("");
   const [computerOn, setComputerOn] = useState(false);
   const googleTokenRef = useRef<string | undefined>(undefined);
-  const accountsRef = useRef<{ spotify?: string; slack?: string; discord?: string }>({});
+  const accountsRef = useRef<{ spotify?: string; slack?: string; discord?: string; x?: string }>({});
   const hasSearchKey = useStore((s) => !!s.searchKey);
   const bottom = useRef<HTMLDivElement>(null);
   // The key and model travel with each request, so switching models mid-chat just works.
@@ -216,7 +216,7 @@ export function ChatView({
     const text = input.trim();
     if ((!text && attachments.length === 0) || streaming || !canSend) return;
     googleTokenRef.current = await googleToken();
-    accountsRef.current = { spotify: await oauthToken("spotify"), slack: await oauthToken("slack"), discord: await oauthToken("discord") };
+    accountsRef.current = { spotify: await oauthToken("spotify"), slack: await oauthToken("slack"), discord: await oauthToken("discord"), x: getState().xToken?.enabled ? getState().xToken?.token : undefined };
     await refreshMcpTokens();
     // Computer use: the person at the PC must approve each session in a native dialog first.
     if (computerOn && !(await desktop()!.computer.status()).active && !(await desktop()!.computer.start(text))) {

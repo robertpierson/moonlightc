@@ -89,6 +89,35 @@ export function slackTools(token: string): { tools: ToolSet; approval: Record<st
   };
 }
 
+const X_API = process.env.MOONC_TEST_X_API ?? "https://api.x.com";
+
+/** X (Twitter) with the user's own API bearer token (the X API is paid, so it's bring-your-own-key). */
+export function xTools(token: string): ToolSet {
+  return {
+    x_search: tool({
+      description: "Search recent public posts on X (Twitter) from the last 7 days. Supports X search operators like from:name.",
+      inputSchema: jsonSchema<{ query: string }>({ type: "object", properties: { query: { type: "string" } }, required: ["query"] }),
+      execute: async ({ query }) => {
+        const d = await call<{ data?: { id: string; text: string; author_id: string; created_at?: string }[]; includes?: { users?: { id: string; username: string }[] } }>(
+          `${X_API}/2/tweets/search/recent?max_results=20&tweet.fields=created_at,author_id&expansions=author_id&user.fields=username&query=${encodeURIComponent(query)}`,
+          token,
+          "X",
+        );
+        const users = new Map((d.includes?.users ?? []).map((u) => [u.id, u.username]));
+        return (d.data ?? []).map((t) => ({ from: users.get(t.author_id), text: t.text, time: t.created_at, url: `https://x.com/i/status/${t.id}` }));
+      },
+    }),
+  };
+}
+
+export async function checkXToken(token: string) {
+  const res = await fetch(`${X_API}/2/tweets/search/recent?max_results=10&query=moon`, { headers: { authorization: `Bearer ${token}` } }).catch(() => null);
+  if (!res) throw new Error("Couldn't reach X. Check your internet connection.");
+  if (res.status === 401 || res.status === 403) throw new Error("X rejected this token. Copy the Bearer Token from your app in the X developer portal.");
+  if (res.status === 429) throw new Error("X says this token has used up its plan's requests. Try later or upgrade your X API plan.");
+  if (!res.ok) throw new Error(`X returned ${res.status}.`);
+}
+
 export function discordTools(token: string): ToolSet {
   return {
     discord_my_servers: tool({

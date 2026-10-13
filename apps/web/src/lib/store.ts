@@ -150,6 +150,7 @@ interface State {
   projects?: Project[];
   automations?: Automation[];
   oauth?: Partial<Record<OAuthProviderId, OAuthAccount>>;
+  xToken?: { token: string; enabled: boolean };
   subscriptions?: { items: Subscription[]; remindDays: number; reminded?: Record<string, number>; scannedAt?: number };
   memory?: { enabled: boolean; items: MemoryItem[] };
 }
@@ -203,7 +204,8 @@ function load() {
         const t = JSON.parse(raw) as { a: string; r?: string };
         oauth[id] = { ...acc, accessToken: t.a, refreshToken: t.r };
       }
-      update((s) => ({ ...s, connections, searchKey, mcpServers, oauth }));
+      const xToken = state.xToken && { ...state.xToken, token: state.xToken.token || ((await b.secrets.get("x")) ?? "") };
+      update((s) => ({ ...s, connections, searchKey, mcpServers, oauth, xToken }));
     });
   }
 }
@@ -222,6 +224,8 @@ function persist(prev: State) {
         b.secrets.set(`mcp:${m.id}`, JSON.stringify({ t: m.token, o: m.oauth?.tokens }));
     }
     for (const m of prev.mcpServers ?? []) if (!state.mcpServers?.some((x) => x.id === m.id)) b.secrets.set(`mcp:${m.id}`, null);
+    if (state.xToken?.token && state.xToken.token !== prev.xToken?.token) b.secrets.set("x", state.xToken.token);
+    else if (!state.xToken && prev.xToken) b.secrets.set("x", null);
     for (const id of OAUTH_IDS) {
       const acc = state.oauth?.[id];
       if (acc?.accessToken && acc.accessToken !== prev.oauth?.[id]?.accessToken) b.secrets.set(`oauth:${id}`, JSON.stringify({ a: acc.accessToken, r: acc.refreshToken }));
@@ -232,6 +236,7 @@ function persist(prev: State) {
       connections: state.connections.map((c) => ({ ...c, apiKey: "" })),
       searchKey: state.searchKey && { ...state.searchKey, key: "" },
       mcpServers: state.mcpServers?.map((m) => ({ ...m, token: m.token ? "" : undefined, oauth: m.oauth && { ...m.oauth, tokens: undefined } })),
+      xToken: state.xToken && { ...state.xToken, token: "" },
       oauth: state.oauth && Object.fromEntries(Object.entries(state.oauth).map(([k, a]) => [k, a && { ...a, accessToken: "", refreshToken: a.refreshToken ? "" : undefined }])),
     };
   }

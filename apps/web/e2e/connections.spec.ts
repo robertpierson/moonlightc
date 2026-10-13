@@ -70,3 +70,11 @@ test("one-click gallery starts the service's own sign-in", async ({ page }) => {
   await expect(page.getByText("Notion sign-in page")).toBeVisible();
   expect(asked).toBe("https://mcp.notion.com/mcp");
 });
+
+test("X: a wrong bearer token is refused with a clear message", async ({ page }) => {
+  await page.goto("/app");
+  await openConnections(page);
+  await page.getByLabel("X bearer token").fill("not-a-real-token");
+  await page.getByRole("button", { name: "Check and connect" }).click();
+  await expect(page.getByRole("alert").filter({ hasText: "X rejected this token" })).toBeVisible({ timeout: 15000 });
+});

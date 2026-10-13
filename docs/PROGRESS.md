@@ -80,6 +80,8 @@ STATUS: BUILDING
 - [x] GitHub connector via token: live stats dashboard + GitHub MCP (46 tools) — verified with real GitHub
 - [x] OAuth framework (PKCE, signed state, refresh) + Google connector: Gmail search/read, Calendar list/create (asks first), Drive search; desktop sign-in via website + moonlightc:// link; e2e with fake Google. Needs owner's Google OAuth client (OWNER_TODO #2)
 - [x] MCP OAuth sign-in (discovery + dynamic client registration + PKCE, browser-held state): one-click Notion, Linear, Jira & Confluence, Asana, Sentry, Canva, Vercel, Supabase (start step verified against the real servers)
+- [x] X (Twitter) bring-your-own bearer token: search recent posts (token checked live)
+- [x] One-click MCP gallery extended: Zapier, monday.com, Airtable, Cloudflare, Webflow, Wix, PostHog, Intercom, Stripe, Square
 - [x] YouTube (via the Google connector): search, my subscriptions, my playlists
 - [x] Spotify (now playing, search, play/pause, playlists), Slack (channels, read, search, send with approval), Discord (servers): built and tested with fakes; appear once owner adds app credentials (OWNER_TODO #3)
 - [x] Desktop automations: scheduled prompts on this computer (tray), run history, notifications, continue in chat
@@ -108,6 +110,7 @@ STATUS: BUILDING
 - No Docker, so no local Supabase stack; test against the hosted project.
 
 ## Notes (last 10)
+- 2026-10-13: X BYOK + 10 more one-click MCP services; in-text links underlined (a11y); 92 web e2e.
 - 2026-10-13: Multi-provider OAuth (Google, Spotify, Slack, Discord); fixed desktop search-key deletion bug; 90 web e2e.
 - 2026-10-13: Subscriptions hub; 87 web e2e.
 - 2026-10-13: Code workspace; fixed effect-return bug (Chrome scrollIntoView now returns a Promise); 86 web e2e stable.

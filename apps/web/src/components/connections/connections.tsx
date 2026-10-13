@@ -14,6 +14,7 @@ import { update, useStore, type McpServer } from "@/lib/store";
 import { beginMcpSignIn } from "@/lib/mcp-auth-client";
 import { GitHubDashboard } from "./github";
 import { AccountCards } from "./google";
+import { XCard } from "./x";
 
 const GITHUB_MCP = "https://api.githubcopilot.com/mcp/";
 
@@ -77,7 +78,7 @@ function AddConnector({ preset, onDone }: { preset?: "github"; onDone: () => voi
       {preset === "github" ? (
         <p className="text-sm text-muted-foreground">
           Paste a GitHub token. Make one at{" "}
-          <a className="text-primary underline-offset-4 hover:underline" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noreferrer">
+          <a className="text-primary underline underline-offset-4" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noreferrer">
             github.com/settings/personal-access-tokens
           </a>{" "}
           (read access to repositories, issues and pull requests is enough to start).
@@ -197,7 +198,7 @@ function ConnectorCard({ s }: { s: McpServer }) {
 }
 
 // Official MCP servers that let any app sign in (dynamic client registration), so they work with one click.
-const SIGN_IN_PRESETS = [
+const SIGN_IN_PRESETS: { name: string; url: string; what: string; more?: boolean }[] = [
   { name: "Notion", url: "https://mcp.notion.com/mcp", what: "Pages and databases" },
   { name: "Linear", url: "https://mcp.linear.app/mcp", what: "Issues and projects" },
   { name: "Jira & Confluence", url: "https://mcp.atlassian.com/v1/mcp", what: "Atlassian work items and docs" },
@@ -206,12 +207,24 @@ const SIGN_IN_PRESETS = [
   { name: "Canva", url: "https://mcp.canva.com/mcp", what: "Designs" },
   { name: "Vercel", url: "https://mcp.vercel.com", what: "Projects and deployments" },
   { name: "Supabase", url: "https://mcp.supabase.com/mcp", what: "Databases and projects" },
+  { name: "Zapier", url: "https://mcp.zapier.com/api/mcp/mcp", what: "Thousands of apps via Zapier", more: true },
+  { name: "monday.com", url: "https://mcp.monday.com/mcp", what: "Boards and items", more: true },
+  { name: "Airtable", url: "https://mcp.airtable.com/mcp", what: "Bases and records", more: true },
+  { name: "Cloudflare", url: "https://mcp.cloudflare.com/sse", what: "Workers, DNS and more", more: true },
+  { name: "Webflow", url: "https://mcp.webflow.com/sse", what: "Sites and CMS", more: true },
+  { name: "Wix", url: "https://mcp.wix.com/sse", what: "Sites and stores", more: true },
+  { name: "PostHog", url: "https://mcp.posthog.com/mcp", what: "Product analytics", more: true },
+  { name: "Intercom", url: "https://mcp.intercom.com/mcp", what: "Customer conversations", more: true },
+  { name: "Stripe", url: "https://mcp.stripe.com", what: "Payments data (asks before every action)", more: true },
+  { name: "Square", url: "https://mcp.squareup.com/sse", what: "Payments and orders (asks before every action)", more: true },
 ];
 
 function SignInGallery({ have }: { have: McpServer[] }) {
   const [busy, setBusy] = useState<string>();
-  const missing = SIGN_IN_PRESETS.filter((p) => !have.some((h) => h.url === p.url));
-  if (!missing.length) return null;
+  const [showMore, setShowMore] = useState(false);
+  const missing = SIGN_IN_PRESETS.filter((p) => !have.some((h) => h.url === p.url) && (showMore || !p.more));
+  const hiddenCount = SIGN_IN_PRESETS.filter((p) => p.more && !have.some((h) => h.url === p.url)).length;
+  if (!missing.length && !hiddenCount) return null;
   return (
     <section aria-label="One-click connections" className="grid gap-2">
       <h3 className="text-sm font-medium">Connect with one click</h3>
@@ -240,6 +253,11 @@ function SignInGallery({ have }: { have: McpServer[] }) {
           </li>
         ))}
       </ul>
+      {!showMore && hiddenCount > 0 && (
+        <Button variant="ghost" size="sm" className="justify-self-start" onClick={() => setShowMore(true)}>
+          Show {hiddenCount} more
+        </Button>
+      )}
       <p className="text-xs text-muted-foreground">You sign in on the service&apos;s own page. MoonlightC never sees your password.</p>
     </section>
   );
@@ -278,6 +296,7 @@ export function Connections() {
         {adding && <AddConnector key={adding} preset={adding === "github" ? "github" : undefined} onDone={() => setAdding(undefined)} />}
         <SignInGallery have={servers} />
         <AccountCards />
+        <XCard />
         {github?.token && <GitHubDashboard token={github.token} />}
         {servers.length > 0 && (
           <ul className="grid gap-3" aria-label="Your connectors">

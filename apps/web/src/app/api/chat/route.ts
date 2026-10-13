@@ -1,7 +1,7 @@
 import { getProvider, languageModel, ProviderError } from "@moonc/core";
 import { APICallError, convertToModelMessages, isStepCount, jsonSchema, tool, type ToolSet, createUIMessageStreamResponse, streamText, toUIMessageStream, type UIMessage } from "ai";
 import { readConnection } from "@/lib/server-guard";
-import { discordTools, slackTools, spotifyTools } from "@/lib/account-tools";
+import { discordTools, slackTools, spotifyTools, xTools } from "@/lib/account-tools";
 import { googleTools } from "@/lib/google-tools";
 import { mcpTools, readServers } from "@/lib/mcp-server";
 import { buildTools, readSearchKey, type SearchKey } from "@/lib/tools";
@@ -21,7 +21,7 @@ interface Body {
   memory?: boolean;
   computer?: boolean;
   google?: { accessToken?: string };
-  accounts?: { spotify?: string; slack?: string; discord?: string };
+  accounts?: { spotify?: string; slack?: string; discord?: string; x?: string };
   code?: boolean;
 }
 
@@ -113,7 +113,7 @@ export async function POST(req: Request) {
     const google = typeof body.google?.accessToken === "string" ? googleTools(body.google.accessToken) : undefined;
     const acc = body.accounts ?? {};
     const slack = typeof acc.slack === "string" ? slackTools(acc.slack) : undefined;
-    const accountTools = { ...(typeof acc.spotify === "string" ? spotifyTools(acc.spotify) : {}), ...slack?.tools, ...(typeof acc.discord === "string" ? discordTools(acc.discord) : {}) };
+    const accountTools = { ...(typeof acc.spotify === "string" ? spotifyTools(acc.spotify) : {}), ...slack?.tools, ...(typeof acc.discord === "string" ? discordTools(acc.discord) : {}), ...(typeof acc.x === "string" ? xTools(acc.x) : {}) };
     const tools = { ...builtIn, ...mcp?.tools, ...google?.tools, ...accountTools, ...readModTools(body.modTools), ...memoryTool, ...(desktopComputer ? { computer: computerTool } : {}), ...(body.code ? codeTools : {}) };
     const hasTools = Object.keys(tools).length > 0;
 

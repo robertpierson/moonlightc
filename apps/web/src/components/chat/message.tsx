@@ -69,7 +69,7 @@ function ToolCall({ part }: { part: ToolPart }) {
       <ul className="mt-1 grid gap-1 border-l-2 pl-3">
         {(search ? (part.output?.results ?? []) : part.output?.url ? [{ title: part.output.title ?? part.output.url, url: part.output.url }] : []).map((r, i) => (
           <li key={i} className="truncate">
-            <a href={r.url} target="_blank" rel="noreferrer" className="text-primary underline-offset-4 hover:underline">
+            <a href={r.url} target="_blank" rel="noreferrer" className="text-primary underline underline-offset-4">
               {r.title || r.url}
             </a>
           </li>
@@ -275,8 +275,8 @@ export function Message({
                 <p key={i} className="mb-2 flex items-center gap-1 text-sm text-muted-foreground">
                   <Brain className="size-3.5" /> Remembered: {String((p as unknown as { input?: { fact?: string } }).input?.fact ?? "")}
                 </p>
-              ) : /^tool-(gmail|calendar|drive|youtube|spotify|slack|discord)_/.test(p.type) ? (
-                <ConnectorCall key={i} part={{ ...(p as unknown as ConnectorPart), toolName: `${/^tool-(spotify|slack|discord)/.exec(p.type)?.[1] ?? "google"}__${p.type.slice(5)}` }} onApproval={onApproval} />
+              ) : /^tool-(gmail|calendar|drive|youtube|spotify|slack|discord|x)_/.test(p.type) ? (
+                <ConnectorCall key={i} part={{ ...(p as unknown as ConnectorPart), toolName: `${/^tool-(spotify|slack|discord|x)_/.exec(p.type)?.[1] ?? "google"}__${p.type.slice(5)}` }} onApproval={onApproval} />
               ) : p.type.startsWith("tool-mod_") ? (
                 <ConnectorCall key={i} part={{ ...(p as unknown as ConnectorPart), toolName: p.type.slice(5) }} onApproval={onApproval} />
               ) : p.type === "dynamic-tool" ? (
