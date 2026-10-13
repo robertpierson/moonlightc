@@ -69,7 +69,7 @@ function ToolCall({ part }: { part: ToolPart }) {
       <ul className="mt-1 grid gap-1 border-l-2 pl-3">
         {(search ? (part.output?.results ?? []) : part.output?.url ? [{ title: part.output.title ?? part.output.url, url: part.output.url }] : []).map((r, i) => (
           <li key={i} className="truncate">
-            <a href={r.url} target="_blank" rel="noreferrer" className="text-primary underline underline-offset-4">
+            <a href={r.url} target="_blank" rel="noreferrer" className="text-link underline underline-offset-4">
               {r.title || r.url}
             </a>
           </li>

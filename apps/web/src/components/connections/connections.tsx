@@ -78,7 +78,7 @@ function AddConnector({ preset, onDone }: { preset?: "github"; onDone: () => voi
       {preset === "github" ? (
         <p className="text-sm text-muted-foreground">
           Paste a GitHub token. Make one at{" "}
-          <a className="text-primary underline underline-offset-4" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noreferrer">
+          <a className="text-link underline underline-offset-4" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noreferrer">
             github.com/settings/personal-access-tokens
           </a>{" "}
           (read access to repositories, issues and pull requests is enough to start).

@@ -63,3 +63,31 @@ test("shortcuts can be rebound", async ({ page, isMobile }) => {
   await page.keyboard.press("Control+Shift+L");
   await expect(page.getByPlaceholder("Type a command, chat or model…")).toBeVisible();
 });
+
+test("profile name and picture, and saving your own theme", async ({ page }) => {
+  await page.goto("/app");
+  await openMenu(page);
+  await page.getByRole("button", { name: "Add your name" }).click();
+  await page.getByLabel("Your name").fill("Shawn Moon");
+  // A 1x1 PNG is enough to exercise the picture path.
+  const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==", "base64");
+  await page.locator('input[type="file"][accept="image/*"]').setInputFiles({ name: "me.png", mimeType: "image/png", buffer: png });
+  await expect(page.locator('img[src^="data:image/jpeg"]').first()).toBeAttached();
+  await go(page, "Chat");
+  await expect(page.getByRole("heading", { name: "What can I help with, Shawn?" })).toBeVisible();
+  await openMenu(page);
+  await expect(page.getByRole("button", { name: "Shawn Moon" }).locator("visible=true")).toHaveCount(1);
+  await page.keyboard.press("Escape");
+
+  await go(page, "Customize");
+  await page.getByRole("radio", { name: /Paper/ }).click();
+  await page.getByText("Theme editor").click();
+  await page.getByLabel("primary color", { exact: true }).fill("#123456");
+  await page.getByLabel("Theme name").fill("Night ink");
+  await page.getByRole("button", { name: "Save as my theme" }).click();
+  await page.getByRole("radio", { name: /Moonlight/ }).first().click();
+  await expect(page.locator("html")).not.toHaveAttribute("data-theme", /.+/);
+  await page.getByRole("radiogroup", { name: "My themes" }).getByRole("radio", { name: "Night ink" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "paper");
+  await expect.poll(() => page.evaluate(() => document.documentElement.style.getPropertyValue("--primary"))).toBe("#123456");
+});

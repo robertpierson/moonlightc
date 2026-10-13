@@ -143,7 +143,7 @@ function SearchKeySection() {
             href={p.url}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1 text-xs text-primary underline underline-offset-4"
+            className="inline-flex items-center gap-1 text-xs text-link underline underline-offset-4"
           >
             Get a key from {p.name} <ExternalLink className="size-3" />
           </a>
@@ -372,7 +372,7 @@ export function KeysPanel() {
                 href={provider.keyUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1 text-xs text-primary underline underline-offset-4"
+                className="inline-flex items-center gap-1 text-xs text-link underline underline-offset-4"
               >
                 Get a key from {provider.name}{" "}
                 <ExternalLink className="size-3" />

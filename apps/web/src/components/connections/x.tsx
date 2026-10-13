@@ -49,7 +49,7 @@ export function XCard() {
         <form onSubmit={save} className="grid gap-2">
           <p className="text-sm text-muted-foreground">
             X charges for its API, so you use your own: create an app in the{" "}
-            <a className="text-primary underline underline-offset-4" href="https://developer.x.com/en/portal/dashboard" target="_blank" rel="noreferrer">
+            <a className="text-link underline underline-offset-4" href="https://developer.x.com/en/portal/dashboard" target="_blank" rel="noreferrer">
               X developer portal <ExternalLink className="inline size-3" />
             </a>{" "}
             and paste its Bearer Token.

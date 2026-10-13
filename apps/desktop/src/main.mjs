@@ -20,7 +20,9 @@ let tray;
 let quitting = false;
 
 // Test runs get their own data folder, so they never touch (or collide with) an installed copy that's running.
-if (!app.isPackaged && process.env.MOONC_E2E_USER_DATA) app.setPath("userData", process.env.MOONC_E2E_USER_DATA);
+// They also run without a visible window or tray icon, so they never look like a second MoonlightC on the screen.
+const testRun = !app.isPackaged && !!process.env.MOONC_E2E_USER_DATA;
+if (testRun) app.setPath("userData", process.env.MOONC_E2E_USER_DATA);
 if (!app.requestSingleInstanceLock()) app.quit();
 app.setAsDefaultProtocolClient("moonlightc");
 
@@ -75,7 +77,7 @@ function lockDown(w) {
 const webPreferences = { preload: path.join(here, "preload.cjs"), contextIsolation: true, sandbox: true, nodeIntegration: false };
 
 function createWindow() {
-  win = new BrowserWindow({ width: 1280, height: 840, minWidth: 360, minHeight: 500, backgroundColor: "#0f1736", title: "MoonlightC", icon: iconPath(), webPreferences });
+  win = new BrowserWindow({ width: 1280, height: 840, minWidth: 360, minHeight: 500, backgroundColor: "#0e1220", title: "MoonlightC", icon: iconPath(), show: !testRun, webPreferences: testRun ? { ...webPreferences, backgroundThrottling: false } : webPreferences });
   lockDown(win);
   win.loadURL(appURL + "/app");
   win.on("close", (e) => {
@@ -96,7 +98,7 @@ function toggleQuickAsk() {
     }
     return;
   }
-  quick = new BrowserWindow({ width: 720, height: 520, frame: false, alwaysOnTop: true, skipTaskbar: true, show: false, backgroundColor: "#0f1736", webPreferences });
+  quick = new BrowserWindow({ width: 720, height: 520, frame: false, alwaysOnTop: true, skipTaskbar: true, show: false, backgroundColor: "#0e1220", webPreferences });
   lockDown(quick);
   quick.loadURL(appURL + "/app?quick=1");
   quick.once("ready-to-show", () => quick.show());
@@ -291,7 +293,7 @@ app.whenReady().then(async () => {
     return;
   }
   createWindow();
-  createTray();
+  if (!testRun) createTray();
   if (pendingLink) win.webContents.once("did-finish-load", () => setTimeout(() => win.webContents.send("deep-link", pendingLink), 1500));
   if (!globalShortcut.register("Alt+Space", toggleQuickAsk)) console.warn("Alt+Space is taken by another app.");
 });

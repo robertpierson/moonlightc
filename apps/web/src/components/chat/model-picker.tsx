@@ -94,7 +94,7 @@ export function ModelPicker({ value, onChange, plain, label = "Choose model" }: 
                   <Check className={isAuto(value) ? "opacity-100" : "opacity-0"} />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1">
-                      Auto <Sparkles className="size-3.5 text-primary" />
+                      Auto <Sparkles className="size-3.5 text-link" />
                     </div>
                     <div className="truncate text-xs text-muted-foreground">Picks the best of your models for each message</div>
                   </div>

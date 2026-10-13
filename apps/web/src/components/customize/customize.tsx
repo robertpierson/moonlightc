@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Download, Link2, Upload } from "lucide-react";
+import { Check, Download, Link2, Save, Trash2, Upload } from "lucide-react";
 import { useState } from "react";
 import { applyDistro, setLook, useLook } from "./look";
 import { toast } from "sonner";
@@ -64,6 +64,8 @@ function ShortcutInput({ label, value, onChange }: { label: string; value: strin
 }
 
 export function Customize({ availableViews }: { availableViews: ViewId[] }) {
+  const myThemes = useStore((s) => s.myThemes) ?? [];
+  const [themeName, setThemeName] = useState("");
   const look = useLook();
   const distroId = useStore((s) => s.distroId);
   const custom = useStore((s) => s.customDistros) ?? [];
@@ -101,7 +103,7 @@ export function Customize({ availableViews }: { availableViews: ViewId[] }) {
                   className="flex h-full w-full flex-col gap-1 rounded-xl border p-4 text-left hover:border-primary aria-pressed:border-primary aria-pressed:ring-2 aria-pressed:ring-ring/40"
                 >
                   <span className="flex items-center gap-2 font-medium">
-                    {d.name} {distroId === d.id && <Check className="size-4 text-primary" />}
+                    {d.name} {distroId === d.id && <Check className="size-4 text-link" />}
                   </span>
                   <span className="text-sm text-muted-foreground">{d.description || "Your saved setup."}</span>
                 </button>
@@ -174,6 +176,23 @@ export function Customize({ availableViews }: { availableViews: ViewId[] }) {
               </button>
             ))}
           </div>
+          {myThemes.length > 0 && (
+            <div role="radiogroup" aria-label="My themes" className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {myThemes.map((t) => {
+                const on = look.theme === t.look.theme && JSON.stringify(look.overrides) === JSON.stringify(t.look.overrides) && look.radius === t.look.radius;
+                return (
+                  <div key={t.id} className="flex items-center gap-1 rounded-xl border p-1 pl-3 has-[[aria-checked=true]]:ring-2 has-[[aria-checked=true]]:ring-ring/40">
+                    <button role="radio" aria-checked={on} onClick={() => setLook({ theme: t.look.theme, overrides: t.look.overrides, radius: t.look.radius })} className="min-w-0 flex-1 truncate py-2 text-left font-medium">
+                      {t.name}
+                    </button>
+                    <Button variant="ghost" size="icon" aria-label={`Delete theme ${t.name}`} onClick={() => update((s) => ({ ...s, myThemes: (s.myThemes ?? []).filter((x) => x.id !== t.id) }))}>
+                      <Trash2 />
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
           {modThemes.length > 0 && (
             <div className="flex flex-wrap gap-2">
               <span className="self-center text-sm text-muted-foreground">From mods:</span>
@@ -239,6 +258,22 @@ export function Customize({ availableViews }: { availableViews: ViewId[] }) {
                   </label>
                 )}
               </div>
+              <form
+                className="flex flex-wrap gap-2"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const name = themeName.trim();
+                  if (!name) return;
+                  update((s) => ({ ...s, myThemes: [...(s.myThemes ?? []).filter((x) => x.name !== name), { id: crypto.randomUUID(), name, look: { theme: look.theme, overrides: look.overrides, radius: look.radius } }] }));
+                  setThemeName("");
+                  toast.success(`Saved "${name}" to your themes.`);
+                }}
+              >
+                <Input aria-label="Theme name" placeholder="Name this theme" maxLength={40} value={themeName} onChange={(e) => setThemeName(e.target.value)} className="max-w-56" />
+                <Button type="submit" variant="outline" disabled={!themeName.trim()}>
+                  <Save /> Save as my theme
+                </Button>
+              </form>
               <Button variant="ghost" className="justify-self-start" onClick={() => setLook({ overrides: {}, radius: undefined, wallpaper: undefined })}>
                 Reset theme edits
               </Button>

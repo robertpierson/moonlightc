@@ -119,6 +119,7 @@ export function ChatView({
     x?: string;
   }>({});
   const hasSearchKey = useStore((s) => !!s.searchKey);
+  const userName = useStore((s) => s.profile?.name?.trim().split(/\s+/)[0]);
   const bottom = useRef<HTMLDivElement>(null);
   // The key and model travel with each request, so switching models mid-chat just works.
   const messagesRef = useRef<UIMessage[]>(chat.messages);
@@ -163,6 +164,7 @@ export function ChatView({
             ),
           }),
           skillsText,
+          getState().profile?.name?.trim() ? `The user's name is ${getState().profile!.name!.trim()}.` : "",
         ]
           .filter(Boolean)
           .join("\n\n"),
@@ -489,7 +491,7 @@ export function ChatView({
           {messages.length === 0 && (
             <div className="flex flex-col items-center gap-3 pt-[18vh] text-center">
               <h2 className="text-2xl font-semibold tracking-tight">
-                {mode.private ? "Private chat" : "What can I help with?"}
+                {mode.private ? "Private chat" : userName ? `What can I help with, ${userName}?` : "What can I help with?"}
               </h2>
               {mode.private && (
                 <p className="max-w-sm text-sm text-muted-foreground">

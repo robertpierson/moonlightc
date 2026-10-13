@@ -198,7 +198,7 @@ function Inner() {
       }}
       onNew={() => start()}
     />
-    <SettingsButton active={view === "settings"} onClick={() => openSettings(section)} />
+    <SettingsButton active={view === "settings"} onClick={() => openSettings(section)} onProfile={() => openSettings("profile")} />
     </div>
   );
 

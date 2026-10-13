@@ -1,6 +1,6 @@
 "use client";
 
-import { Cpu, Download, FolderOpen, Globe, KeyRound, Laptop, Moon, Palette, Plug, Puzzle, Shield, SlidersHorizontal, Sparkles, Sun, Trash2, Wand2, X } from "lucide-react";
+import { Cpu, Download, FolderOpen, Globe, KeyRound, Laptop, Moon, Palette, Plug, Puzzle, Shield, SlidersHorizontal, Sparkles, Sun, Trash2, Upload, UserRound, Wand2, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
@@ -9,6 +9,7 @@ import { ModelPicker } from "@/components/chat/model-picker";
 import { KeysPanel } from "@/components/chat/keys-dialog";
 import { ModesManager } from "@/components/chat/modes";
 import { ClaudePlugins } from "./claude-plugins";
+import { Avatar } from "./avatar";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
@@ -22,9 +23,10 @@ const Customize = dynamic(() => import("@/components/customize/customize").then(
 const ModsView = dynamic(() => import("@/components/mods/mods-view").then((m) => m.ModsView), { loading: () => <div className="flex-1" /> });
 const LocalModels = dynamic(() => import("@/components/desktop/local-models").then((m) => m.LocalModels), { loading: () => <div className="flex-1" /> });
 
-export type SettingsSection = "general" | "models" | "auto" | "modes" | "connectors" | "plugins" | "files" | "browser" | "local" | "appearance" | "privacy";
+export type SettingsSection = "profile" | "general" | "models" | "auto" | "modes" | "connectors" | "plugins" | "files" | "browser" | "local" | "appearance" | "privacy";
 
 const SECTIONS: { id: SettingsSection; label: string; icon: React.ReactNode; desktopOnly?: boolean; webOnly?: boolean }[] = [
+  { id: "profile", label: "Profile", icon: <UserRound /> },
   { id: "general", label: "General", icon: <SlidersHorizontal /> },
   { id: "models", label: "Models & API keys", icon: <KeyRound /> },
   { id: "auto", label: "Auto model", icon: <Sparkles /> },
@@ -62,6 +64,7 @@ export function Settings({ section, onSection, availableViews, onClose, onChat }
         ))}
       </nav>
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        {section === "profile" && <Profile />}
         {section === "general" && <General />}
         {section === "models" && (
           <Page title="Models & API keys" description="Every provider you've connected, with its key (only the last 4 characters are shown). Keys stay on this device.">
@@ -114,6 +117,77 @@ function Row({ label, hint, children }: { label: string; hint?: string; children
       </div>
       {children}
     </div>
+  );
+}
+
+/** Shrinks a picture to a 128px square so it stays small on the device. */
+function squareAvatar(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement("canvas");
+      c.width = c.height = 128;
+      const side = Math.min(img.width, img.height);
+      c.getContext("2d")!.drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, 128, 128);
+      URL.revokeObjectURL(img.src);
+      resolve(c.toDataURL("image/jpeg", 0.85));
+    };
+    img.onerror = () => reject(new Error("That file isn't a picture MoonlightC can read."));
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+
+function Profile() {
+  const profile = useStore((s) => s.profile) ?? {};
+  const set = (p: Partial<NonNullable<typeof profile>>) => update((s) => ({ ...s, profile: { ...s.profile, ...p } }));
+  return (
+    <Page title="Profile" description="How MoonlightC greets you. The AI also knows your name. Stored on this device.">
+      <div className="grid gap-4">
+        <Row label="Picture">
+          <div className="flex items-center gap-2">
+            <Avatar size="size-12" />
+            <Button variant="outline" size="sm" asChild>
+              <label>
+                <Upload /> Choose picture
+                <input
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  onChange={async (e) => {
+                    const f = e.target.files?.[0];
+                    if (!f) return;
+                    try {
+                      set({ avatar: await squareAvatar(f) });
+                    } catch (err) {
+                      toast.error(err instanceof Error ? err.message : String(err));
+                    }
+                  }}
+                />
+              </label>
+            </Button>
+            {profile.avatar && (
+              <Button variant="ghost" size="sm" onClick={() => set({ avatar: undefined })}>
+                Remove
+              </Button>
+            )}
+          </div>
+        </Row>
+        <Row label="Your name">
+          <input
+            aria-label="Your name"
+            maxLength={60}
+            value={profile.name ?? ""}
+            onChange={(e) => set({ name: e.target.value })}
+            placeholder="What should MoonlightC call you?"
+            className="h-9 w-64 rounded-lg border bg-transparent px-3 text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+          />
+        </Row>
+        <Row label="Theme" hint="Pick a theme, edit its colors, and save your own in Appearance.">
+          <span className="text-sm text-muted-foreground">Settings &gt; Appearance</span>
+        </Row>
+      </div>
+    </Page>
   );
 }
 
@@ -226,7 +300,7 @@ function BrowserExtension() {
       ) : (
         <ol className="grid list-decimal gap-2 pl-5 text-sm">
           <li>
-            <a className="text-primary underline underline-offset-4" href="/downloads/moonlightc-chrome-extension.zip" download>
+            <a className="text-link underline underline-offset-4" href="/downloads/moonlightc-chrome-extension.zip" download>
               Download the extension
             </a>{" "}
             and unzip it (right-click the file, then <strong>Extract all</strong>).

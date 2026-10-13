@@ -136,7 +136,7 @@ function Form() {
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
                 {step === "signin" && (
-                  <button type="button" className="text-xs text-primary underline underline-offset-4" onClick={() => setStep("forgot")}>
+                  <button type="button" className="text-xs text-link underline underline-offset-4" onClick={() => setStep("forgot")}>
                     Forgot password?
                   </button>
                 )}
@@ -168,15 +168,15 @@ function Form() {
         <div className="grid gap-1 text-center text-sm">
           {step === "signin" ? (
             <>
-              <button className="text-primary underline underline-offset-4" onClick={() => setStep("signup")}>
+              <button className="text-link underline underline-offset-4" onClick={() => setStep("signup")}>
                 New here? Create an account
               </button>
-              <button className="text-primary underline underline-offset-4" onClick={() => setStep("magic")}>
+              <button className="text-link underline underline-offset-4" onClick={() => setStep("magic")}>
                 Email me a sign-in link instead
               </button>
             </>
           ) : (
-            <button className="text-primary underline underline-offset-4" onClick={() => setStep("signin")}>
+            <button className="text-link underline underline-offset-4" onClick={() => setStep("signin")}>
               Back to sign in
             </button>
           )}

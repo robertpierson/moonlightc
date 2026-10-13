@@ -170,7 +170,7 @@ function Preview({ plugin: p, existing, onInstall, onCancel }: { plugin: Draft; 
         <span className="font-medium">{p.displayName ?? p.name}</span>
         {p.version && <Badge variant="secondary">v{p.version}</Badge>}
         <Summary p={p} />
-        <a className="ml-auto text-sm text-primary underline underline-offset-4" href={ghLink(p.source)} target="_blank" rel="noreferrer">
+        <a className="ml-auto text-sm text-link underline underline-offset-4" href={ghLink(p.source)} target="_blank" rel="noreferrer">
           Source <ExternalLink className="inline size-3" />
         </a>
       </div>

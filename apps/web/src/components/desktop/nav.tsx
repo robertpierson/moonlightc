@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import type { ViewId } from "@/lib/customize";
 import { desktop } from "@/lib/desktop";
+import { useStore } from "@/lib/store";
+import { Avatar } from "@/components/settings/avatar";
 
 export type View =
   | "chat"
@@ -114,20 +116,19 @@ export function AppNav({
   );
 }
 
-/** Bottom-of-sidebar button that opens Settings. */
-export function SettingsButton({
-  active,
-  onClick,
-}: {
-  active: boolean;
-  onClick: () => void;
-}) {
+/** Bottom of the sidebar: your profile (opens Profile) and Settings. */
+export function SettingsButton({ active, onClick, onProfile }: { active: boolean; onClick: () => void; onProfile: () => void }) {
+  const name = useStore((s) => s.profile?.name?.trim());
   return (
-    <div className="border-t p-2">
+    <div className="flex items-center gap-1 border-t p-2">
+      <button onClick={onProfile} className="flex min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 py-1.5 text-sm hover:bg-accent">
+        <Avatar />
+        <span className="truncate">{name || "Add your name"}</span>
+      </button>
       <button
         aria-current={active ? "page" : undefined}
         onClick={onClick}
-        className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-sm hover:bg-accent aria-[current=page]:bg-accent [&_svg]:size-4"
+        className="flex items-center gap-1.5 rounded-md px-2.5 py-2 text-sm hover:bg-accent aria-[current=page]:bg-accent [&_svg]:size-4"
       >
         <SettingsIcon /> Settings
       </button>

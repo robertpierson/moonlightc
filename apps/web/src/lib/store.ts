@@ -161,6 +161,10 @@ interface State {
   autoPicks?: AutoPicks;
   /** Claude Code plugins installed from GitHub (skills, commands, agents, MCP servers). */
   plugins?: ClaudePlugin[];
+  /** Name and picture shown in the app (kept on this device until accounts exist). */
+  profile?: { name?: string; avatar?: string };
+  /** Themes the person saved from the theme editor. */
+  myThemes?: { id: string; name: string; look: Pick<Look, "theme" | "overrides" | "radius"> }[];
   subscriptions?: { items: Subscription[]; remindDays: number; reminded?: Record<string, number>; scannedAt?: number };
   memory?: { enabled: boolean; items: MemoryItem[] };
 }

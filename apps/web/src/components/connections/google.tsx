@@ -93,7 +93,7 @@ export function AccountCards() {
                 <>
                   {" "}
                   To remove access completely, also visit{" "}
-                  <a className="text-primary underline underline-offset-4" href={a.revoke} target="_blank" rel="noreferrer">
+                  <a className="text-link underline underline-offset-4" href={a.revoke} target="_blank" rel="noreferrer">
                     {a.name}&apos;s connected apps page <ExternalLink className="inline size-3" />
                   </a>
                   .
