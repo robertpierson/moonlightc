@@ -1,20 +1,16 @@
 "use client";
 
-import { code } from "@streamdown/code";
-import { createMathPlugin } from "@streamdown/math";
-import { mermaid } from "@streamdown/mermaid";
 import type { UIMessage } from "ai";
 import { AppWindow, Check, Copy, FileText, GitBranch, Link2, Loader2, Search, Terminal, Pencil, RotateCcw, Volume2, VolumeX } from "lucide-react";
 import { useState } from "react";
-import { Streamdown } from "streamdown";
+import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { extractArtifacts, type Artifact } from "@/lib/artifacts";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import "katex/dist/katex.min.css";
-import "streamdown/styles.css";
 
-const plugins = { code, math: createMathPlugin({ singleDollarTextMath: true }), mermaid };
+// The markdown renderer (code highlighting, math, diagrams) is large, so it loads only once there is an answer to show.
+const Markdown = dynamic(() => import("./markdown"), { ssr: false, loading: () => <div className="h-5" /> });
 
 export interface Usage {
   inputTokens?: number;
@@ -218,9 +214,7 @@ export function Message({
               ) : p.type === "tool-web_search" || p.type === "tool-fetch_url" ? (
                 <ToolCall key={i} part={p as unknown as ToolPart} />
               ) : p.type === "text" ? (
-                <Streamdown key={i} plugins={plugins} isAnimating={streaming} className="min-w-0">
-                  {p.text}
-                </Streamdown>
+                <Markdown key={i} text={p.text} streaming={streaming} />
               ) : null,
             )}
           </>

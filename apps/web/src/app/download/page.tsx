@@ -26,7 +26,7 @@ export default async function DownloadPage() {
         <Link href="/" className="display text-xl font-semibold">
           MoonlightC
         </Link>
-        <Link href="/app" className="ml-auto rounded-full bg-[var(--silver)] px-4 py-2 text-sm font-medium text-[var(--night)] hover:opacity-90">
+        <Link prefetch={false} href="/app" className="ml-auto rounded-full bg-[var(--silver)] px-4 py-2 text-sm font-medium text-[var(--night)] hover:opacity-90">
           Open web app
         </Link>
       </header>

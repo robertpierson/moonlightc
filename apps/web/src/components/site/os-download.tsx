@@ -71,7 +71,7 @@ export function PrimaryDownload({ release, className }: { release: Release | nul
     );
   }
   return (
-    <Link href="/app" className={className}>
+    <Link prefetch={false} href="/app" className={className}>
       Open the web app{d && d.platform !== "unknown" ? ` on ${NAMES[d.platform]}` : ""}
       <span className="block text-xs font-normal opacity-75">Works in any modern browser. Install it like an app.</span>
     </Link>

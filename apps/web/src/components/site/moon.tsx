@@ -19,7 +19,7 @@ float noise(vec3 p) {
   return mix(mix(mix(hash(i), hash(i + vec3(1,0,0)), f.x), mix(hash(i + vec3(0,1,0)), hash(i + vec3(1,1,0)), f.x), f.y),
              mix(mix(hash(i + vec3(0,0,1)), hash(i + vec3(1,0,1)), f.x), mix(hash(i + vec3(0,1,1)), hash(i + vec3(1,1,1)), f.x), f.y), f.z);
 }
-float fbm(vec3 p) { float v = 0.0, a = 0.5; for (int i = 0; i < 5; i++) { v += a * noise(p); p *= 2.03; a *= 0.5; } return v; }
+float fbm(vec3 p) { float v = 0.0, a = 0.5; for (int i = 0; i < 4; i++) { v += a * noise(p); p *= 2.03; a *= 0.5; } return v; }
 
 void main() {
   vec2 uv = (gl_FragCoord.xy - 0.5 * res) / min(res.x, res.y);
@@ -85,13 +85,15 @@ export function Moon({ className }: { className?: string }) {
     gl.uniform3fv(u("lit"), hexToRGB(styles.getPropertyValue("--moon-lit").trim() || "#e4e8f2"));
     gl.uniform3fv(u("dark"), hexToRGB(styles.getPropertyValue("--moon-dark").trim() || "#1b2550"));
 
-    const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // Draw one frame now; start the slow drift only after the page has settled, so it never competes with loading.
+    let still = true;
     let raf = 0;
     let visible = true;
     const start = performance.now();
 
     const resize = () => {
-      const dpr = Math.min(devicePixelRatio, 1.5);
+      const dpr = Math.min(devicePixelRatio, matchMedia("(pointer: coarse)").matches ? 1 : 1.5);
       canvas.width = canvas.clientWidth * dpr;
       canvas.height = canvas.clientHeight * dpr;
       gl.viewport(0, 0, canvas.width, canvas.height);
@@ -116,9 +118,15 @@ export function Moon({ className }: { className?: string }) {
     resize();
     draw();
     io.observe(canvas);
+    const wake = setTimeout(() => {
+      if (reduced) return;
+      still = false;
+      if (visible) draw();
+    }, 4000);
     addEventListener("resize", resize);
     addEventListener("scroll", onScroll, { passive: true });
     return () => {
+      clearTimeout(wake);
       cancelAnimationFrame(raf);
       io.disconnect();
       removeEventListener("resize", resize);

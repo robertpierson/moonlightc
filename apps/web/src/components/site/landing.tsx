@@ -97,7 +97,7 @@ export function Landing({ release }: { release: Release | null }) {
           <a href={`https://github.com/${REPO}`} className="hidden hover:text-[var(--tide)] sm:inline">
             GitHub
           </a>
-          <Link href="/app" className="rounded-full bg-[var(--silver)] px-4 py-2 font-medium text-[var(--night)] hover:opacity-90">
+          <Link prefetch={false} href="/app" className="rounded-full bg-[var(--silver)] px-4 py-2 font-medium text-[var(--night)] hover:opacity-90">
             Open web app
           </Link>
         </nav>
@@ -115,7 +115,7 @@ export function Landing({ release }: { release: Release | null }) {
               Claude, GPT, Gemini, Grok and hundreds more in one app, with your own keys. Free and open source.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="/app" className="rounded-full bg-[var(--silver)] px-6 py-3 font-semibold text-[var(--night)] hover:opacity-90">
+              <Link prefetch={false} href="/app" className="rounded-full bg-[var(--silver)] px-6 py-3 font-semibold text-[var(--night)] hover:opacity-90">
                 Open web app
               </Link>
               <Link href="/download" className="rounded-full border border-[var(--line)] px-6 py-3 font-semibold hover:border-[var(--tide)]">

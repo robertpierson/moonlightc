@@ -54,7 +54,6 @@
 }
 @keyframes rise {
   from {
-    opacity: 0.15;
     transform: translateY(48px) scale(0.97);
   }
 }
