@@ -202,7 +202,7 @@ handle("files:grant", async () => {
   const testDir = !app.isPackaged && process.env.MOONC_E2E_GRANT_DIR;
   const r = testDir ? { canceled: false, filePaths: [testDir] } : await dialog.showOpenDialog(win, { title: "Choose a folder the AI can use", properties: ["openDirectory"] });
   if (r.canceled || !r.filePaths[0]) return readGrants();
-  const folder = fs.realpathSync(r.filePaths[0]);
+  const folder = fs.realpathSync.native(r.filePaths[0]);
   if (folder === path.parse(folder).root) {
     await dialog.showMessageBox(win, { type: "warning", message: "Pick a specific folder, not a whole drive." });
     return readGrants();

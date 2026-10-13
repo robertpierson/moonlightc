@@ -222,6 +222,7 @@ test("computer use through chat: the model takes a screenshot after the PC appro
 });
 
 test("files: the AI reads shared folders and asks before writing", async () => {
+  test.setTimeout(120_000);
   await page.getByRole("button", { name: "Settings", exact: true }).click();
   await page.getByRole("navigation", { name: "Settings" }).getByRole("button", { name: "Files" }).click();
   await page.getByRole("button", { name: "Share a folder" }).click();

@@ -12,7 +12,10 @@ export async function readGrants(file = process.env.MOONC_FILE_GRANTS): Promise<
   if (!file) return [];
   try {
     const list = JSON.parse(await fs.readFile(file, "utf8"));
-    return Array.isArray(list) ? list.filter((x): x is string => typeof x === "string") : [];
+    if (!Array.isArray(list)) return [];
+    // Compare real full paths (Windows short names like RUNNER~1 and links resolve to the same thing).
+    const real = await Promise.all(list.filter((x): x is string => typeof x === "string").map((g) => fs.realpath(g).catch(() => null)));
+    return real.filter((g): g is string => !!g);
   } catch {
     return [];
   }
