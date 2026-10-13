@@ -39,4 +39,5 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
-
+      - if: failure() && startsWith(matrix.os, 'macos')
+        run: find apps/desktop/dist -path "*.app/*" -type l -exec ls -l {} \; | grep -v "Frameworks/.*Versions/Current\|Frameworks/.*/Resources ->\|Frameworks/.*/Libraries ->\|-> Versions/Current" | head -40
