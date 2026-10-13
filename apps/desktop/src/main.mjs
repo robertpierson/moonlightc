@@ -36,12 +36,35 @@ const freePort = () =>
     s.on("error", reject);
   });
 
+const portFree = (port) =>
+  new Promise((resolve) => {
+    const s = net.createServer();
+    s.once("error", () => resolve(false));
+    s.listen(port, "127.0.0.1", () => s.close(() => resolve(true)));
+  });
+
+// Chats and settings live in the browser storage of http://127.0.0.1:<port>, so the port must stay the same from one
+// launch to the next. Reuse the saved one; pick (and save) a new one only if it's taken.
+async function stablePort() {
+  const file = path.join(app.getPath("userData"), "port.json");
+  let saved;
+  try {
+    saved = JSON.parse(fs.readFileSync(file, "utf8")).port;
+  } catch {}
+  for (const p of [saved, 47821]) if (Number.isInteger(p) && (await portFree(p))) return keep(p);
+  return keep(await freePort());
+  function keep(p) {
+    if (p !== saved) fs.writeFileSync(file, JSON.stringify({ port: p }));
+    return p;
+  }
+}
+
 /** Start the bundled Next.js server (the same app as the website) on a private localhost port. */
 async function startServer() {
   const root = app.isPackaged ? path.join(process.resourcesPath, "app-server") : path.join(here, "..", "app-server");
   const entry = path.join(root, "apps", "web", "server.js");
   if (!fs.existsSync(entry)) throw new Error(`Missing app server at ${entry}. Run "pnpm bundle-web" first.`);
-  const port = await freePort();
+  const port = await stablePort();
   server = spawn(process.execPath, [entry], {
     cwd: path.dirname(entry),
     env: { ...process.env, MOONC_E2E_AUTO_APPROVE: app.isPackaged ? "" : (process.env.MOONC_E2E_AUTO_APPROVE ?? ""), MOONC_MCP_ALLOWLIST: mcpAllowlist(), MOONC_FILE_GRANTS: fileGrants(), MOONC_FILE_AUDIT: fileAudit(), NODE_PATH: path.join(root, "deps", ".pnpm", "node_modules"), ELECTRON_RUN_AS_NODE: "1", PORT: String(port), HOSTNAME: "127.0.0.1", MOONC_DESKTOP: "1", NODE_ENV: "production" },

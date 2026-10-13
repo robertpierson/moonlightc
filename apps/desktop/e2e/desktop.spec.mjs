@@ -7,8 +7,10 @@ let app;
 let page;
 const grantDir = fs.mkdtempSync(path.join(os.tmpdir(), "moonc-share-"));
 fs.writeFileSync(path.join(grantDir, "hello.txt"), "hi");
+const userData = fs.mkdtempSync(path.join(os.tmpdir(), "moonc-e2e-"));
+const launch = () => electron.launch({ args: ["."], env: { ...process.env, MOONC_E2E_AUTO_APPROVE: "1", MOONC_E2E_USER_DATA: userData, MOONC_E2E_GRANT_DIR: grantDir }, cwd: new URL("..", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1") });
 test.beforeAll(async () => {
-  app = await electron.launch({ args: ["."], env: { ...process.env, MOONC_E2E_AUTO_APPROVE: "1", MOONC_E2E_USER_DATA: fs.mkdtempSync(path.join(os.tmpdir(), "moonc-e2e-")), MOONC_E2E_GRANT_DIR: grantDir }, cwd: new URL("..", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1") });
+  app = await launch();
   page = await app.firstWindow();
   await page.waitForURL(/127\.0\.0\.1:\d+\/app/);
 });
@@ -250,4 +252,19 @@ test("files: the AI reads shared folders and asks before writing", async () => {
   } finally {
     mock.kill();
   }
+});
+
+test("chats and settings survive a restart (same local address every launch)", async () => {
+  const before = new URL(page.url()).port;
+  await page.evaluate(() => {
+    const s = JSON.parse(localStorage.getItem("moonc:v1") || "{}");
+    localStorage.setItem("moonc:v1", JSON.stringify({ ...s, profile: { name: "Restart check" } }));
+  });
+  await app.evaluate(({ app }) => app.quit());
+  await app.close().catch(() => {});
+  app = await launch();
+  page = await app.firstWindow();
+  await page.waitForURL(/127\.0\.0\.1:\d+\/app/);
+  expect(new URL(page.url()).port).toBe(before);
+  await expect(page.getByRole("button", { name: "Restart check" })).toBeVisible();
 });
