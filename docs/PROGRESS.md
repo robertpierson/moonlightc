@@ -23,7 +23,7 @@ STATUS: BUILDING
 - [x] CI (GitHub Actions: typecheck, lint, test, build, Playwright) green
 - [x] Gate verified: build green, https://moonlightc.vercel.app 200, Playwright desktop+mobile pass on prod
 
-## Phase 2 tasks (branch `phase-2-chat`, Vercel preview; merges after Phase 1)
+## Phase 2 tasks (LIVE in production since PR #1 merge)
 - [x] Provider registry (packages/core): 11 providers + custom URL, live model lists, key validation, cost estimate
 - [x] /api/models + /api/chat streaming proxy, SSRF guard, friendly errors
 - [x] Chat UI: model picker (search, favorites), stream + Stop (partial kept), edit/resend, regenerate, branch, copy, read aloud, markdown/code/math/mermaid, search, pin, rename, export, delete; device-local storage
@@ -102,6 +102,7 @@ STATUS: BUILDING
 - No Docker, so no local Supabase stack; test against the hosted project.
 
 ## Notes (last 10)
+- 2026-10-13: PR #1 merged; production https://moonlightc.vercel.app serves phases 2-8 (39 deployed-site tests pass). Work continues on main.
 - 2026-10-13: Google connector + OAuth framework; 80 web e2e, 12 desktop e2e, 63 unit tests.
 - 2026-10-13: Local computer use with full §8 safety set (approval, overlay, panic key verified by real keypress in e2e).
 - 2026-10-13: Automations (desktop) + Azure/Bedrock + LM Studio detection; 76 web + 10 desktop e2e.

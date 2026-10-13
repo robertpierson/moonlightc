@@ -44,17 +44,15 @@ This makes the **Connect Google** button appear. Google is free for this.
 2. Open https://github.com/robertpierson/moonlightc. That is the code. The green check next to the latest commit means all tests passed.
 
 ---
-## Try this yourself: Phases 2 and 3 (preview, not live yet)
-These go live at moonlightc.vercel.app once sign-in (step 1 above) is done. Until then, use the preview:
-1. Open https://github.com/robertpierson/moonlightc/pull/1 and click the **Visit Preview** link in the Vercel comment (log in to Vercel if asked).
-2. On the home page, scroll slowly: the moon's light moves. Click **Open web app**.
-3. Click **Connect a model**. Pick **OpenRouter**, click **Get a key from OpenRouter**, make a key there, paste it, and click **Check key and connect**.
-4. Ask anything. Press the square **Stop** button mid-answer: the partial answer stays.
-5. Click **Compare** at the top, pick a second model, and send one question to both.
-6. Open the preview on your phone and use the browser menu to **Install** / **Add to Home screen**.
-
+## Try this yourself (live now at https://moonlightc.vercel.app)
+1. Open https://moonlightc.vercel.app on your PC and phone. Scroll slowly: the moon's light moves. Click **Open web app**.
+2. Click **Connect a model**, pick **OpenRouter**, click **Get a key from OpenRouter**, make a key there (add a few dollars of credit), paste it, click **Check key and connect**.
+3. Ask anything. Press the square **Stop** button mid-answer: the partial answer stays. Try **Compare** at the top with two models.
+4. On your phone, use the browser menu > **Add to Home screen** / **Install**. It opens like an app.
+5. Try **Customize** > **Forge** or **Moon** (the whole look changes), and **Mods** > install **Unit Converter**, then ask "convert 10 km to miles".
+6. Everything is saved in that browser only until sign-in exists (step 1 above).
 ---
-## Optional: try the Studio and GitHub (preview link from PR #1)
+## Optional: try the Studio and GitHub
 1. Make a fal key: open https://fal.ai/dashboard/keys, sign in, click **Add key**, copy it. (fal charges per image/video from your own balance.)
 2. In MoonlightC click the key icon (**Models and keys**), choose **fal (images, video, audio)**, paste, click **Check key and connect**.
 3. Click **Studio**, describe an image, click **Generate**. Then the **Video** tab, describe a short clip, **Generate** (takes 1–5 minutes).
