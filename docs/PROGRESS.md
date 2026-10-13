@@ -23,6 +23,20 @@ STATUS: BUILDING
 - [x] CI (GitHub Actions: typecheck, lint, test, build, Playwright) green
 - [x] Gate verified: build green, https://moonlightc.vercel.app 200, Playwright desktop+mobile pass on prod
 
+## Phase 2 tasks (branch `phase-2-chat`, Vercel preview; merges after Phase 1)
+- [x] Provider registry (packages/core): 11 providers + custom URL, live model lists, key validation, cost estimate
+- [x] /api/models + /api/chat streaming proxy, SSRF guard, friendly errors
+- [x] Chat UI: model picker (search, favorites), stream + Stop (partial kept), edit/resend, regenerate, branch, copy, read aloud, markdown/code/math/mermaid, search, pin, rename, export, delete; device-local storage
+- [x] e2e: mock OpenAI-compatible provider (e2e/mock-openai.mjs); 10 tests pass desktop+mobile
+- [ ] Modes/personas (General, Coder, Writer, Researcher, Tutor, Private incognito) + custom
+- [ ] Attachments (images, PDFs, text/code files; drag-drop, paste)
+- [ ] Artifacts side panel (HTML/SVG/Mermaid live, edit, download)
+- [ ] Compare mode (2-4 models side by side)
+- [ ] Command palette (Ctrl/Cmd+K)
+- [ ] Tools: web search (Tavily/Exa/Brave BYOK), URL fetch
+- [ ] Azure OpenAI + AWS Bedrock providers
+- [ ] NEEDS SUPABASE: accounts sync, key vault (cloud), projects, memory (pgvector), cross-device chats
+
 ## Owner steps completed
 (none yet)
 
@@ -31,4 +45,5 @@ STATUS: BUILDING
 - No Docker, so no local Supabase stack; test against the hosted project.
 
 ## Notes (last 10)
+- 2026-10-13: Phase 2 chat core working locally on branch phase-2-chat (device-local storage until Supabase).
 - 2026-10-13: Phase 0 done. Next: Phase 2 provider layer (no DB needed) while Supabase is blocked; Phase 1 resumes when OWNER_TODO #1 is done.
