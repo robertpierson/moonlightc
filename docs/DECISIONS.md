@@ -38,3 +38,10 @@ Security: contextIsolation + sandbox, no Node in pages, IPC checks the sender UR
 What: desktop keeps chats in Chromium localStorage (persisted on disk under userData) for now; keys go to the OS keychain
 via safeStorage. SQLite arrives with Supabase sync (needs the database first).
 Why: avoid a native module and a migration with nothing to sync against yet.
+
+## 2026-10-13 Ship finished phases 2-8 to production before Phase 1
+What: merge PR #1 (chat, site, PWA, desktop downloads page, studio, connections, customization) to main while accounts wait
+on the Supabase slot (OWNER_TODO #1).
+Why: everything visible works end to end on the device (no accounts needed); keeping it on a protected preview gave the
+owner nothing usable. Account-only features stay hidden until Phase 1. Alternative: wait for the owner (blocked indefinitely).
+Rollback: Vercel "Instant Rollback" to the previous production deployment.
