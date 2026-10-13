@@ -38,11 +38,11 @@ export function Sidebar({
   const chats = useMemo(() => (projectFilter ? allChats.filter((c) => c.projectId === projectFilter) : allChats), [allChats, projectFilter]);
   const [q, setQ] = useState("");
   const [renaming, setRenaming] = useState<string>();
+  const [limit, setLimit] = useState(100);
 
   const list = useMemo(() => {
     const needle = q.trim().toLowerCase();
     const hit = (c: Chat) => !needle || c.title.toLowerCase().includes(needle) || c.messages.some((m) => textOf(m).toLowerCase().includes(needle));
-    // ponytail: renders every chat; virtualize when users have thousands.
     return chats.filter(hit).sort((a, b) => Number(!!b.pinned) - Number(!!a.pinned) || b.updatedAt - a.updatedAt);
   }, [chats, q]);
 
@@ -72,7 +72,7 @@ export function Sidebar({
       </div>
       <ul className="min-h-0 flex-1 overflow-y-auto">
         {list.length === 0 && <li className="p-3 text-sm text-muted-foreground">{q ? "No chats match." : "Your chats will appear here."}</li>}
-        {list.map((c) => (
+        {list.slice(0, limit).map((c) => (
           <li key={c.id} className="group relative">
             {renaming === c.id ? (
               <form
@@ -132,6 +132,13 @@ export function Sidebar({
             )}
           </li>
         ))}
+        {list.length > limit && (
+          <li>
+            <Button variant="ghost" size="sm" className="w-full" onClick={() => setLimit((n) => n + 100)}>
+              Show more chats ({list.length - limit} more)
+            </Button>
+          </li>
+        )}
       </ul>
       <InstallApp className="rounded-md border px-3 py-2 text-left text-sm hover:bg-accent" />
     </nav>

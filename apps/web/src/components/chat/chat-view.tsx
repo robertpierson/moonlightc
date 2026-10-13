@@ -7,7 +7,6 @@ import { ArrowUp, FileText, MousePointerClick, Wrench, KeyRound, Paperclip, Squa
 import { toast } from "sonner";
 import type { Artifact } from "@/lib/artifacts";
 import { buildInstructions, relevantMemories } from "@/lib/context";
-import { addMemory } from "@/components/library/library";
 import { callModTool, modToolName } from "@/lib/mods";
 import { fillCommand } from "@moonc/mods-sdk";
 import { desktop, type ComputerAction } from "@/lib/desktop";
@@ -24,7 +23,7 @@ import { composeText, isSupported, MAX_TOTAL_BYTES, readAttachment, type Attachm
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { findModel, getState, saveChat, update, useStore, type Chat, type Mode, type ModelRef } from "@/lib/store";
+import { addMemory, findModel, getState, saveChat, update, useStore, type Chat, type Mode, type ModelRef } from "@/lib/store";
 import { Message, textOf, type Usage } from "./message";
 import { MicButton } from "./mic-button";
 

@@ -1,6 +1,21 @@
 "use client";
 
 import type { UIMessage } from "ai";
+import dynamic from "next/dynamic";
+
+// Screens other than chat load on demand, so opening the app only downloads what chat needs.
+const ArtifactPanel = dynamic(() => import("./artifact-panel").then((m) => m.ArtifactPanel), { loading: () => <div className="flex-1" /> });
+const CompareView = dynamic(() => import("./compare-view").then((m) => m.CompareView), { loading: () => <div className="flex-1" /> });
+const LocalModels = dynamic(() => import("@/components/desktop/local-models").then((m) => m.LocalModels), { loading: () => <div className="flex-1" /> });
+const Customize = dynamic(() => import("@/components/customize/customize").then((m) => m.Customize), { loading: () => <div className="flex-1" /> });
+const Connections = dynamic(() => import("@/components/connections/connections").then((m) => m.Connections), { loading: () => <div className="flex-1" /> });
+const ModsView = dynamic(() => import("@/components/mods/mods-view").then((m) => m.ModsView), { loading: () => <div className="flex-1" /> });
+const Automations = dynamic(() => import("@/components/desktop/automations").then((m) => m.Automations), { loading: () => <div className="flex-1" /> });
+const Library = dynamic(() => import("@/components/library/library").then((m) => m.Library), { loading: () => <div className="flex-1" /> });
+const Studio = dynamic(() => import("@/components/studio/studio").then((m) => m.Studio), { loading: () => <div className="flex-1" /> });
+const Projects = dynamic(() => import("@/components/desktop/projects").then((m) => m.Projects), { loading: () => <div className="flex-1" /> });
+const Terminals = dynamic(() => import("@/components/desktop/terminals").then((m) => m.Terminals), { ssr: false, loading: () => <div className="flex-1" /> });
+
 import { Columns2, KeyRound, Menu } from "lucide-react";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { ThemeToggle } from "@/components/theme";
@@ -9,24 +24,16 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { getState, patchChat, saveChat, update, useStore, type Chat, type ModelRef } from "@/lib/store";
 import type { Artifact } from "@/lib/artifacts";
-import { ArtifactPanel } from "./artifact-panel";
-import { LocalModels } from "@/components/desktop/local-models";
 import { AppNav, availableViews, type View } from "@/components/desktop/nav";
-import { applyDistro, Customize, LookApplier, useLook } from "@/components/customize/customize";
+import { applyDistro, LookApplier, useLook } from "@/components/customize/look";
 import { decodeDistro, DISTROS, matchShortcut, type Distro } from "@/lib/customize";
-import { Connections } from "@/components/connections/connections";
 import { ModHost } from "@/components/mods/mod-host";
-import { ModsView } from "@/components/mods/mods-view";
-import { AutomationRunner, Automations } from "@/components/desktop/automations";
+import { AutomationRunner } from "@/components/desktop/automation-runner";
 import { ComputerBanner } from "@/components/desktop/computer-banner";
-import { Library } from "@/components/library/library";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Studio } from "@/components/studio/studio";
 import type { FileUIPart } from "ai";
-import { Projects } from "@/components/desktop/projects";
-import { Terminals, type LaunchRequest } from "@/components/desktop/terminals";
+import type { LaunchRequest } from "@/components/desktop/terminals";
 import { ChatView } from "./chat-view";
-import { CompareView } from "./compare-view";
 import { KeysDialog } from "./keys-dialog";
 import { ModelPicker } from "./model-picker";
 import { ModeSelect, ModesDialog, useModes } from "./modes";
@@ -46,7 +53,25 @@ const noop = () => () => {};
 export function ChatApp() {
   // Local storage only exists in the browser; render after mount to avoid hydration mismatches.
   const mounted = useSyncExternalStore(noop, () => true, () => false);
-  return mounted ? <Inner /> : <div className="flex-1" />;
+  return mounted ? <Inner /> : <Shell />;
+}
+
+/** Server-rendered frame with the same layout as the app, so the first paint isn't blank and nothing jumps. */
+function Shell() {
+  return (
+    <div className="flex h-dvh min-h-0" aria-busy="true">
+      <aside className="hidden w-72 shrink-0 border-r bg-sidebar md:block" />
+      <main className="flex min-w-0 flex-1 flex-col">
+        <header className="h-14 shrink-0 border-b" />
+        <div className="flex flex-1 flex-col items-center pt-[18vh]">
+          <h2 className="text-2xl font-semibold tracking-tight">What can I help with?</h2>
+        </div>
+        <div className="mx-auto w-full max-w-3xl px-4 pb-4">
+          <div className="h-[6.25rem] rounded-2xl border bg-card" />
+        </div>
+      </main>
+    </div>
+  );
 }
 
 function Inner() {
@@ -63,7 +88,6 @@ function Inner() {
   const [offer, setOffer] = useState<Distro | undefined>(() => {
     const raw = new URLSearchParams(location.search).get("distro");
     if (!raw) return undefined;
-    history.replaceState(null, "", location.pathname);
     try {
       return decodeDistro(raw);
     } catch {
@@ -108,6 +132,10 @@ function Inner() {
     setNavOpen(false);
   };
 
+  // Drop ?distro= from the address once read, so reloading doesn't offer it again.
+  useEffect(() => {
+    if (new URLSearchParams(location.search).has("distro")) history.replaceState(null, "", location.pathname);
+  }, []);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (matchShortcut(e, look.shortcuts.newChat)) {

@@ -106,6 +106,7 @@ export function Studio({ onOpenKeys, onSendToChat }: { onOpenKeys: () => void; o
   const [busy, setBusy] = useState<string>();
   const [result, setResult] = useState<GalleryItem>();
   const [filter, setFilter] = useState<MediaKind | "all">("all");
+  const [limit, setLimit] = useState(24);
   const cancelled = useRef(false);
 
   const currentKey = current ? `${current.id}:${kind}` : "";
@@ -320,7 +321,7 @@ export function Studio({ onOpenKeys, onSendToChat }: { onOpenKeys: () => void; o
             <p className="text-sm text-muted-foreground">Everything you make is saved here on this device.</p>
           ) : (
             <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {shown.map((g) => (
+              {shown.slice(0, limit).map((g) => (
                 <li key={g.id} className="flex flex-col gap-2 rounded-xl border p-3">
                   <Preview item={g} className="aspect-square w-full rounded-lg bg-muted object-cover" />
                   <p className="line-clamp-2 text-sm">{g.prompt}</p>
@@ -347,6 +348,11 @@ export function Studio({ onOpenKeys, onSendToChat }: { onOpenKeys: () => void; o
                 </li>
               ))}
             </ul>
+          )}
+          {shown.length > limit && (
+            <Button variant="outline" className="mt-3" onClick={() => setLimit((n) => n + 24)}>
+              Show more ({shown.length - limit} more)
+            </Button>
           )}
         </section>
       </div>

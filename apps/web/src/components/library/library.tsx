@@ -9,11 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { isSupported, readAttachment } from "@/lib/attachments";
-import { update, useStore, type Project } from "@/lib/store";
+import { addMemory, update, useStore, type Project } from "@/lib/store";
 
-export function addMemory(text: string, projectId?: string) {
-  update((s) => ({ ...s, memory: { enabled: s.memory?.enabled ?? true, items: [...(s.memory?.items ?? []), { id: crypto.randomUUID(), text, projectId, createdAt: Date.now() }] } }));
-}
 
 const MAX_PROJECT_FILES_BYTES = 400_000;
 

@@ -4,7 +4,7 @@ import { Columns2, KeyRound, MessageSquare, Moon, Plus, Sparkles, SunMoon } from
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { Command, CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandShortcut } from "@/components/ui/command";
-import { currentLook } from "@/components/customize/customize";
+import { currentLook } from "@/components/customize/look";
 import { matchShortcut } from "@/lib/customize";
 import { useStore, type ModelRef } from "@/lib/store";
 

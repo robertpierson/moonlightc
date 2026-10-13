@@ -4,7 +4,7 @@ import type { Connection, ModelInfo } from "@moonc/core";
 import type { UIMessage } from "ai";
 import { useSyncExternalStore } from "react";
 import type { Distro, Look } from "./customize";
-import type { Automation } from "@/components/desktop/automations";
+import type { Automation } from "@/components/desktop/automation-runner";
 import type { InstalledMod } from "./mods";
 
 // Device-local storage. Keys saved here never leave this browser except inside a chat request to our proxy.
@@ -249,4 +249,8 @@ export function findModel(ref?: ModelRef) {
   const conn = getState().connections.find((c) => c.id === ref.connectionId);
   const model = conn?.models.find((m) => m.id === ref.modelId);
   return conn && model ? { conn, model } : undefined;
+}
+
+export function addMemory(text: string, projectId?: string) {
+  update((s) => ({ ...s, memory: { enabled: s.memory?.enabled ?? true, items: [...(s.memory?.items ?? []), { id: crypto.randomUUID(), text, projectId, createdAt: Date.now() }] } }));
 }
