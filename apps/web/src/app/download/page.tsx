@@ -16,7 +16,8 @@ const GROUPS: { platform: Build["platform"]; name: string; note: string }[] = [
   { platform: "linux", name: "Linux", note: "arm64 builds also run on Raspberry Pi and on Chromebooks with Linux turned on." },
 ];
 
-const archLabel = (a: Build["arch"]) => (a === "universal" ? "Apple silicon and Intel" : a === "arm64" ? "ARM64" : "x64");
+const archLabel = (a: Build["arch"], platform: Build["platform"]) =>
+  a === "universal" ? "Apple silicon and Intel" : platform === "mac" ? (a === "arm64" ? "Apple silicon" : "Intel") : a === "arm64" ? "ARM64" : "x64";
 
 export default async function DownloadPage() {
   const release = await getLatestRelease();
@@ -60,7 +61,7 @@ export default async function DownloadPage() {
                           <li key={b.name}>
                             <a href={b.url} className="flex justify-between gap-3 rounded-lg px-2 py-1.5 hover:bg-[var(--night-2)]">
                               <span>
-                                {b.kind}, {archLabel(b.arch)}
+                                {b.kind}, {archLabel(b.arch, b.platform)}
                               </span>
                               <span className="text-[var(--mist)]">{(b.size / 1e6).toFixed(0)} MB</span>
                             </a>

@@ -51,6 +51,8 @@ export const NAMES: Record<Detected["platform"], string> = {
 
 export function pickBuild(builds: Build[], d: Detected): Build | undefined {
   const platform = d.platform === "chromeos" ? "linux" : d.platform;
+  // Browsers on Macs report "Intel" even on Apple silicon, so default Macs to arm64 (all Macs sold since 2023).
+  if (platform === "mac") d = { ...d, arch: "arm64" };
   const forOS = builds.filter((b) => b.platform === platform);
   const pref = (b: Build) => (b.arch === d.arch || b.arch === "universal" ? 0 : 1) + (b.kind === "AppImage" || b.kind.startsWith("Installer") ? 0 : 0.5);
   return forOS.sort((a, b) => pref(a) - pref(b))[0];

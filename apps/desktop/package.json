@@ -85,13 +85,13 @@
         {
           "target": "dmg",
           "arch": [
-            "universal"
+            "arm64",
+            "x64"
           ]
         }
       ],
       "category": "public.app-category.productivity",
-      "identity": "-",
-      "x64ArchFiles": "**/node_modules/node-pty/prebuilds/**"
+      "identity": "-"
     },
     "linux": {
       "target": [

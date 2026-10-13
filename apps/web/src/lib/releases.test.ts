@@ -7,6 +7,8 @@ describe("classify", () => {
     ["MoonlightC-Setup-1.0.0.exe", "windows", "x64"],
     ["MoonlightC-Setup-1.0.0-arm64.exe", "windows", "arm64"],
     ["MoonlightC-1.0.0-universal.dmg", "mac", "universal"],
+    ["MoonlightC-0.1.0-mac-arm64.dmg", "mac", "arm64"],
+    ["MoonlightC-0.1.0-mac-x64.dmg", "mac", "x64"],
     ["MoonlightC-1.0.0.AppImage", "linux", "x64"],
     ["MoonlightC-1.0.0-arm64.AppImage", "linux", "arm64"],
     ["moonlightc_1.0.0_arm64.deb", "linux", "arm64"],
