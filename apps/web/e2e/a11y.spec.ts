@@ -28,7 +28,7 @@ for (const scheme of ["light", "dark"] as const) {
       await page.goto("/app");
       await page.getByLabel("Message", { exact: true }).waitFor();
       expect(await audit(page), "chat").toEqual([]);
-      for (const s of ["Code", "Studio", "Settings", "Connections", "Mods", "Customize"]) {
+      for (const s of ["Studio", "Projects", "Settings", "Connections", "Mods", "Customize", "Usage", "Memory", "Cowork", "Code"]) {
         await nav(page, s);
         expect(await audit(page), s).toEqual([]);
       }

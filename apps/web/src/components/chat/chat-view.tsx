@@ -1,6 +1,7 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
+import { activePlugins, activeServers, mcpPayload } from "@/lib/project-tools";
 import { getProvider } from "@moonc/core";
 import { track } from "@/lib/analytics";
 import { OpenRouterSignIn } from "./keys-dialog";
@@ -40,8 +41,8 @@ import { googleToken, oauthToken } from "@/lib/oauth-client";
 import { runPython } from "@/lib/python";
 
 /** "/tldr some text" -> the installed mod command's prompt with the text filled in. */
-function expandCommand(text: string) {
-  const fromPlugin = expandPluginCommand(text, getState().plugins ?? []);
+function expandCommand(text: string, pluginIds?: string[]) {
+  const fromPlugin = expandPluginCommand(text, activePlugins(pluginIds));
   if (fromPlugin !== undefined) return fromPlugin;
   const m = text.match(/^(\/[a-z0-9-]+)(?:\s+([\s\S]*))?$/);
   if (!m) return text;
@@ -89,6 +90,9 @@ function costLabel(m: UIMessage): string | undefined {
     : `${tokens} · ~$${cost < 0.01 ? cost.toFixed(4) : cost.toFixed(2)}`;
 }
 
+const COWORK_INSTRUCTIONS =
+  "Cowork: you're working alongside the person on their own computer. Use the folders, screen and browser tabs they shared when it helps, say what you're about to do before doing it, and stop to ask whenever something could delete, buy, send or publish anything.";
+
 export function ChatView({
   chat,
   model,
@@ -100,6 +104,7 @@ export function ChatView({
   initialFiles,
   bigInput,
   projectId,
+  cowork,
 }: {
   chat: Chat;
   model?: ModelRef;
@@ -111,6 +116,8 @@ export function ChatView({
   initialFiles?: FileUIPart[];
   bigInput?: boolean;
   projectId?: string;
+  /** Cowork: the AI may use shared folders, this PC's screen and shared browser tabs (each with permission). */
+  cowork?: boolean;
 }) {
   const [input, setInput] = useState("");
   const [computerOn, setComputerOn] = useState(false);
@@ -131,6 +138,8 @@ export function ChatView({
     return m ? textOf(m) : input;
   };
 
+  // Connectors and skills the chat's project switches on.
+  const projectTools = (): { connectorIds?: string[]; pluginIds?: string[] } => getState().projects?.find((p) => p.id === projectId) ?? {};
   const lastUserHasImage = () =>
     !![...messagesRef.current]
       .reverse()
@@ -140,7 +149,7 @@ export function ChatView({
       );
 
   const request = () => {
-    const skillsText = skillsInstructions(getState().plugins ?? []);
+    const skillsText = skillsInstructions(activePlugins(projectTools().pluginIds));
     const found = findModel(
       isAuto(model)
         ? resolveAuto(
@@ -167,6 +176,7 @@ export function ChatView({
             ),
           }),
           skillsText,
+          cowork ? COWORK_INSTRUCTIONS : "",
           getState().profile?.name?.trim() ? `The user's name is ${getState().profile!.name!.trim()}.` : "",
         ]
           .filter(Boolean)
@@ -174,8 +184,8 @@ export function ChatView({
         skills: !!skillsText || undefined,
         memory: (!!getState().memory?.enabled && !mode.private) || undefined,
         computer: computerOn || undefined,
-        files: !!desktop() || undefined,
-        browser: hasExtension() || undefined,
+        files: (cowork && !!desktop()) || undefined,
+        browser: (cowork && hasExtension()) || undefined,
         google: googleTokenRef.current
           ? { accessToken: googleTokenRef.current }
           : undefined,
@@ -195,21 +205,7 @@ export function ChatView({
               inputSchema: t.inputSchema,
             })),
           ),
-        mcp: (getState().mcpServers ?? [])
-          .filter((m) => m.enabled)
-          .map(
-            ({ id, name, kind, url, token, command, args, policy, oauth }) => ({
-              id,
-              name,
-              kind,
-              url,
-              token,
-              accessToken: oauth?.tokens?.access_token,
-              command,
-              args,
-              policy,
-            }),
-          ),
+        mcp: mcpPayload(activeServers(projectTools().connectorIds)),
       },
     };
   };
@@ -299,7 +295,7 @@ export function ChatView({
       }
       if (toolCall.toolName === "load_skill") {
         const name = String((toolCall.input as { name?: string }).name ?? "");
-        const skill = findSkill(getState().plugins ?? [], name);
+        const skill = findSkill(activePlugins(projectTools().pluginIds), name);
         addToolOutput({
           tool: "load_skill",
           toolCallId: toolCall.toolCallId,
@@ -456,7 +452,7 @@ export function ChatView({
       a.kind === "file" ? [a.part] : [],
     );
     sendMessage(
-      { text: composeText(expandCommand(text), attachments), files },
+      { text: composeText(expandCommand(text, projectTools().pluginIds), attachments), files },
       request(),
     );
     const used = findModel(isAuto(model) ? getState().autoPicks?.everyday : model);
@@ -702,7 +698,7 @@ export function ChatView({
             </Button>
             <MicButton onText={(t) => setInput((v) => (v ? `${v} ${t}` : t))} />
             <WebToggle />
-            {desktop() && (
+            {cowork && desktop() && (
               <Button
                 type="button"
                 variant={computerOn ? "secondary" : "ghost"}

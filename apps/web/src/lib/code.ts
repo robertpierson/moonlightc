@@ -19,6 +19,9 @@ export interface CodeProject {
   history: CodeChange[];
   repo?: string; // GitHub "owner/name" after the first push
   updatedAt: number;
+  folder?: string;
+  connectorIds?: string[];
+  pluginIds?: string[];
 }
 
 export const MAX_PROJECT_CHARS = 1_000_000;

@@ -67,9 +67,11 @@ test("desktop sections: local models, terminal, projects", async () => {
   await openLocalModels();
   await expect(page.getByRole("heading", { name: "Local models" })).toBeVisible();
   await expect(page.getByText(/This computer: .* GB memory/)).toBeVisible({ timeout: 15000 });
+  // Terminal and local projects live in Code.
+  await page.getByRole("group", { name: "Mode" }).getByRole("button", { name: "Code" }).click();
   await page.getByRole("button", { name: "Terminal" }).click();
   await expect(page.getByTestId("terminal").first()).toBeVisible();
-  await page.getByRole("button", { name: "My AI Projects" }).click();
+  await page.getByRole("button", { name: "Local projects" }).click();
   await expect(page.getByRole("button", { name: "Allow AI tool folders" })).toBeVisible();
   await page.getByRole("button", { name: "Chat", exact: true }).click();
   await expect(page.getByLabel("Message", { exact: true })).toBeVisible();
@@ -108,6 +110,7 @@ test("gate: download a local model with one click and chat with it (no cloud inv
 test("gate: Claude Code opens in the built-in terminal (if installed)", async () => {
   const tools = await page.evaluate(() => window.moonc.terminals.tools());
   test.skip(!tools.find((t) => t.id === "claude")?.installed, "Claude Code isn't installed on this machine");
+  await page.getByRole("group", { name: "Mode" }).getByRole("button", { name: "Code" }).click();
   await page.getByRole("button", { name: "Terminal" }).click();
   await page.getByRole("button", { name: "Claude Code" }).click();
   await expect(page.getByRole("tab", { name: "Claude Code" })).toBeVisible();
@@ -209,7 +212,9 @@ test("computer use through chat: the model takes a screenshot after the PC appro
       localStorage.setItem("moonc:v1", JSON.stringify(s));
     });
     await page.reload();
-    await page.getByRole("button", { name: "New chat" }).click();
+    // Screen control lives in Cowork.
+    await page.getByRole("group", { name: "Mode" }).getByRole("button", { name: "Cowork" }).click();
+    await page.getByRole("button", { name: "New task" }).click();
     await page.getByRole("button", { name: "Use this PC" }).click();
     await page.getByLabel("Message", { exact: true }).fill("please use the computer");
     await page.getByRole("button", { name: "Send message" }).click();
@@ -240,7 +245,8 @@ test("files: the AI reads shared folders and asks before writing", async () => {
       localStorage.setItem("moonc:v1", JSON.stringify(s));
     });
     await page.reload();
-    await page.getByRole("button", { name: "New chat" }).click();
+    await page.getByRole("group", { name: "Mode" }).getByRole("button", { name: "Cowork" }).click();
+    await page.getByRole("button", { name: "New task" }).click();
     await page.getByLabel("Message", { exact: true }).fill("list my files");
     await page.getByRole("button", { name: "Send message" }).click();
     await expect(page.locator('[data-role="assistant"]').last()).toContainText("moonc-share-", { timeout: 20000 });

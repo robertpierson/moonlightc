@@ -70,7 +70,7 @@ export function Terminals({ request }: { request?: LaunchRequest }) {
   const [tools, setTools] = useState<CliTool[]>([]);
   const [handled, setHandled] = useState(request?.id);
 
-  // A new launch request (for example "Resume" in My AI Projects) opens a new tab.
+  // A new launch request (for example "Resume" in Local projects) opens a new tab.
   if (request && request.id !== handled) {
     const tab = { key: nextKey++, title: request.title, command: request.command, cwd: request.cwd || undefined };
     setHandled(request.id);

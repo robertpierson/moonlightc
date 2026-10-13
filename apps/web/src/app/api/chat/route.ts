@@ -26,7 +26,8 @@ interface Body {
   computer?: boolean;
   google?: { accessToken?: string };
   accounts?: { spotify?: string; slack?: string; discord?: string; x?: string };
-  code?: boolean;
+  /** Code assistant: true = may change files; "plan" = plan only, no file changes. */
+  code?: boolean | "plan";
 }
 
 // Code workspace: the browser holds the project, so these tools run there and report back.
@@ -137,13 +138,17 @@ export async function POST(req: Request) {
     // Desktop app: files in the folders the user shared (writing asks first).
     const grants = body.files && process.env.MOONC_DESKTOP === "1" ? await readGrants() : [];
     const files = grants.length ? fileTools(grants) : undefined;
-    const tools = { ...files?.tools, ...builtIn, ...mcp?.tools, ...google?.tools, ...accountTools, ...readModTools(body.modTools), ...memoryTool, ...skillTool, ...browserTools, ...(desktopComputer ? { computer: computerTool } : {}), ...(body.code ? codeTools : {}) };
+    const tools = { ...files?.tools, ...builtIn, ...mcp?.tools, ...google?.tools, ...accountTools, ...readModTools(body.modTools), ...memoryTool, ...skillTool, ...browserTools, ...(desktopComputer ? { computer: computerTool } : {}), ...(body.code === true ? codeTools : {}) };
     const hasTools = Object.keys(tools).length > 0;
 
     const result = streamText({
       model: languageModel(c, body.modelId),
       instructions:
-        [typeof body.instructions === "string" ? body.instructions.slice(0, 80000) : "", desktopComputer ? COMPUTER_INSTRUCTIONS : ""].filter(Boolean).join("\n\n") || undefined,
+        [
+          typeof body.instructions === "string" ? body.instructions.slice(0, 80000) : "",
+          desktopComputer ? COMPUTER_INSTRUCTIONS : "",
+          body.code === "plan" ? "Plan mode: don't change any files. Read the request and the current files, then reply with a short, numbered plan of the changes you would make and why." : "",
+        ].filter(Boolean).join("\n\n") || undefined,
       temperature: typeof body.temperature === "number" ? Math.min(2, Math.max(0, body.temperature)) : undefined,
       messages: await convertToModelMessages(body.messages),
       abortSignal: req.signal,

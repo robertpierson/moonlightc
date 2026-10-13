@@ -2,23 +2,24 @@
 
 import { useChat } from "@ai-sdk/react";
 import { SandpackPreview, SandpackProvider, useSandpack } from "@codesandbox/sandpack-react";
-import { DefaultChatTransport, lastAssistantMessageIsCompleteWithToolCalls } from "ai";
-import { ArrowUp, Download, ExternalLink, FileCode2, FolderDown, Loader2, Plus, Square, Trash2, Undo2, Upload } from "lucide-react";
+import { NewProject } from "./new-project";
+import { DefaultChatTransport, lastAssistantMessageIsCompleteWithApprovalResponses, lastAssistantMessageIsCompleteWithToolCalls } from "ai";
+import { findSkill, skillsInstructions } from "@/lib/claude-plugins";
+import { activePlugins, activeServers, mcpPayload } from "@/lib/project-tools";
+import { PermissionMode } from "./permission-mode";
+import { ArrowUp, Download, ExternalLink, FileCode2, FolderDown, Loader2, Plug, Plus, Square, Trash2, Undo2, Upload } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ModelPicker } from "@/components/chat/model-picker";
 import { Message } from "@/components/chat/message";
-import { applyChange, codeInstructions, pushToGitHub, revertChange, TEMPLATES, zipProject, type CodeProject, type Template } from "@/lib/code";
+import { ProjectToolsDialog } from "@/components/library/project-tools";
+import { applyChange, codeInstructions, pushToGitHub, revertChange, zipProject, type CodeProject } from "@/lib/code";
 import { deleteProject, getProject, saveProject, useCodeProjects } from "@/lib/code-store";
 import { desktop } from "@/lib/desktop";
-import { findModel, useStore, type ModelRef } from "@/lib/store";
+import { findModel, getState, useStore, type ModelRef } from "@/lib/store";
 
 const Editor = dynamic(() => import("@monaco-editor/react").then((m) => m.default), { ssr: false, loading: () => <div className="flex-1" /> });
 const DiffEditor = dynamic(() => import("@monaco-editor/react").then((m) => m.DiffEditor), { ssr: false, loading: () => <div className="flex-1" /> });
@@ -26,52 +27,6 @@ const DiffEditor = dynamic(() => import("@monaco-editor/react").then((m) => m.Di
 const language = (p: string) =>
   ({ js: "javascript", jsx: "javascript", ts: "typescript", tsx: "typescript", css: "css", html: "html", json: "json", md: "markdown" })[p.split(".").pop() ?? ""] ?? "plaintext";
 
-function NewProject({ open, onOpenChange, onCreate }: { open: boolean; onOpenChange: (o: boolean) => void; onCreate: (p: CodeProject) => void }) {
-  const [name, setName] = useState("");
-  const [template, setTemplate] = useState<Template>("react");
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>New code project</DialogTitle>
-          <DialogDescription>Describe what you want afterwards; the AI writes the code and you see it run.</DialogDescription>
-        </DialogHeader>
-        <form
-          className="grid gap-3"
-          onSubmit={(e) => {
-            e.preventDefault();
-            const p: CodeProject = { id: crypto.randomUUID(), name: name.trim() || "My app", template, files: { ...TEMPLATES[template].files }, history: [], updatedAt: Date.now() };
-            saveProject(p);
-            onCreate(p);
-            onOpenChange(false);
-            setName("");
-          }}
-        >
-          <div className="grid gap-1.5">
-            <Label htmlFor="code-name">Name</Label>
-            <Input id="code-name" maxLength={60} value={name} onChange={(e) => setName(e.target.value)} placeholder="Recipe finder" />
-          </div>
-          <div className="grid gap-1.5">
-            <Label htmlFor="code-template">Kind</Label>
-            <Select value={template} onValueChange={(v) => setTemplate(v as Template)}>
-              <SelectTrigger id="code-template" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {(Object.keys(TEMPLATES) as Template[]).map((t) => (
-                  <SelectItem key={t} value={t}>
-                    {TEMPLATES[t].label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <Button type="submit">Create project</Button>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 function AiPanel({ project, onChange }: { project: CodeProject; onChange: (p: CodeProject) => void }) {
   const lastModel = useStore((s) => s.lastModel);
@@ -90,19 +45,46 @@ function AiPanel({ project, onChange }: { project: CodeProject; onChange: (p: Co
     const found = findModel(modelRef.current);
     if (!found) return {};
     const { apiKey, providerId, baseURL } = found.conn;
-    return { connection: { apiKey, providerId, baseURL }, modelId: found.model.id, instructions: codeInstructions(projectRef.current), code: true };
+    const p = projectRef.current;
+    const perm = getState().codePermission ?? "auto";
+    const skills = skillsInstructions(activePlugins(p.pluginIds));
+    return {
+      connection: { apiKey, providerId, baseURL },
+      modelId: found.model.id,
+      instructions: [codeInstructions(p), skills].filter(Boolean).join("\n\n"),
+      code: perm === "plan" ? "plan" : true,
+      skills: !!skills || undefined,
+      mcp: mcpPayload(activeServers(p.connectorIds), perm === "bypass"),
+    };
   };
+  // "Ask first": each change waits here until the person applies or rejects it.
+  const [pending, setPending] = useState<{ summary: string; paths: string[]; decide: (ok: boolean) => void }>();
   // eslint-disable-next-line react-hooks/refs -- read when a request is sent, not during render
   const [transport] = useState(() => new DefaultChatTransport({ api: "/api/chat", body }));
-  const { messages, sendMessage, status, stop, error, addToolOutput } = useChat({
+  const { messages, sendMessage, status, stop, error, addToolOutput, addToolApprovalResponse } = useChat({
     id: `code-${project.id}`,
     transport,
-    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
-    onToolCall: async ({ toolCall }) => {
-      if (toolCall.dynamic || (toolCall.toolName !== "write_files" && toolCall.toolName !== "delete_files")) return;
+    sendAutomaticallyWhen: (o) => lastAssistantMessageIsCompleteWithToolCalls(o) || lastAssistantMessageIsCompleteWithApprovalResponses(o),
+    onToolCall: async ({ toolCall }): Promise<void> => {
+      if (toolCall.dynamic) return;
+      if (toolCall.toolName === "load_skill") {
+        const skill = findSkill(activePlugins(projectRef.current.pluginIds), String((toolCall.input as { name?: string }).name ?? ""));
+        addToolOutput({ tool: "load_skill", toolCallId: toolCall.toolCallId, output: skill ? { instructions: skill.body } : { error: "No such skill." } } as never);
+        return;
+      }
+      if (toolCall.toolName !== "write_files" && toolCall.toolName !== "delete_files") return;
       try {
-        const cur = getProject(projectRef.current.id) ?? projectRef.current;
         const i = toolCall.input as { summary?: string; files?: { path: string; content: string }[]; paths?: string[] };
+        if ((getState().codePermission ?? "auto") === "ask") {
+          const paths = toolCall.toolName === "write_files" ? (i.files ?? []).map((f) => f.path) : (i.paths ?? []).map((p) => `${p} (delete)`);
+          const ok = await new Promise<boolean>((decide) => setPending({ summary: i.summary ?? (toolCall.toolName === "write_files" ? "Edit files" : "Delete files"), paths, decide }));
+          setPending(undefined);
+          if (!ok) {
+            addToolOutput({ tool: toolCall.toolName, toolCallId: toolCall.toolCallId, output: { ok: false, error: "The person rejected this change. Ask what they'd like instead." } } as never);
+            return;
+          }
+        }
+        const cur = getProject(projectRef.current.id) ?? projectRef.current;
         const next = toolCall.toolName === "write_files" ? applyChange(cur, i.summary ?? "Edited files", i.files ?? []) : applyChange(cur, "Deleted files", [], i.paths ?? []);
         projectRef.current = next;
         onChange(next);
@@ -122,6 +104,8 @@ function AiPanel({ project, onChange }: { project: CodeProject; onChange: (p: Co
     <section aria-label="Code assistant" className="flex min-h-0 flex-1 flex-col">
       <div className="flex items-center gap-1 border-b px-1 py-1">
         <ModelPicker value={model} onChange={setModel} />
+        <span className="flex-1" />
+        <PermissionMode />
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto p-3">
         <div className="grid gap-3 text-sm">
@@ -139,7 +123,12 @@ function AiPanel({ project, onChange }: { project: CodeProject; onChange: (p: Co
                     </p>
                   ) : null,
                 )}
-                <Message message={{ ...m, parts: m.parts.filter((p) => p.type === "text") }} streaming={busy && i === messages.length - 1} isLast={false} />
+                <Message
+                  message={{ ...m, parts: m.parts.filter((p) => p.type !== "tool-write_files" && p.type !== "tool-delete_files") }}
+                  streaming={busy && i === messages.length - 1}
+                  isLast={false}
+                  onApproval={(id, approved) => addToolApprovalResponse({ id, approved })}
+                />
               </div>
             ),
           )}
@@ -151,6 +140,24 @@ function AiPanel({ project, onChange }: { project: CodeProject; onChange: (p: Co
           <div ref={bottom} />
         </div>
       </div>
+      {pending && (
+        <div role="group" aria-label="Apply this change?" className="grid gap-2 border-t bg-amber-500/10 p-3 text-sm">
+          <p className="font-medium">Apply this change? {pending.summary}</p>
+          <ul className="max-h-24 overflow-y-auto font-mono text-xs text-muted-foreground">
+            {pending.paths.map((p) => (
+              <li key={p}>{p}</li>
+            ))}
+          </ul>
+          <div className="flex gap-2">
+            <Button size="sm" onClick={() => pending.decide(true)}>
+              Apply
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => pending.decide(false)}>
+              Reject
+            </Button>
+          </div>
+        </div>
+      )}
       <form
         className="flex items-end gap-2 border-t p-2"
         onSubmit={(e) => {
@@ -210,10 +217,10 @@ function Preview({ project }: { project: CodeProject }) {
   );
 }
 
-export function CodeWorkspace({ onConnectGitHub }: { onConnectGitHub: () => void }) {
+export function CodeWorkspace({ projectId, onSelect, onConnectGitHub, onOpenConnectors }: { projectId?: string; onSelect: (id: string) => void; onConnectGitHub: () => void; onOpenConnectors: () => void }) {
   const projects = useCodeProjects();
-  const [activeId, setActiveId] = useState<string>();
-  const project = projects.find((p) => p.id === activeId) ?? projects[0];
+  const project = projects.find((p) => p.id === projectId) ?? projects[0];
+  const [tools, setTools] = useState(false);
   const [file, setFile] = useState<string>();
   const [tab, setTab] = useState<"code" | "changes" | "preview">("preview");
   const [creating, setCreating] = useState(false);
@@ -230,7 +237,7 @@ export function CodeWorkspace({ onConnectGitHub }: { onConnectGitHub: () => void
         <Button onClick={() => setCreating(true)}>
           <Plus /> New code project
         </Button>
-        <NewProject open={creating} onOpenChange={setCreating} onCreate={(p) => setActiveId(p.id)} />
+        <NewProject open={creating} onOpenChange={setCreating} onCreate={(p) => onSelect(p.id)} />
       </div>
     );
   }
@@ -247,20 +254,12 @@ export function CodeWorkspace({ onConnectGitHub }: { onConnectGitHub: () => void
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex flex-wrap items-center gap-2 border-b p-2">
-        <Select value={project.id} onValueChange={setActiveId}>
-          <SelectTrigger aria-label="Code project" className="w-48">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {projects.map((p) => (
-              <SelectItem key={p.id} value={p.id}>
-                {p.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Button size="sm" variant="ghost" onClick={() => setCreating(true)}>
-          <Plus /> New
+        <h2 className="truncate font-mono text-sm font-semibold">
+          {project.folder && <span className="text-muted-foreground">{project.folder} / </span>}
+          {project.name}
+        </h2>
+        <Button size="sm" variant="ghost" onClick={() => setTools(true)}>
+          <Plug /> Connectors & skills{(project.connectorIds?.length ?? 0) + (project.pluginIds?.length ?? 0) ? ` (${(project.connectorIds?.length ?? 0) + (project.pluginIds?.length ?? 0)})` : ""}
         </Button>
         <span className="flex-1" />
         <Button size="sm" variant="outline" onClick={download}>
@@ -381,7 +380,15 @@ export function CodeWorkspace({ onConnectGitHub }: { onConnectGitHub: () => void
           )}
         </div>
       </div>
-      <NewProject open={creating} onOpenChange={setCreating} onCreate={(p) => setActiveId(p.id)} />
+      <NewProject open={creating} onOpenChange={setCreating} onCreate={(p) => onSelect(p.id)} />
+      <ProjectToolsDialog
+        open={tools}
+        onOpenChange={setTools}
+        title={`Connectors and skills for ${project.name}`}
+        value={{ connectorIds: project.connectorIds ?? [], pluginIds: project.pluginIds ?? [] }}
+        onChange={(v) => update({ ...project, ...v })}
+        onOpenConnectors={onOpenConnectors}
+      />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { Cpu, Download, FolderOpen, Globe, KeyRound, Laptop, Moon, Palette, Plug, Puzzle, Shield, SlidersHorizontal, Sparkles, Sun, KeySquare, Trash2, Upload, UserRound, Wand2, X } from "lucide-react";
+import { Brain, Cpu, Download, FolderOpen, Gauge, Globe, KeyRound, Laptop, Moon, Palette, Plug, Puzzle, Shield, SlidersHorizontal, Sparkles, Sun, KeySquare, Trash2, Upload, UserRound, Wand2, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
@@ -9,6 +9,8 @@ import { ModelPicker } from "@/components/chat/model-picker";
 import { KeysPanel } from "@/components/chat/keys-dialog";
 import { ModesManager } from "@/components/chat/modes";
 import { ClaudePlugins } from "./claude-plugins";
+import { UsagePanel } from "./usage";
+import { MemoryManager } from "@/components/library/library";
 import { AccountPanel } from "@/components/account/account";
 import { accountsEnabled } from "@/lib/supabase/client";
 import { Avatar } from "./avatar";
@@ -25,12 +27,14 @@ const Customize = dynamic(() => import("@/components/customize/customize").then(
 const ModsView = dynamic(() => import("@/components/mods/mods-view").then((m) => m.ModsView), { loading: () => <div className="flex-1" /> });
 const LocalModels = dynamic(() => import("@/components/desktop/local-models").then((m) => m.LocalModels), { loading: () => <div className="flex-1" /> });
 
-export type SettingsSection = "profile" | "account" | "general" | "models" | "auto" | "modes" | "connectors" | "plugins" | "files" | "browser" | "local" | "appearance" | "privacy";
+export type SettingsSection = "profile" | "account" | "general" | "usage" | "memory" | "models" | "auto" | "modes" | "connectors" | "plugins" | "files" | "browser" | "local" | "appearance" | "privacy";
 
 const SECTIONS: { id: SettingsSection; label: string; icon: React.ReactNode; desktopOnly?: boolean; webOnly?: boolean; needsAccounts?: boolean }[] = [
   { id: "profile", label: "Profile", icon: <UserRound /> },
   { id: "account", label: "Account", icon: <KeySquare />, needsAccounts: true },
   { id: "general", label: "General", icon: <SlidersHorizontal /> },
+  { id: "usage", label: "Usage", icon: <Gauge /> },
+  { id: "memory", label: "Memory", icon: <Brain /> },
   { id: "models", label: "Models & API keys", icon: <KeyRound /> },
   { id: "auto", label: "Auto model", icon: <Sparkles /> },
   { id: "modes", label: "Modes", icon: <Wand2 /> },
@@ -74,6 +78,18 @@ export function Settings({ section, onSection, availableViews, onClose, onChat }
           </Page>
         )}
         {section === "general" && <General />}
+        {section === "usage" && (
+          <Page title="Usage" description="How much you've used each model, what it's likely cost, and live limits where providers share them.">
+            <UsagePanel />
+          </Page>
+        )}
+        {section === "memory" && (
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <div className="mx-auto grid max-w-2xl px-4 py-6">
+              <MemoryManager />
+            </div>
+          </div>
+        )}
         {section === "models" && (
           <Page title="Models & API keys" description="Every provider you've connected, with its key (only the last 4 characters are shown). Keys stay on this device.">
             <KeysPanel />
@@ -240,7 +256,7 @@ function General() {
         <Row label="Web tools" hint="Let the AI search the web and read pages (needs a search key in Models & API keys).">
           <Switch aria-label="Web tools" checked={webTools} onCheckedChange={(v) => update((s) => ({ ...s, webTools: v }))} />
         </Row>
-        <Row label="Memory" hint="Let the AI remember facts you tell it, across chats. Manage them in Projects & memory.">
+        <Row label="Memory" hint="Let the AI remember facts you tell it, across chats. Manage them in Settings > Memory.">
           <Switch aria-label="Memory" checked={memory} onCheckedChange={(v) => update((s) => ({ ...s, memory: { enabled: v, items: s.memory?.items ?? [] } }))} />
         </Row>
         {openAtLogin !== undefined && (

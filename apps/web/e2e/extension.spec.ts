@@ -36,7 +36,8 @@ test("the AI reads a shared tab, clicks, and risky clicks wait for the person", 
   await app.goto(`${baseURL}/app`);
   await slow(app.locator("html")).toHaveAttribute("data-moonc-extension", /\d/);
 
-  // Nothing is shared yet: the AI is told to ask for a tab.
+  // Browser tabs are a Cowork thing. Nothing is shared yet: the AI is told to ask for a tab.
+  await app.getByRole("group", { name: "Mode" }).getByRole("button", { name: "Cowork" }).click();
   await app.getByRole("button", { name: "Connect a model" }).click();
   await app.getByLabel("Provider", { exact: true }).click();
   await app.getByRole("option", { name: /Custom/ }).click();

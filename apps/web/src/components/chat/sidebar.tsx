@@ -1,15 +1,25 @@
 "use client";
 
-import { Download, MoreHorizontal, Pencil, Pin, PinOff, Plus, Search, Trash2 } from "lucide-react";
+import { ChevronRight, Download, FolderInput, FolderOpen, History, MoreHorizontal, Pencil, Pin, PinOff, Plus, Search, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { deleteChat, patchChat, useStore, type Chat } from "@/lib/store";
 import { InstallApp } from "@/components/site/install-app";
 import { textOf } from "./message";
+
+/** How many recent chats the sidebar shows; the rest live on the All chats page. */
+export const RECENT_LIMIT = 15;
 
 function exportMarkdown(c: Chat) {
   const md = `# ${c.title}\n\n` + c.messages.map((m) => `## ${m.role === "user" ? "You" : "Assistant"}\n\n${textOf(m)}`).join("\n\n");
@@ -20,127 +30,225 @@ function exportMarkdown(c: Chat) {
   URL.revokeObjectURL(a.href);
 }
 
+const byRecent = (a: Chat, b: Chat) => Number(!!b.pinned) - Number(!!a.pinned) || b.updatedAt - a.updatedAt;
+
+function matches(c: Chat, q: string) {
+  const needle = q.trim().toLowerCase();
+  return !needle || c.title.toLowerCase().includes(needle) || c.messages.some((m) => textOf(m).toLowerCase().includes(needle));
+}
+
+/** A list of chats with the per-chat menu (pin, rename, move to project, export, delete). */
+export function ChatList({ chats, activeId, onSelect, onDeleted, showProject }: { chats: Chat[]; activeId?: string; onSelect: (id: string) => void; onDeleted: (id: string) => void; showProject?: boolean }) {
+  const projects = useStore((s) => s.projects) ?? [];
+  const [renaming, setRenaming] = useState<string>();
+  return (
+    <ul className="grid gap-0.5">
+      {chats.map((c) => (
+        <li key={c.id} className="group relative">
+          {renaming === c.id ? (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const v = new FormData(e.currentTarget).get("title")?.toString().trim();
+                if (v) patchChat(c.id, { title: v });
+                setRenaming(undefined);
+              }}
+            >
+              <Input name="title" aria-label="Chat name" autoFocus defaultValue={c.title} onBlur={(e) => e.currentTarget.form?.requestSubmit()} />
+            </form>
+          ) : (
+            <>
+              <button
+                onClick={() => onSelect(c.id)}
+                aria-current={c.id === activeId ? "page" : undefined}
+                className="flex w-full items-center gap-1.5 rounded-md px-2.5 py-2 pr-9 text-left text-sm hover:bg-accent aria-[current=page]:bg-accent"
+              >
+                {c.pinned && <Pin className="size-3 shrink-0 text-muted-foreground" />}
+                <span className="truncate">{c.title || "New chat"}</span>
+                {showProject && c.projectId && <span className="ml-auto shrink-0 text-xs text-muted-foreground">{projects.find((p) => p.id === c.projectId)?.name}</span>}
+              </button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={`Options for ${c.title}`}
+                    className="absolute top-1/2 right-1 -translate-y-1/2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100 data-[state=open]:opacity-100"
+                  >
+                    <MoreHorizontal />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onSelect={() => patchChat(c.id, { pinned: !c.pinned })}>
+                    {c.pinned ? <PinOff /> : <Pin />} {c.pinned ? "Unpin" : "Pin"}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => setRenaming(c.id)}>
+                    <Pencil /> Rename
+                  </DropdownMenuItem>
+                  {projects.length > 0 && (
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger>
+                        <FolderInput /> Move to project
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuSubContent>
+                        {projects.map((p) => (
+                          <DropdownMenuItem key={p.id} onSelect={() => patchChat(c.id, { projectId: p.id })}>
+                            {p.name}
+                          </DropdownMenuItem>
+                        ))}
+                        {c.projectId && <DropdownMenuItem onSelect={() => patchChat(c.id, { projectId: undefined })}>No project</DropdownMenuItem>}
+                      </DropdownMenuSubContent>
+                    </DropdownMenuSub>
+                  )}
+                  <DropdownMenuItem onSelect={() => exportMarkdown(c)}>
+                    <Download /> Export as Markdown
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    variant="destructive"
+                    onSelect={() => {
+                      deleteChat(c.id);
+                      onDeleted(c.id);
+                      toast("Chat deleted.");
+                    }}
+                  >
+                    <Trash2 /> Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** The Chat sidebar: new chat, search, project folders, and only the most recent chats. */
 export function Sidebar({
   activeId,
   onSelect,
   onNew,
-  projectFilter,
-  onProjectFilter,
+  onAllChats,
+  onOpenProject,
+  workspace = "chat",
 }: {
   activeId?: string;
   onSelect: (id: string) => void;
   onNew: () => void;
-  projectFilter?: string;
-  onProjectFilter: (id?: string) => void;
+  onAllChats: () => void;
+  onOpenProject: (id: string) => void;
+  workspace?: "chat" | "cowork";
 }) {
   const allChats = useStore((s) => s.chats);
   const projects = useStore((s) => s.projects) ?? [];
-  const chats = useMemo(() => (projectFilter ? allChats.filter((c) => c.projectId === projectFilter) : allChats), [allChats, projectFilter]);
+  const chats = useMemo(() => allChats.filter((c) => (workspace === "cowork" ? c.workspace === "cowork" : c.workspace !== "cowork")), [allChats, workspace]);
   const [q, setQ] = useState("");
-  const [renaming, setRenaming] = useState<string>();
-  const [limit, setLimit] = useState(100);
+  const [open, setOpen] = useState<string[]>([]);
+  const deleted = (id: string) => id === activeId && onNew();
 
-  const list = useMemo(() => {
-    const needle = q.trim().toLowerCase();
-    const hit = (c: Chat) => !needle || c.title.toLowerCase().includes(needle) || c.messages.some((m) => textOf(m).toLowerCase().includes(needle));
-    return chats.filter(hit).sort((a, b) => Number(!!b.pinned) - Number(!!a.pinned) || b.updatedAt - a.updatedAt);
-  }, [chats, q]);
+  const found = useMemo(() => (q.trim() ? chats.filter((c) => matches(c, q)).sort(byRecent) : []), [chats, q]);
+  const recent = useMemo(() => [...chats].sort(byRecent).slice(0, RECENT_LIMIT), [chats]);
+  const label = workspace === "cowork" ? "task" : "chat";
 
   return (
     <nav aria-label="Chats" className="flex min-h-0 flex-1 flex-col gap-2 p-2">
       <Button onClick={onNew} className="justify-start">
-        <Plus /> New chat
+        <Plus /> New {label}
       </Button>
-      {projects.length > 0 && (
-        <Select value={projectFilter ?? "all"} onValueChange={(v) => onProjectFilter(v === "all" ? undefined : v)}>
-          <SelectTrigger aria-label="Show chats from" className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All chats</SelectItem>
-            {projects.map((p) => (
-              <SelectItem key={p.id} value={p.id}>
-                {p.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      )}
       <div className="relative">
         <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input aria-label="Search chats" placeholder="Search chats" value={q} onChange={(e) => setQ(e.target.value)} className="pl-8" />
+        <Input aria-label={`Search ${label}s`} placeholder={`Search ${label}s`} value={q} onChange={(e) => setQ(e.target.value)} className="pl-8" />
       </div>
-      <ul className="min-h-0 flex-1 overflow-y-auto">
-        {list.length === 0 && <li className="p-3 text-sm text-muted-foreground">{q ? "No chats match." : "Your chats will appear here."}</li>}
-        {list.slice(0, limit).map((c) => (
-          <li key={c.id} className="group relative">
-            {renaming === c.id ? (
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const v = new FormData(e.currentTarget).get("title")?.toString().trim();
-                  if (v) patchChat(c.id, { title: v });
-                  setRenaming(undefined);
-                }}
-              >
-                <Input name="title" aria-label="Chat name" autoFocus defaultValue={c.title} onBlur={(e) => e.currentTarget.form?.requestSubmit()} />
-              </form>
-            ) : (
-              <>
-                <button
-                  onClick={() => onSelect(c.id)}
-                  aria-current={c.id === activeId ? "page" : undefined}
-                  className="flex w-full items-center gap-1.5 rounded-md px-2.5 py-2 pr-9 text-left text-sm hover:bg-accent aria-[current=page]:bg-accent"
-                >
-                  {c.pinned && <Pin className="size-3 shrink-0 text-muted-foreground" />}
-                  <span className="truncate">{c.title || "New chat"}</span>
-                </button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      aria-label={`Options for ${c.title}`}
-                      className="absolute top-1/2 right-1 -translate-y-1/2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100 data-[state=open]:opacity-100"
-                    >
-                      <MoreHorizontal />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onSelect={() => patchChat(c.id, { pinned: !c.pinned })}>
-                      {c.pinned ? <PinOff /> : <Pin />} {c.pinned ? "Unpin" : "Pin"}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => setRenaming(c.id)}>
-                      <Pencil /> Rename
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => exportMarkdown(c)}>
-                      <Download /> Export as Markdown
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      variant="destructive"
-                      onSelect={() => {
-                        deleteChat(c.id);
-                        if (c.id === activeId) onNew();
-                        toast("Chat deleted.");
-                      }}
-                    >
-                      <Trash2 /> Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </>
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        {q.trim() ? (
+          found.length ? (
+            <ChatList chats={found.slice(0, 100)} activeId={activeId} onSelect={onSelect} onDeleted={deleted} showProject />
+          ) : (
+            <p className="p-3 text-sm text-muted-foreground">No {label}s match.</p>
+          )
+        ) : (
+          <>
+            {workspace === "chat" && projects.length > 0 && (
+              <section aria-label="Your projects" className="mb-2">
+                <h3 className="px-2.5 py-1 text-xs font-medium text-muted-foreground">Projects</h3>
+                <ul className="grid gap-0.5">
+                  {projects.map((p) => {
+                    const inside = chats.filter((c) => c.projectId === p.id).sort(byRecent);
+                    const isOpen = open.includes(p.id);
+                    return (
+                      <li key={p.id}>
+                        <div className="flex items-center">
+                          <button
+                            aria-label={`${isOpen ? "Collapse" : "Expand"} ${p.name}`}
+                            aria-expanded={isOpen}
+                            onClick={() => setOpen((o) => (isOpen ? o.filter((x) => x !== p.id) : [...o, p.id]))}
+                            className="rounded p-1.5 hover:bg-accent"
+                          >
+                            <ChevronRight className={`size-3.5 transition-transform ${isOpen ? "rotate-90" : ""}`} />
+                          </button>
+                          <button onClick={() => onOpenProject(p.id)} className="flex min-w-0 flex-1 items-center gap-1.5 rounded-md px-1.5 py-1.5 text-left text-sm hover:bg-accent">
+                            <FolderOpen className="size-4 shrink-0" />
+                            <span className="truncate">{p.name}</span>
+                            <span className="ml-auto text-xs text-muted-foreground">{inside.length || ""}</span>
+                          </button>
+                        </div>
+                        {isOpen && (
+                          <div className="ml-5 border-l pl-1">
+                            {inside.length ? <ChatList chats={inside} activeId={activeId} onSelect={onSelect} onDeleted={deleted} /> : <p className="px-2.5 py-1.5 text-xs text-muted-foreground">No chats yet.</p>}
+                          </div>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
             )}
-          </li>
-        ))}
-        {list.length > limit && (
-          <li>
-            <Button variant="ghost" size="sm" className="w-full" onClick={() => setLimit((n) => n + 100)}>
-              Show more chats ({list.length - limit} more)
-            </Button>
-          </li>
+            <section aria-label="Recent">
+              <h3 className="px-2.5 py-1 text-xs font-medium text-muted-foreground">Recent</h3>
+              {recent.length ? (
+                <ChatList chats={recent} activeId={activeId} onSelect={onSelect} onDeleted={deleted} />
+              ) : (
+                <p className="p-3 text-sm text-muted-foreground">Your {label}s will appear here.</p>
+              )}
+              {chats.length > RECENT_LIMIT && (
+                <Button variant="ghost" size="sm" className="mt-1 w-full justify-start text-muted-foreground" onClick={onAllChats}>
+                  <History /> All {label}s ({chats.length})
+                </Button>
+              )}
+            </section>
+          </>
         )}
-      </ul>
+      </div>
       <InstallApp className="rounded-md border px-3 py-2 text-left text-sm hover:bg-accent" />
     </nav>
+  );
+}
+
+/** Every chat, searchable: the place older chats live once they drop off the sidebar. */
+export function AllChats({ activeId, onSelect, onNew, workspace = "chat" }: { activeId?: string; onSelect: (id: string) => void; onNew: () => void; workspace?: "chat" | "cowork" }) {
+  const allChats = useStore((s) => s.chats);
+  const [q, setQ] = useState("");
+  const [limit, setLimit] = useState(100);
+  const list = useMemo(() => allChats.filter((c) => (workspace === "cowork" ? c.workspace === "cowork" : c.workspace !== "cowork") && matches(c, q)).sort(byRecent), [allChats, q, workspace]);
+  return (
+    <div className="min-h-0 flex-1 overflow-y-auto">
+      <div className="mx-auto grid max-w-3xl gap-4 px-4 py-6">
+        <h2 className="text-lg font-semibold">All {workspace === "cowork" ? "tasks" : "chats"}</h2>
+        <div className="relative">
+          <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input aria-label="Search all chats" placeholder="Search by title or message" value={q} onChange={(e) => setQ(e.target.value)} className="pl-8" />
+        </div>
+        {list.length ? (
+          <ChatList chats={list.slice(0, limit)} activeId={activeId} onSelect={onSelect} onDeleted={(id) => id === activeId && onNew()} showProject />
+        ) : (
+          <p className="text-sm text-muted-foreground">{q ? "No chats match." : "No chats yet."}</p>
+        )}
+        {list.length > limit && (
+          <Button variant="ghost" onClick={() => setLimit((n) => n + 100)}>
+            Show more ({list.length - limit} more)
+          </Button>
+        )}
+      </div>
+    </div>
   );
 }

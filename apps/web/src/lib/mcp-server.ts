@@ -73,7 +73,7 @@ export async function mcpTools(servers: McpServerConfig[]) {
         clients.push(client);
         const set = await client.tools();
         for (const [name, t] of Object.entries(set)) {
-          const policy = s.policy?.[name] ?? "ask";
+          const policy = s.policy?.[name] ?? s.policy?.["*"] ?? "ask"; // "*": default for tools not listed (used by Bypass permissions)
           if (policy === "never") continue;
           const key = `${slug(s.name)}__${name}`.slice(0, 64);
           tools[key] = t;

@@ -1,4 +1,4 @@
-STATUS: WAITING_ON_OWNER
+STATUS: BUILDING
 
 # MoonlightC progress
 
@@ -27,6 +27,14 @@ STATUS: WAITING_ON_OWNER
 - [x] R9 Dark theme: dark blue with black accents (no light blue); light mode polished
 - [x] R10 Profile (name, picture) + save your own themes
 - [x] R11 Update the installed desktop app to match the web app; test copies run hidden
+- [x] R12 Sidebar per tab: Chat shows chat things only; Code shows code things (terminal, Projects renamed from My AI Projects); visibly different Code sidebar
+- [x] R13 Recent chats only in sidebar; older in "All chats" (click to open)
+- [x] R14 Memory and settings-like items move into Settings
+- [x] R15 Projects like Claude: folders grouping chats, with instructions, files, connectors and skills per project; code projects in folders too
+- [x] R16 Code permission modes: Ask, Auto-accept edits, Plan, Bypass (warning)
+- [x] R17 Cowork tab (Chat | Cowork | Code): files, screen and browser tabs with permissions
+- [x] R18 Settings > Usage: tokens and cost per model, OpenRouter credits and limits
+- [ ] R19 Rebuild + install desktop so it matches
 - [ ] R8c (needs Supabase, Phase 5) remote control from another device
 
 ## Phase 0 tasks
@@ -125,6 +133,7 @@ STATUS: WAITING_ON_OWNER
 - No Docker, so no local Supabase stack; test against the hosted project.
 
 ## Notes (last 10)
+- 2026-10-13: Chat | Cowork | Code modes with their own sidebars (editor-style Code sidebar), recents capped at 15 + All chats, Claude-style chat Projects (move chats in, connectors + skills per project), code folders, code permission modes (ask/auto/plan/bypass), Cowork (files, screen, browser with permissions), Settings > Usage (tokens, est. cost, OpenRouter credits) and Memory. 109 web e2e, 14 desktop e2e, 67 unit.
 - 2026-10-13: Sign in with OpenRouter (PKCE, web + desktop deep link). Phase 1 prep, hidden until Supabase: onboarding (7 steps, 13+), Settings > Account (link/unlink, TOTP two-step, export, delete), /admin (retention, onboarding answers, downloads, local vs cloud), /api/track with EU consent, privacy text. 8 PGlite tests, 66 unit, 102 web e2e.
 - 2026-10-13: Desktop 0.2.0 built and installed on the owner's PC (silent NSIS). Fixed data loss: desktop now keeps port 47821 (saved in userData/port.json) so localStorage survives restarts. 14 desktop e2e.
 - 2026-10-13: R9/R10: black accents on dark blue, link color token, profile name+picture (greets you, AI knows your name), My themes. Desktop tests now run hidden (no extra window/tray). 99 web e2e, 13 desktop e2e.
@@ -134,4 +143,3 @@ STATUS: WAITING_ON_OWNER
 - 2026-10-13: R6 Claude plugins from GitHub (skills via load_skill, slash commands, agents as modes, MCP connectors; browse Anthropic's directory, verified against the real 315-plugin list). Fixed: mode/model changes didn't stick in a just-started chat. 96 web e2e.
 - 2026-10-13: Owner requests R1-R5: Compare removed, mode menu (3 pinned + More options), Chat/Code switch, Claude-style Settings, Auto model; sign-in code ready (hidden until Supabase). 92 web e2e.
 - 2026-10-13: X BYOK + 10 more one-click MCP services; in-text links underlined (a11y); 92 web e2e.
-- 2026-10-13: Multi-provider OAuth (Google, Spotify, Slack, Discord); fixed desktop search-key deletion bug; 90 web e2e.

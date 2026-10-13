@@ -11,7 +11,7 @@ export async function openMenu(page: Page) {
 }
 
 // These live inside Settings now.
-const SETTINGS: Record<string, string> = { Connections: "Connectors", Customize: "Appearance", Mods: "Plugins & mods", "Local models": "Local models" };
+const SETTINGS: Record<string, string> = { Connections: "Connectors", Customize: "Appearance", Mods: "Plugins & mods", "Local models": "Local models", Memory: "Memory", Usage: "Usage" };
 
 export async function nav(page: Page, name: string) {
   await openMenu(page);

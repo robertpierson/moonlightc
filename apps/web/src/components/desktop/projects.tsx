@@ -51,7 +51,7 @@ export function Projects({ onResume }: { onResume: (command: string, cwd: string
     <div className="min-h-0 flex-1 overflow-y-auto">
       <div className="mx-auto grid max-w-5xl gap-6 px-4 py-6">
         <section aria-labelledby="proj-h" className="rounded-xl border p-4">
-          <h2 id="proj-h" className="text-lg font-semibold">My AI Projects</h2>
+          <h2 id="proj-h" className="text-lg font-semibold">Local projects</h2>
           <p className="text-sm text-muted-foreground">
             Your Claude Code, Codex, Gemini CLI and Cursor work, git repos and Ollama models in one place. MoonlightC only reads the folders you allow
             here and never changes anything unless you click a button.

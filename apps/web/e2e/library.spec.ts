@@ -1,12 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
-import { openMenu } from "./helpers";
+import { nav } from "./helpers";
 
 test.skip(!!process.env.BASE_URL, "needs the local mock provider");
 
-async function nav(page: Page, name: string) {
-  await openMenu(page);
-  await page.getByRole("button", { name, exact: true }).click();
-}
 async function send(page: Page, text: string) {
   await page.getByLabel("Message", { exact: true }).fill(text);
   await page.getByRole("button", { name: "Send message" }).click();
@@ -23,14 +19,16 @@ test("projects add their instructions and files; memory is saved by the AI and r
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).toHaveCount(0);
 
-  await nav(page, "Projects & memory");
+  await nav(page, "Memory");
+  await page.getByRole("switch", { name: "Let the AI remember things" }).click();
+  await nav(page, "Chat");
+  await nav(page, "Projects");
   await page.getByRole("button", { name: "New project" }).click();
   await page.getByLabel("Project name").fill("Bakery");
   await page.getByLabel("Instructions for every chat in this project").fill("Answer in French.");
   await page.locator('input[type="file"]').setInputFiles({ name: "menu.txt", mimeType: "text/plain", buffer: Buffer.from("croissant 3 euros") });
   await expect(page.getByRole("list", { name: "Project files" })).toContainText("menu.txt");
   await page.getByRole("button", { name: "Save project" }).click();
-  await page.getByRole("switch").first().click(); // memory on
   await page.getByRole("button", { name: "New chat in this project" }).click();
 
   await send(page, "hello");
@@ -41,10 +39,12 @@ test("projects add their instructions and files; memory is saved by the AI and r
   await send(page, "remember that my cat is Miso");
   await expect(page.getByText("Remembered: my cat is Miso")).toBeVisible();
 
-  await nav(page, "Projects & memory");
+  await nav(page, "Memory");
   await expect(page.getByRole("list", { name: "Memories" })).toContainText("my cat is Miso");
-
-  await nav(page, "New chat");
+  // Memories saved in a project stay with that project.
+  await nav(page, "Chat");
+  await nav(page, "Projects");
+  await page.getByRole("button", { name: "New chat in this project" }).click();
   await send(page, "what is my cat called?");
   await expect(page.locator('[data-role="assistant"]').last()).toContainText("my cat is Miso");
 });

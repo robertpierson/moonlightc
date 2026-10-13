@@ -118,6 +118,9 @@ export interface Project {
   instructions: string;
   files: { name: string; text: string }[];
   createdAt: number;
+  /** Connectors and Claude plugins switched on for every chat in this project (even if off elsewhere). */
+  connectorIds?: string[];
+  pluginIds?: string[];
 }
 
 export interface MemoryItem {
@@ -136,6 +139,8 @@ export interface Chat {
   messages: UIMessage[];
   pinned?: boolean;
   updatedAt: number;
+  /** Cowork sessions are listed in the Cowork sidebar, not with chats. */
+  workspace?: "cowork";
 }
 
 interface State {
@@ -164,6 +169,10 @@ interface State {
   /** Name and picture shown in the app (kept on this device until accounts exist). */
   profile?: { name?: string; avatar?: string };
   /** Themes the person saved from the theme editor. */
+  /** Code project folders (a folder exists even before a project is in it). */
+  codeFolders?: string[];
+  /** How the code assistant may change files: ask first, apply automatically, plan only, or skip all approvals. */
+  codePermission?: "ask" | "auto" | "plan" | "bypass";
   myThemes?: { id: string; name: string; look: Pick<Look, "theme" | "overrides" | "radius"> }[];
   subscriptions?: { items: Subscription[]; remindDays: number; reminded?: Record<string, number>; scannedAt?: number };
   memory?: { enabled: boolean; items: MemoryItem[] };

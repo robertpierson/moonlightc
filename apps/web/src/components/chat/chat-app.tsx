@@ -25,7 +25,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { findModel, getState, patchChat, saveChat, update, useStore, type Chat, type ModelRef } from "@/lib/store";
 import { isAuto } from "@/lib/auto-model";
 import type { Artifact } from "@/lib/artifacts";
-import { AppNav, availableViews, SettingsButton, type View } from "@/components/desktop/nav";
+import { availableViews, SectionNav, SettingsButton, WorkspaceSwitch, workspaceOf, type View, type Workspace } from "@/components/desktop/nav";
+import { CodeSidebar } from "@/components/code/code-sidebar";
+import { CoworkAccess } from "@/components/cowork/cowork-access";
 import type { SettingsSection } from "@/components/settings/settings";
 import { applyDistro, LookApplier, useLook } from "@/components/customize/look";
 import { decodeDistro, DISTROS, matchShortcut, type Distro } from "@/lib/customize";
@@ -46,9 +48,12 @@ import { KeysDialog } from "./keys-dialog";
 import { ModelPicker } from "./model-picker";
 import { ModeSelect, ModesDialog, useModes } from "./modes";
 import { CommandPalette } from "./command-palette";
-import { Sidebar } from "./sidebar";
+import { AllChats, Sidebar } from "./sidebar";
 
-const VIEW_TITLES: Record<View, string> = { chat: "Chat", code: "Code", subscriptions: "Subscriptions", library: "Projects & memory", studio: "Studio", terminal: "Terminal", projects: "My AI Projects", automations: "Automations", settings: "Settings" };
+const VIEW_TITLES: Record<View, string> = { chat: "Chat", chats: "All chats", cowork: "Cowork", code: "Code", subscriptions: "Subscriptions", library: "Projects", studio: "Studio", terminal: "Terminal", projects: "Local projects", automations: "Automations", settings: "Settings" };
+
+// The Code sidebar looks like an editor's file panel: near-black in both light and dark mode.
+const CODE_SIDEBAR = "dark bg-[oklch(0.1_0.015_268)] text-foreground";
 
 function distroDefaultMode() {
   const s = getState();
@@ -106,16 +111,19 @@ function Inner() {
   const [artifact, setArtifact] = useState<Artifact>();
   const [modesOpen, setModesOpen] = useState(false);
   const [view, setView] = useState<View>("chat");
+  const [workspace, setWorkspace] = useState<Workspace>("chat");
+  const [codeProjectId, setCodeProjectId] = useState<string>();
+  const [libraryProject, setLibraryProject] = useState<string>();
   const [section, setSection] = useState<SettingsSection>("general");
   const [termOpened, setTermOpened] = useState(false);
   const [launch, setLaunch] = useState<LaunchRequest>();
   const [pendingFiles, setPendingFiles] = useState<FileUIPart[]>();
   const [draftProject, setDraftProject] = useState<string>();
-  const [projectFilter, setProjectFilter] = useState<string>();
   const projects = useStore((s) => s.projects) ?? [];
   const [quick] = useState(() => new URLSearchParams(location.search).has("quick"));
   const go = (v: View) => {
     setView(v);
+    setWorkspace((w) => workspaceOf(v, w));
     track(`feature.${v}`);
     if (v === "terminal") setTermOpened(true);
     setNavOpen(false);
@@ -136,15 +144,22 @@ function Inner() {
   const mode = modes.find((m) => m.id === (saved ? chat.modeId : draftMode)) ?? modes[0];
   const model = [chat.model, saved ? undefined : draftModel, mode.model, lastModel, fallback].find(valid);
 
-  const start = (c: Chat = newChat()) => {
-    setDraft(c);
+  const start = (c: Chat = newChat(), ws: "chat" | "cowork" = workspace === "cowork" ? "cowork" : "chat") => {
+    setDraft(ws === "cowork" ? { ...c, workspace: "cowork" } : c);
     setActiveId(undefined);
     setDraftModel(undefined);
     setDraftMode(distroDefaultMode() ?? "general");
     setDraftProject(undefined);
     setArtifact(undefined);
-    setView("chat");
+    setView(ws);
+    setWorkspace(ws);
     setNavOpen(false);
+  };
+  const switchWorkspace = (w: Workspace) => {
+    if (w === "code") return go("code");
+    const isCowork = chat.workspace === "cowork";
+    if (w === "cowork") return isCowork ? go("cowork") : start(newChat(), "cowork");
+    return isCowork ? start(newChat(), "chat") : go("chat");
   };
 
   // Sign-in results for connectors arrive in the address fragment (web) or a moonlightc:// link (desktop).
@@ -206,21 +221,38 @@ function Inner() {
   };
 
   const sidebar = (
-    <div className="flex h-full min-h-0 flex-col">
-      <AppNav view={view} onChange={go} hidden={look.hidden} />
-    <Sidebar
-      projectFilter={projectFilter}
-      onProjectFilter={setProjectFilter}
-      activeId={saved ? chat.id : undefined}
-      onSelect={(id) => {
-        setActiveId(id);
-        setArtifact(undefined);
-        setView("chat");
-        setNavOpen(false);
-      }}
-      onNew={() => start()}
-    />
-    <SettingsButton active={view === "settings"} onClick={() => openSettings(section)} onProfile={() => openSettings("profile")} />
+    <div className="flex h-full min-h-0 flex-col" data-workspace={workspace}>
+      <div className="grid gap-2 border-b p-2">
+        <WorkspaceSwitch workspace={workspace} onChange={switchWorkspace} hidden={look.hidden} />
+        <SectionNav workspace={workspace} view={view} onChange={go} hidden={look.hidden} />
+      </div>
+      {workspace === "code" ? (
+        <CodeSidebar
+          activeId={codeProjectId}
+          onSelect={(id) => {
+            setCodeProjectId(id);
+            go("code");
+          }}
+        />
+      ) : (
+        <Sidebar
+          workspace={workspace}
+          activeId={saved ? chat.id : undefined}
+          onSelect={(id) => {
+            setActiveId(id);
+            setArtifact(undefined);
+            setView(workspace);
+            setNavOpen(false);
+          }}
+          onNew={() => start()}
+          onAllChats={() => go("chats")}
+          onOpenProject={(id) => {
+            setLibraryProject(id);
+            go("library");
+          }}
+        />
+      )}
+      <SettingsButton active={view === "settings"} onClick={() => openSettings(section)} onProfile={() => openSettings("profile")} />
     </div>
   );
 
@@ -245,9 +277,9 @@ function Inner() {
         </div>
       )}
       <div className={`flex h-dvh min-h-0 ${look.sidebarSide === "right" ? "flex-row-reverse" : ""}`}>
-        {!quick && <aside className={`hidden w-72 shrink-0 bg-sidebar md:block ${look.sidebarSide === "right" ? "border-l" : "border-r"}`}>{sidebar}</aside>}
+        {!quick && <aside className={`hidden w-72 shrink-0 md:block ${workspace === "code" ? CODE_SIDEBAR : "bg-sidebar"} ${look.sidebarSide === "right" ? "border-l" : "border-r"}`}>{sidebar}</aside>}
         <Sheet open={navOpen} onOpenChange={setNavOpen}>
-          <SheetContent side="left" className="w-72 bg-sidebar p-0">
+          <SheetContent side="left" className={`w-72 p-0 ${workspace === "code" ? CODE_SIDEBAR : "bg-sidebar"}`}>
             <SheetTitle className="sr-only">Chats</SheetTitle>
             {sidebar}
           </SheetContent>
@@ -255,7 +287,7 @@ function Inner() {
 
         <main className="flex min-w-0 flex-1 flex-col">
           <ComputerBanner />
-          {view !== "chat" && !quick && (
+          {view !== "chat" && view !== "cowork" && !quick && (
             <header className="flex h-12 shrink-0 items-center gap-1 border-b px-2 md:hidden">
               <Button variant="ghost" size="icon" aria-label="Open chats" onClick={() => setNavOpen(true)}>
                 <Menu />
@@ -263,8 +295,19 @@ function Inner() {
               <span className="font-semibold">{VIEW_TITLES[view]}</span>
             </header>
           )}
-          {view === "settings" && <Settings section={section} onSection={setSection} availableViews={availableViews()} onClose={() => go("chat")} onChat={() => go("chat")} />}
-          {view === "code" && <CodeWorkspace onConnectGitHub={() => openSettings("connectors")} />}
+          {view === "settings" && <Settings section={section} onSection={setSection} availableViews={availableViews()} onClose={() => go(workspace)} onChat={() => go("chat")} />}
+          {view === "code" && <CodeWorkspace projectId={codeProjectId} onSelect={setCodeProjectId} onConnectGitHub={() => openSettings("connectors")} onOpenConnectors={() => openSettings("connectors")} />}
+          {view === "chats" && (
+            <AllChats
+              workspace={workspace === "cowork" ? "cowork" : "chat"}
+              activeId={saved ? chat.id : undefined}
+              onSelect={(id) => {
+                setActiveId(id);
+                go(workspace === "cowork" ? "cowork" : "chat");
+              }}
+              onNew={() => start()}
+            />
+          )}
           {view === "subscriptions" && <Subscriptions onConnectGoogle={() => openSettings("connectors")} />}
           {view === "automations" && (
             <Automations
@@ -276,11 +319,17 @@ function Inner() {
           )}
           {view === "library" && (
             <Library
+              selectedId={libraryProject}
+              onSelectProject={setLibraryProject}
               onOpenProject={(id) => {
-                start();
+                start(newChat(), "chat");
                 setDraftProject(id);
-                setProjectFilter(id);
               }}
+              onOpenChat={(id) => {
+                setActiveId(id);
+                go("chat");
+              }}
+              onOpenConnectors={() => openSettings("connectors")}
             />
           )}
           {view === "studio" && (
@@ -310,7 +359,7 @@ function Inner() {
               <Terminals request={launch} />
             </div>
           )}
-          {view === "chat" && (<>
+          {(view === "chat" || view === "cowork") && (<>
           <header className="flex h-14 shrink-0 items-center gap-1 border-b px-2">
             <Button variant="ghost" size="icon" className={quick ? "hidden" : "md:hidden"} aria-label="Open chats" onClick={() => setNavOpen(true)}>
               <Menu />
@@ -330,8 +379,10 @@ function Inner() {
               <ThemeToggle />
             </div>
           </header>
+          {view === "cowork" && <CoworkAccess onOpenSettings={openSettings} />}
           <ChatView
             key={chat.id}
+            cowork={view === "cowork"}
             chat={chat}
             model={model}
             mode={mode}
@@ -339,7 +390,7 @@ function Inner() {
               <>
               {projects.length > 0 && (
                 <Select
-                  value={(saved ? chat.projectId : (draftProject ?? projectFilter)) ?? "none"}
+                  value={(saved ? chat.projectId : (draftProject)) ?? "none"}
                   onValueChange={(v) => {
                     const id = v === "none" ? undefined : v;
                     if (saved) patchChat(chat.id, { projectId: id });
@@ -371,7 +422,7 @@ function Inner() {
             onOpenArtifact={setArtifact}
             initialFiles={pendingFiles}
             bigInput={look.bigInput}
-            projectId={saved ? chat.projectId : (draftProject ?? projectFilter)}
+            projectId={saved ? chat.projectId : (draftProject)}
           />
           </>)}
         </main>

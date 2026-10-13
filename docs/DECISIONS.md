@@ -71,3 +71,9 @@ Rollback: Vercel "Instant Rollback" to the previous production deployment.
 - What: /api/track writes event names plus a few short plain values to the Supabase events table (signed-in people; anonymous download counts via the server key). /admin reads them through admin_overview(). EU/EEA/UK/CH visitors are asked first; elsewhere it's disclosed in the privacy policy.
 - Why: covers every /admin number in SPEC §3 without a third-party key or extra cookie; PostHog needs an owner account and key.
 - Alternatives: PostHog (add later if the owner wants session replays or funnels; events can be forwarded).
+
+## 2026-10-13 Chat | Cowork | Code, each with its own sidebar
+- What: three modes like Claude. Chat sidebar: Projects, Studio, Subscriptions (+ Automations on desktop), project folders, 15 most recent chats, "All chats" page for the rest. Cowork: tasks list plus an access bar; files, screen control and browser tools are only offered in Cowork. Code: editor-style dark sidebar with folders of code projects, Terminal and Local projects (renamed from My AI Projects) on desktop. Memory and Usage moved into Settings.
+- Why: owner asked for a clean sidebar tailored to each mode and for Claude-like projects, cowork and permission modes.
+- Recent limit: 15 (pinned chats count toward it and sort first); everything else is one click away and searchable.
+- Code permission modes: Ask (apply/reject each change), Auto-accept (default), Plan only (no file tools), Bypass (connector tools run without asking; confirmation dialog; tools set to "never" stay blocked; computer use is never bypassed).
