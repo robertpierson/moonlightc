@@ -22,19 +22,20 @@ const archLabel = (a: Build["arch"], platform: Build["platform"]) =>
 export default async function DownloadPage() {
   const release = await getLatestRelease();
   return (
-    <div className={`${display.variable} site min-h-dvh`}>
-      <header className="mx-auto flex max-w-5xl items-center px-4 py-5 sm:px-6">
+    <div className={`${display.variable} site relative min-h-dvh overflow-x-clip`}>
+      <div aria-hidden className="sky pointer-events-none absolute inset-x-0 top-0 h-[36rem] [mask-image:linear-gradient(black_60%,transparent)]" />
+      <header className="relative mx-auto flex max-w-5xl items-center px-4 py-5 sm:px-6">
         <Link href="/" className="display text-xl font-semibold">
           MoonlightC
         </Link>
-        <Link prefetch={false} href="/app" className="ml-auto rounded-full bg-[var(--silver)] px-4 py-2 text-sm font-medium text-[var(--night)] hover:opacity-90">
+        <Link prefetch={false} href="/app" className="ml-auto rounded-full btn-moon px-4 py-2 text-sm font-medium ">
           Open web app
         </Link>
       </header>
-      <main className="mx-auto max-w-5xl px-4 pb-24 sm:px-6">
-        <h1 className="display pt-10 text-[clamp(2.8rem,9vw,5.5rem)] font-bold">Get MoonlightC</h1>
+      <main className="relative mx-auto max-w-5xl px-4 pb-24 sm:px-6">
+        <h1 className="display ink-gradient pt-10 pb-2 text-[clamp(2.8rem,9vw,5.5rem)] font-bold">Get MoonlightC</h1>
         <div className="mt-8">
-          <PrimaryDownload release={release} className="inline-block rounded-2xl bg-[var(--silver)] px-6 py-4 text-lg font-semibold text-[var(--night)] hover:opacity-90" />
+          <PrimaryDownload release={release} className="inline-block rounded-2xl btn-moon px-6 py-4 text-lg font-semibold " />
         </div>
 
         <section aria-labelledby="desktop" className="mt-16">

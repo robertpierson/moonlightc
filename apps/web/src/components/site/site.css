@@ -1,25 +1,24 @@
-/* Marketing site tokens: night by default, dawn in light mode. */
+/* Marketing site: a daytime moonrise. Always light, whatever the device's color mode. */
 .site {
-  --night: #0f1736;
-  --night-2: #172153;
-  --silver: #dfe4f0;
-  --mist: #9aa6c8;
-  --tide: #8fa8ff;
-  --moon-lit: #e8ebf4;
-  --moon-dark: #1c2758;
-  --line: rgb(223 228 240 / 0.12);
+  color-scheme: light;
+  --night: #fbfaff; /* page */
+  --night-2: rgb(255 255 255 / 0.78); /* panels */
+  --silver: #1a1d3d; /* ink */
+  --mist: #545a7c;
+  --tide: #5140d9;
+  --line: rgb(26 29 61 / 0.1);
+  --moon-lit: #fffdf7;
+  --moon-dark: #d9d4fb;
+  --g-brand: linear-gradient(115deg, #4338ca 0%, #7c3aed 52%, #a21caf 100%);
+  --g-soft: linear-gradient(135deg, #c7d2fe 0%, #f5d0fe 55%, #fed7aa 100%);
+  --g-sky:
+    radial-gradient(55% 60% at 8% 0%, #e2dbff 0%, transparent 70%),
+    radial-gradient(45% 55% at 92% 8%, #d5e5ff 0%, transparent 70%),
+    radial-gradient(60% 55% at 75% 100%, #ffe0d2 0%, transparent 72%),
+    radial-gradient(40% 40% at 30% 95%, #fbe1f4 0%, transparent 70%),
+    linear-gradient(180deg, #f6f5ff 0%, #fdf8f6 100%);
   background: var(--night);
   color: var(--silver);
-}
-:root:not(.dark) .site {
-  --night: #eef1f8;
-  --night-2: #e1e6f3;
-  --silver: #141c3d;
-  --mist: #4b567a;
-  --tide: #3a55c8;
-  --moon-lit: #fbfcff;
-  --moon-dark: #c9d1e8;
-  --line: rgb(20 28 61 / 0.12);
 }
 .site .display {
   font-family: var(--font-display), var(--font-geist-sans), sans-serif;
@@ -27,12 +26,69 @@
   letter-spacing: -0.035em;
   line-height: 0.92;
 }
+.site .sky {
+  background: var(--g-sky);
+}
+/* The whole headline carries the gradient (not one word of it). */
+.site .ink-gradient {
+  background: var(--g-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.site .btn-moon {
+  background: var(--g-brand);
+  color: #fff;
+  box-shadow: 0 10px 30px -12px rgb(91 33 182 / 0.55);
+  transition:
+    box-shadow 0.2s,
+    transform 0.2s;
+}
+.site .btn-moon:hover {
+  box-shadow: 0 14px 34px -10px rgb(91 33 182 / 0.65);
+  transform: translateY(-1px);
+}
+/* Panels: white glass with a soft gradient edge. */
+.site .panel {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(var(--night-2), var(--night-2)) padding-box,
+    var(--g-soft) border-box;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 24px 60px -36px rgb(67 56 202 / 0.35);
+}
+.site .wash {
+  background:
+    radial-gradient(35% 30% at 0% 20%, rgb(221 214 254 / 0.55), transparent 70%),
+    radial-gradient(35% 30% at 100% 50%, rgb(254 215 170 / 0.4), transparent 70%),
+    radial-gradient(35% 30% at 0% 85%, rgb(251 207 232 / 0.45), transparent 70%);
+}
+.site .halo {
+  background: radial-gradient(closest-side, rgb(255 255 255 / 0.95), rgb(237 233 254 / 0.7) 45%, rgb(254 215 170 / 0.25) 75%, transparent);
+}
+.site .band {
+  background:
+    radial-gradient(50% 80% at 85% 20%, rgb(251 207 232 / 0.35), transparent 70%),
+    var(--g-brand);
+  color: #fff;
+}
 .site a:focus-visible,
 .site button:focus-visible,
 .site summary:focus-visible {
   outline: 2px solid var(--tide);
   outline-offset: 3px;
   border-radius: 6px;
+}
+.site .band a:focus-visible {
+  outline-color: #fff;
+}
+.moon-canvas {
+  opacity: 0;
+  transition: opacity 0.9s ease-out;
+}
+.moon-canvas[data-ready],
+.moon-canvas[data-fallback] {
+  opacity: 1;
 }
 .moon-canvas[data-fallback] {
   background: radial-gradient(circle at 40% 40%, var(--moon-lit) 0 22%, transparent 23%);
@@ -61,5 +117,8 @@
   .marquee,
   .rise {
     animation: none;
+  }
+  .site .btn-moon:hover {
+    transform: none;
   }
 }

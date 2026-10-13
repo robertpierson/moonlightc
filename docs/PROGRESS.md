@@ -21,7 +21,7 @@ STATUS: BUILDING
 - [x] R4 Full Settings screen like Claude's: General, Models & keys (all keys, masked), Auto model, Connectors, Local models (downloaded), Plugins, Appearance, Privacy & data, Shortcuts
 - [x] R5 Auto model: picks a model per task type (everyday / coding / deep thinking / quick / images), mapped in Settings
 - [x] R6 Claude plugins: install from GitHub (plugin.json / marketplace.json): skills, slash commands, MCP servers
-- [ ] R7 Marketing site: light, clean, lots of gradients; moon must not clash with the background
+- [x] R7 Marketing site: light, clean, lots of gradients; moon must not clash with the background
 - [ ] R8 (needs Supabase, Phase 5) remote control + Chrome extension for screen access + file access
 
 ## Phase 0 tasks
@@ -120,6 +120,7 @@ STATUS: BUILDING
 - No Docker, so no local Supabase stack; test against the hosted project.
 
 ## Notes (last 10)
+- 2026-10-13: R7 website redesign: always-light daytime-moon look with gradients; moon setup deferred until idle (Lighthouse mobile 92, a11y 100). 96 web e2e.
 - 2026-10-13: R6 Claude plugins from GitHub (skills via load_skill, slash commands, agents as modes, MCP connectors; browse Anthropic's directory, verified against the real 315-plugin list). Fixed: mode/model changes didn't stick in a just-started chat. 96 web e2e.
 - 2026-10-13: Owner requests R1-R5: Compare removed, mode menu (3 pinned + More options), Chat/Code switch, Claude-style Settings, Auto model; sign-in code ready (hidden until Supabase). 92 web e2e.
 - 2026-10-13: X BYOK + 10 more one-click MCP services; in-text links underlined (a11y); 92 web e2e.
@@ -129,4 +130,3 @@ STATUS: BUILDING
 - 2026-10-13: One-click MCP sign-in connectors; 84 web e2e.
 - 2026-10-13: PR #1 merged; production https://moonlightc.vercel.app serves phases 2-8 (39 deployed-site tests pass). Work continues on main.
 - 2026-10-13: Google connector + OAuth framework; 80 web e2e, 12 desktop e2e, 63 unit tests.
-- 2026-10-13: Local computer use with full §8 safety set (approval, overlay, panic key verified by real keypress in e2e).

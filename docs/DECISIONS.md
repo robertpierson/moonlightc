@@ -55,3 +55,8 @@ Rollback: Vercel "Instant Rollback" to the previous production deployment.
 - What: install Claude Code plugins from GitHub in the browser (GitHub tree API + raw files, the visitor's own rate limit). Skills: listed in the instructions, full text loaded on demand through a browser-side load_skill tool. Commands: slash commands with $ARGUMENTS/$1. Agents: modes. MCP: remote servers connect like other connectors; stdio only in the desktop app with its approval prompt. Hooks, bin/, LSP, monitors and shell snippets are listed as not supported before install.
 - Why: owner wants "the same plugins as Claude". These parts map cleanly onto a chat app; the rest needs Claude Code's local runtime.
 - Alternatives: server-side fetching (shared Vercel IP would hit GitHub's anonymous limit fast); running hooks/scripts (unsafe in a browser, needs a sandbox).
+
+## 2026-10-13 Website is always light ("daytime moon")
+- What: the marketing pages ignore the device's dark mode: pale lilac/blue/peach sky gradients, indigo-to-fuchsia gradient buttons and headline, and a pearl moon whose shadow side lets the sky show through. The app itself still follows light/dark.
+- Why: owner disliked the dark site and the moon against the blue background; asked for clean with lots of gradients.
+- Alternatives: a light and a dark variant (owner didn't want dark); a static moon image (the shader is small and now starts after load).

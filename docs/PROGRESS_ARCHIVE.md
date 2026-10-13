@@ -9,3 +9,4 @@
 - 2026-10-13: Phase 4 working on Windows; desktop e2e 8 tests; release workflow triggered.
 - 2026-10-13: Phase 3 done on branch. 38 e2e tests. Next: Phase 4 desktop (Electron) since Supabase still blocked.
 - 2026-10-13: Automations (desktop) + Azure/Bedrock + LM Studio detection; 76 web + 10 desktop e2e.
+- 2026-10-13: Local computer use with full §8 safety set (approval, overlay, panic key verified by real keypress in e2e).

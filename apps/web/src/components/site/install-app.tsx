@@ -25,7 +25,7 @@ export function InstallApp({ className }: { className?: string }) {
   if (!evt) return null;
   return (
     <button
-      className={className ?? "mt-4 rounded-full bg-[var(--silver)] px-6 py-3 font-semibold text-[var(--night)] hover:opacity-90"}
+      className={className ?? "mt-4 rounded-full btn-moon px-6 py-3 font-semibold "}
       onClick={async () => {
         await evt.prompt();
         await evt.userChoice;
