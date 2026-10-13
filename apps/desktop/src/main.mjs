@@ -39,7 +39,7 @@ async function startServer() {
   const port = await freePort();
   server = spawn(process.execPath, [entry], {
     cwd: path.dirname(entry),
-    env: { ...process.env, NODE_PATH: path.join(root, "node_modules", ".pnpm", "node_modules"), ELECTRON_RUN_AS_NODE: "1", PORT: String(port), HOSTNAME: "127.0.0.1", MOONC_DESKTOP: "1", NODE_ENV: "production" },
+    env: { ...process.env, NODE_PATH: path.join(root, "deps", ".pnpm", "node_modules"), ELECTRON_RUN_AS_NODE: "1", PORT: String(port), HOSTNAME: "127.0.0.1", MOONC_DESKTOP: "1", NODE_ENV: "production" },
     stdio: ["ignore", "pipe", "pipe"],
     windowsHide: true,
   });

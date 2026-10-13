@@ -24,5 +24,111 @@
     "electron": "44.7.0",
     "electron-builder": "26.15.3",
     "typescript": "^5.9.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/robertpierson/moonlightc.git"
+  },
+  "homepage": "https://moonlightc.vercel.app",
+  "build": {
+    "appId": "app.moonlightc.desktop",
+    "productName": "MoonlightC",
+    "artifactName": "MoonlightC-${version}-${os}-${arch}.${ext}",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "!src/**/*.test.mjs",
+      "build/icon.png",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "app-server",
+        "to": "app-server",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "asarUnpack": [
+      "**/node_modules/node-pty/**"
+    ],
+    "protocols": [
+      {
+        "name": "MoonlightC",
+        "schemes": [
+          "moonlightc"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "artifactName": "MoonlightC-Setup-${version}-${arch}.${ext}"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        }
+      ],
+      "category": "public.app-category.productivity"
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "rpm",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "category": "Utility",
+      "maintainer": "MoonlightC contributors"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "robertpierson",
+        "repo": "moonlightc",
+        "releaseType": "draft"
+      }
+    ],
+    "npmRebuild": false,
+    "extraMetadata": {
+      "name": "moonlightc"
+    }
   }
 }
