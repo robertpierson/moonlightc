@@ -17,6 +17,7 @@ import { decodeDistro, DISTROS, matchShortcut, type Distro } from "@/lib/customi
 import { Connections } from "@/components/connections/connections";
 import { ModHost } from "@/components/mods/mod-host";
 import { ModsView } from "@/components/mods/mods-view";
+import { AutomationRunner, Automations } from "@/components/desktop/automations";
 import { Library } from "@/components/library/library";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Studio } from "@/components/studio/studio";
@@ -31,7 +32,7 @@ import { ModeSelect, ModesDialog, useModes } from "./modes";
 import { CommandPalette } from "./command-palette";
 import { Sidebar } from "./sidebar";
 
-const VIEW_TITLES: Record<View, string> = { chat: "Chat", library: "Projects & memory", studio: "Studio", connections: "Connections", models: "Local models", terminal: "Terminal", projects: "My AI Projects", mods: "Mods", customize: "Customize" };
+const VIEW_TITLES: Record<View, string> = { chat: "Chat", library: "Projects & memory", studio: "Studio", connections: "Connections", models: "Local models", terminal: "Terminal", projects: "My AI Projects", automations: "Automations", mods: "Mods", customize: "Customize" };
 
 function distroDefaultMode() {
   const s = getState();
@@ -147,6 +148,7 @@ function Inner() {
     <TooltipProvider>
       <LookApplier />
       <ModHost />
+      <AutomationRunner />
       {offer && (
         <div role="dialog" aria-label="Apply shared distro" className="fixed inset-x-0 top-0 z-50 flex flex-wrap items-center gap-3 border-b bg-popover p-3 text-sm shadow">
           <span className="flex-1">
@@ -182,6 +184,14 @@ function Inner() {
           {view === "connections" && <Connections />}
           {view === "customize" && <Customize availableViews={availableViews()} />}
           {view === "mods" && <ModsView />}
+          {view === "automations" && (
+            <Automations
+              onOpenChat={(id) => {
+                setActiveId(id);
+                go("chat");
+              }}
+            />
+          )}
           {view === "library" && (
             <Library
               onOpenProject={(id) => {

@@ -15,8 +15,8 @@ export default defineConfig({
   webServer: process.env.BASE_URL
     ? undefined
     : [
-        { command: "node e2e/mock-openai.mjs", url: "http://127.0.0.1:4010/v1/models", reuseExistingServer: true },
-        { command: "node e2e/mock-mcp.mjs", port: 4020, reuseExistingServer: true },
+        { command: "node e2e/mock-openai.mjs", url: "http://127.0.0.1:4010/v1/models", reuseExistingServer: false },
+        { command: "node e2e/mock-mcp.mjs", port: 4020, reuseExistingServer: false },
         { command: "pnpm start", url: baseURL, reuseExistingServer: true, env: { MOONC_ALLOW_PRIVATE_URLS: "1" } },
       ],
 });

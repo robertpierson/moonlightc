@@ -77,7 +77,8 @@ STATUS: BUILDING
 - [x] MCP client: custom URL connectors, desktop local commands (native approval dialog + allowlist), per-tool ask/always/never, in-chat approval
 - [x] GitHub connector via token: live stats dashboard + GitHub MCP (46 tools) — verified with real GitHub
 - [ ] OAuth connectors (Google/Gmail, Discord, Spotify, Notion, Slack, YouTube): need Supabase + owner OAuth apps
-- [ ] Scheduled agents (pg_cron) + subscriptions hub: need Supabase + Gmail
+- [x] Desktop automations: scheduled prompts on this computer (tray), run history, notifications, continue in chat
+- [ ] Cloud scheduled agents (pg_cron) + subscriptions hub: need Supabase + Gmail
 
 ## Phase 8 (customization, on branch)
 - [x] Distros: Moon, Studio, Forge, Command, Offline + save/export/import/share link (validated, asks before applying)
@@ -98,6 +99,7 @@ STATUS: BUILDING
 - No Docker, so no local Supabase stack; test against the hosted project.
 
 ## Notes (last 10)
+- 2026-10-13: Automations (desktop) + Azure/Bedrock + LM Studio detection; 76 web + 10 desktop e2e.
 - 2026-10-13: Projects & memory on device; 74 web e2e; DB migration + offline RLS tests ready for when Supabase exists.
 - 2026-10-13: Phase 8 done on branch; 56 web e2e. Mod registry repo created (public, MIT).
 - 2026-10-13: Phases 6/7 unblocked parts done; 47 web e2e + 8 desktop e2e. Next: Phase 8 customization.

@@ -4,6 +4,7 @@ import type { Connection, ModelInfo } from "@moonc/core";
 import type { UIMessage } from "ai";
 import { useSyncExternalStore } from "react";
 import type { Distro, Look } from "./customize";
+import type { Automation } from "@/components/desktop/automations";
 import type { InstalledMod } from "./mods";
 
 // Device-local storage. Keys saved here never leave this browser except inside a chat request to our proxy.
@@ -132,6 +133,7 @@ interface State {
   customDistros?: Distro[];
   mods?: InstalledMod[];
   projects?: Project[];
+  automations?: Automation[];
   memory?: { enabled: boolean; items: MemoryItem[] };
 }
 

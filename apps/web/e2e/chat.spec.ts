@@ -253,3 +253,11 @@ test("other websites can't call the API from a visitor's browser", async ({ requ
   const res = await request.post("/api/models", { headers: { origin: "https://evil.example" }, data: { providerId: "openrouter", apiKey: "" } });
   expect(res.status()).toBe(403);
 });
+
+test("unattended runs (automations) return the model's answer", async ({ request }) => {
+  const res = await request.post("/api/run", {
+    data: { connection: { providerId: "custom", apiKey: "", baseURL: "http://127.0.0.1:4010/v1" }, modelId: "mock-fast", prompt: "daily brief" },
+  });
+  expect(res.status()).toBe(200);
+  expect((await res.json()).text).toBe("Echo from mock-fast: daily brief");
+});

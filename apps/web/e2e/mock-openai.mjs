@@ -69,6 +69,10 @@ createServer(async (req, res) => {
     const prefix = sys ? `[sys: ${sys.content}] ` : "";
     if (toolMsg) prompt = "Tool says: " + String(toolMsg.content).slice(0, 300);
     const words = slow ? Array.from({ length: 100 }, (_, i) => `word${i} `) : [prefix + "Echo", " from ", body.model, ": ", prompt];
+    if (!body.stream) {
+      res.setHeader("content-type", "application/json");
+      return res.end(JSON.stringify({ id: "x", object: "chat.completion", created: 0, model: body.model, choices: [{ index: 0, message: { role: "assistant", content: words.join("") }, finish_reason: "stop" }], usage: { prompt_tokens: 10, completion_tokens: words.length, total_tokens: 10 + words.length } }));
+    }
     res.writeHead(200, { "content-type": "text/event-stream" });
     const chunk = (delta, finish = null) =>
       res.write(`data: ${JSON.stringify({ id: "x", object: "chat.completion.chunk", created: 0, model: body.model, choices: [{ index: 0, delta, finish_reason: finish }] })}\n\n`);

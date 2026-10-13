@@ -1,11 +1,11 @@
 "use client";
 
-import { Brain, Cpu, FolderGit2, MessageSquare, Palette, Plug, Puzzle, SlidersHorizontal, SquareTerminal } from "lucide-react";
+import { Brain, Clock, Cpu, FolderGit2, MessageSquare, Palette, Plug, Puzzle, SlidersHorizontal, SquareTerminal } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Switch } from "@/components/ui/switch";
 import { desktop } from "@/lib/desktop";
 
-export type View = "chat" | "library" | "studio" | "connections" | "models" | "terminal" | "projects" | "mods" | "customize";
+export type View = "chat" | "library" | "studio" | "connections" | "models" | "terminal" | "projects" | "automations" | "mods" | "customize";
 
 const ITEMS: { id: View; label: string; icon: React.ReactNode; desktopOnly?: boolean }[] = [
   { id: "chat", label: "Chat", icon: <MessageSquare /> },
@@ -15,6 +15,7 @@ const ITEMS: { id: View; label: string; icon: React.ReactNode; desktopOnly?: boo
   { id: "models", label: "Local models", icon: <Cpu />, desktopOnly: true },
   { id: "terminal", label: "Terminal", icon: <SquareTerminal />, desktopOnly: true },
   { id: "projects", label: "My AI Projects", icon: <FolderGit2 />, desktopOnly: true },
+  { id: "automations", label: "Automations", icon: <Clock />, desktopOnly: true },
   { id: "mods", label: "Mods", icon: <Puzzle /> },
   { id: "customize", label: "Customize", icon: <SlidersHorizontal /> },
 ];

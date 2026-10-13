@@ -119,3 +119,33 @@ test("detects an LM Studio server on this computer and uses its models", async (
     mock.kill();
   }
 });
+
+test("automations run on a schedule or on demand and keep a history", async () => {
+  const { spawn } = await import("node:child_process");
+  const mock = spawn(process.execPath, ["../web/e2e/mock-openai.mjs"], { env: { ...process.env, MOCK_PORT: "4011" }, stdio: "ignore" });
+  try {
+    await new Promise((r) => setTimeout(r, 800));
+    await page.evaluate(async () => {
+      const res = await fetch("/api/models", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ providerId: "custom", apiKey: "", baseURL: "http://127.0.0.1:4011/v1" }) });
+      const { models } = await res.json();
+      const s = JSON.parse(localStorage.getItem("moonc:v1") || "{}");
+      s.connections = [...(s.connections || []), { id: "mock4011", providerId: "custom", apiKey: "", baseURL: "http://127.0.0.1:4011/v1", label: "Mock", models, addedAt: 0 }];
+      s.lastModel = { connectionId: "mock4011", modelId: "mock-fast" };
+      localStorage.setItem("moonc:v1", JSON.stringify(s));
+    });
+    await page.reload();
+    await page.getByRole("button", { name: "Automations" }).click();
+    await page.getByRole("button", { name: "New automation" }).click();
+    await page.getByLabel("Name").fill("Brief");
+    await page.getByLabel("What should the AI do?").fill("summarize my day");
+    await page.getByRole("button", { name: "Save automation" }).click();
+    await expect(page.getByText("Every day at 08:00")).toBeVisible();
+    await page.getByRole("button", { name: "Run now" }).click();
+    await page.getByText(/Run history \(1\)/).click();
+    await expect(page.getByRole("list", { name: "Brief runs" })).toContainText("Echo from mock-fast: summarize my day");
+    await page.getByRole("button", { name: "Continue in chat" }).click();
+    await expect(page.locator('[data-role="assistant"]').last()).toContainText("summarize my day");
+  } finally {
+    mock.kill();
+  }
+});
