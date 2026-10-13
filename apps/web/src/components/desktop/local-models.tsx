@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import catalog from "@/data/model-catalog.json";
 import { desktop, type Hardware, type OllamaStatus } from "@/lib/desktop";
 import { listLocal, pull, remove, syncOllamaConnection, type LocalModel } from "@/lib/ollama";
-import { update } from "@/lib/store";
+import { update, useStore } from "@/lib/store";
 import { verdict } from "@/lib/verdict";
 
 // Downloads live outside React so they keep going when you switch views.
@@ -70,6 +70,38 @@ function DownloadButton({ name, installed, onDone }: { name: string; installed: 
         )}
       </div>
     </div>
+  );
+}
+
+function OtherServers() {
+  const connections = useStore((s) => s.connections);
+  const [servers, setServers] = useState<{ id: string; name: string; baseURL: string }[]>([]);
+  useEffect(() => {
+    fetch("/api/local-servers")
+      .then((r) => r.json())
+      .then((d) => setServers(d.servers ?? []))
+      .catch(() => {});
+  }, []);
+  const connect = async (s: { name: string; baseURL: string }) => {
+    const res = await fetch("/api/models", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ providerId: "custom", apiKey: "", baseURL: s.baseURL }) });
+    const d = (await res.json()) as { models?: { id: string; name: string }[]; error?: string };
+    if (!res.ok || !d.models?.length) return toast.error(d.error ?? `${s.name} has no models loaded. Load one in ${s.name}, then try again.`);
+    update((st) => ({ ...st, connections: [...st.connections, { id: crypto.randomUUID(), providerId: "custom", apiKey: "", baseURL: s.baseURL, label: s.name, models: d.models!, addedAt: Date.now() }] }));
+    toast.success(`${s.name} connected: ${d.models.length} models.`);
+  };
+  const fresh = servers.filter((s) => !connections.some((c) => c.baseURL === s.baseURL));
+  if (!fresh.length) return null;
+  return (
+    <section aria-label="Other local servers" className="flex flex-wrap items-center gap-3 rounded-xl border p-4 text-sm">
+      {fresh.map((s) => (
+        <div key={s.id} className="flex items-center gap-2">
+          <span>{s.name} is running on this computer.</span>
+          <Button size="sm" variant="outline" onClick={() => connect(s)}>
+            Use its models
+          </Button>
+        </div>
+      ))}
+    </section>
   );
 }
 
@@ -162,6 +194,8 @@ export function LocalModels({ onChat }: { onChat: () => void }) {
             </Button>
           ) : null}
         </section>
+
+        <OtherServers />
 
         {status?.running && (
           <>

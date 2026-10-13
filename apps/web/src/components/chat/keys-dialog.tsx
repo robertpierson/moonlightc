@@ -107,15 +107,20 @@ export function KeysDialog({ open, onOpenChange }: { open: boolean; onOpenChange
   const provider = PROVIDERS.find((p) => p.id === providerId)!;
   const isCustom = providerId === "custom";
   const keyless = isCustom || !!provider.local;
+  const extra =
+    isCustom ? { label: "Base URL", placeholder: "https://your-server.com/v1" }
+    : providerId === "azure" ? { label: "Azure endpoint", placeholder: "https://my-resource.openai.azure.com" }
+    : providerId === "bedrock" ? { label: "AWS region", placeholder: "us-east-1" }
+    : undefined;
 
   async function add(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
     setError("");
     try {
-      const c = { providerId, apiKey: apiKey.trim(), baseURL: isCustom ? baseURL.trim() : undefined };
+      const c = { providerId, apiKey: apiKey.trim(), baseURL: extra ? baseURL.trim() : undefined };
       const models = await fetchModels(c);
-      const label = isCustom ? new URL(c.baseURL!).host : provider.name;
+      const label = isCustom ? new URL(c.baseURL!).host : providerId === "azure" ? `Azure ${new URL(c.baseURL!).host.split(".")[0]}` : providerId === "bedrock" ? `Bedrock ${c.baseURL}` : provider.name;
       const conn: SavedConnection = { ...c, id: crypto.randomUUID(), label, models, addedAt: Date.now() };
       update((s) => ({
         ...s,
@@ -203,10 +208,10 @@ export function KeysDialog({ open, onOpenChange }: { open: boolean; onOpenChange
               </SelectContent>
             </Select>
           </div>
-          {isCustom && (
+          {extra && (
             <div className="grid gap-1.5">
-              <Label htmlFor="baseurl">Base URL</Label>
-              <Input id="baseurl" required placeholder="https://your-server.com/v1" value={baseURL} onChange={(e) => setBaseURL(e.target.value)} />
+              <Label htmlFor="baseurl">{extra.label}</Label>
+              <Input id="baseurl" required placeholder={extra.placeholder} value={baseURL} onChange={(e) => setBaseURL(e.target.value)} />
             </div>
           )}
           <div className="grid gap-1.5">

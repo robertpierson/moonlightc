@@ -102,3 +102,20 @@ test("gate: Claude Code opens in the built-in terminal (if installed)", async ()
   await expect(page.getByTestId("terminal").last()).toContainText(/Claude|claude|trust|Welcome/, { timeout: 30000 });
   await page.getByRole("button", { name: "Close Claude Code" }).click();
 });
+
+test("detects an LM Studio server on this computer and uses its models", async () => {
+  const { spawn } = await import("node:child_process");
+  const busy = await fetch("http://127.0.0.1:1234/v1/models").then(() => true, () => false);
+  test.skip(busy, "something already uses port 1234");
+  const mock = spawn(process.execPath, ["../web/e2e/mock-openai.mjs"], { env: { ...process.env, MOCK_PORT: "1234" }, stdio: "ignore" });
+  try {
+    await new Promise((r) => setTimeout(r, 800));
+    await page.getByRole("button", { name: "Local models" }).click();
+    await page.reload();
+    await page.getByRole("button", { name: "Local models" }).click();
+    await page.getByRole("button", { name: "Use its models" }).click();
+    await expect(page.getByText("LM Studio connected: 2 models.")).toBeVisible();
+  } finally {
+    mock.kill();
+  }
+});
