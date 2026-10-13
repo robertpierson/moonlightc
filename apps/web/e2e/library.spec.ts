@@ -1,9 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
+import { openMenu } from "./helpers";
 
 test.skip(!!process.env.BASE_URL, "needs the local mock provider");
 
 async function nav(page: Page, name: string) {
-  if (await page.getByRole("button", { name: "Open chats" }).isVisible()) await page.getByRole("button", { name: "Open chats" }).click();
+  await openMenu(page);
   await page.getByRole("button", { name, exact: true }).click();
 }
 async function send(page: Page, text: string) {

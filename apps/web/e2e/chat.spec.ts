@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { openMenu } from "./helpers";
 
 // These use the local mock provider (e2e/mock-openai.mjs), so they only run against a local server.
 test.skip(!!process.env.BASE_URL, "needs the local mock provider");
@@ -43,7 +44,7 @@ test("connect a provider, chat, persist, edit, regenerate, branch", async ({ pag
 
   // Survives a reload.
   await page.reload();
-  if (await page.getByRole("button", { name: "Open chats" }).isVisible()) await page.getByRole("button", { name: "Open chats" }).click();
+  await openMenu(page);
   await page.getByRole("button", { name: "hello there", exact: true }).click();
   await expect(page.getByText("Echo from mock-other: second")).toBeVisible();
   await page.keyboard.press("Escape");
@@ -107,7 +108,7 @@ test("private mode never saves, custom modes send their instructions", async ({ 
   await send(page, "secret thing");
   await expect(page.getByText("Echo from mock-fast: secret thing")).toBeVisible();
   await page.reload();
-  if (await page.getByRole("button", { name: "Open chats" }).isVisible()) await page.getByRole("button", { name: "Open chats" }).click();
+  await openMenu(page);
   await expect(page.getByText("Your chats will appear here.").locator("visible=true")).toBeVisible();
   await page.keyboard.press("Escape");
 

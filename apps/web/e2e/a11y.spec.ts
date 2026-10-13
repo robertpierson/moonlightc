@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
+import { openMenu } from "./helpers";
 
 // WCAG 2.1 AA checks on every screen, in light and dark.
 async function audit(page: Page) {
@@ -8,7 +9,7 @@ async function audit(page: Page) {
 }
 
 async function nav(page: Page, name: string) {
-  if (await page.getByRole("button", { name: "Open chats" }).isVisible()) await page.getByRole("button", { name: "Open chats" }).click();
+  await openMenu(page);
   await page.getByRole("button", { name, exact: true }).click();
   await page.waitForTimeout(300);
 }

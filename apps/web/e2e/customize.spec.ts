@@ -1,7 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
+import { openMenu } from "./helpers";
 
 async function go(page: Page, section: string) {
-  if (await page.getByRole("button", { name: "Open chats" }).isVisible()) await page.getByRole("button", { name: "Open chats" }).click();
+  await openMenu(page);
   await page.getByRole("button", { name: section, exact: true }).click();
 }
 
@@ -16,7 +17,7 @@ test("distros restyle the app and change which sections show", async ({ page }) 
   await expect(page.locator("html")).not.toHaveAttribute("data-theme", /.+/);
   await go(page, "Chat");
   await expect(page.getByLabel("Message", { exact: true })).toHaveClass(/min-h-32/);
-  if (await page.getByRole("button", { name: "Open chats" }).isVisible()) await page.getByRole("button", { name: "Open chats" }).click();
+  await openMenu(page);
   await expect(page.getByRole("button", { name: "Studio", exact: true }).locator("visible=true")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Customize", exact: true }).locator("visible=true")).toHaveCount(1);
 });

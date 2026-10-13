@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { openMenu } from "./helpers";
 
 // Provider calls are replaced with fakes here; real-key runs happen at the phase gate.
 const PNG = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
@@ -16,13 +17,13 @@ async function withFalKey(page: Page) {
     await r.fulfill({ json: { models: [{ id: `fal-ai/test-${kind}`, name: `Test ${kind} model` }] } });
   });
   await page.goto("/app");
-  if (await page.getByRole("button", { name: "Open chats" }).isVisible()) await page.getByRole("button", { name: "Open chats" }).click();
+  await openMenu(page);
   await page.getByRole("button", { name: "Studio" }).click();
 }
 
 test("studio needs a media key first", async ({ page }) => {
   await page.goto("/app");
-  if (await page.getByRole("button", { name: "Open chats" }).isVisible()) await page.getByRole("button", { name: "Open chats" }).click();
+  await openMenu(page);
   await page.getByRole("button", { name: "Studio" }).click();
   await page.getByRole("button", { name: "Add a key" }).click();
   await expect(page.getByRole("dialog", { name: "Models and keys" })).toBeVisible();
@@ -44,7 +45,7 @@ test("generate an image, keep it in the gallery, remix and send to chat", async 
   await expect(card.getByText(/seed 42/)).toBeVisible();
 
   await page.reload();
-  if (await page.getByRole("button", { name: "Open chats" }).isVisible()) await page.getByRole("button", { name: "Open chats" }).click();
+  await openMenu(page);
   await page.getByRole("button", { name: "Studio" }).click();
   await expect(page.getByRole("listitem").filter({ hasText: "a moon over the sea" })).toBeVisible();
 

@@ -1,9 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
+import { openMenu } from "./helpers";
 
 test.skip(!!process.env.BASE_URL, "needs the local mock servers");
 
 async function openConnections(page: Page) {
-  if (await page.getByRole("button", { name: "Open chats" }).isVisible()) await page.getByRole("button", { name: "Open chats" }).click();
+  await openMenu(page);
   await page.getByRole("button", { name: "Connections" }).click();
 }
 
@@ -33,7 +34,7 @@ test("add an MCP connector, then the AI uses its tool after the user approves", 
   await expect(page.getByText("Calc connected with 1 tools")).toBeVisible();
   await expect(page.getByRole("list", { name: "Your connectors" })).toContainText("Calc");
 
-  if (await page.getByRole("button", { name: "Open chats" }).isVisible()) await page.getByRole("button", { name: "Open chats" }).click();
+  await openMenu(page);
   await page.getByRole("button", { name: "Chat", exact: true }).click();
   await page.getByLabel("Message", { exact: true }).fill("add 2 3");
   await page.getByRole("button", { name: "Send message" }).click();

@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
+import { openMenu } from "./helpers";
 
 test.skip(!!process.env.BASE_URL, "needs the local mock provider");
 
@@ -15,7 +16,7 @@ async function fakeRegistry(page: Page) {
 }
 
 async function nav(page: Page, name: string) {
-  if (await page.getByRole("button", { name: "Open chats" }).isVisible()) await page.getByRole("button", { name: "Open chats" }).click();
+  await openMenu(page);
   await page.getByRole("button", { name, exact: true }).click();
 }
 
