@@ -8,7 +8,7 @@ Free and open source (MIT). Bring your own keys; nothing is resold and there are
 ## What it does
 - **Chat with any model**: Anthropic, OpenAI, Google, xAI, Mistral, DeepSeek, Groq, Together, Perplexity, Cohere,
   OpenRouter or any OpenAI-compatible server. Model lists come live from each provider. Stop, edit, regenerate, branch,
-  compare 2–4 models side by side, attachments, artifacts (live HTML/SVG/React), Python in the browser, web search,
+  an Auto model that picks the right model per message, attachments, artifacts (live HTML/SVG/React), Python in the browser, web search,
   Deep Research, voice typing, modes and a Private mode that saves nothing.
 - **Studio**: images, video and voices with your fal, OpenAI, Google, xAI, Replicate or ElevenLabs keys.
 - **Connections**: any MCP server, with per-tool "ask / always / never" permissions. GitHub with a live stats dashboard.

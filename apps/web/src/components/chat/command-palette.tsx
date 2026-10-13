@@ -1,6 +1,6 @@
 "use client";
 
-import { Columns2, KeyRound, MessageSquare, Moon, Plus, Sparkles, SunMoon } from "lucide-react";
+import { KeyRound, MessageSquare, Moon, Plus, Sparkles, SunMoon , Settings } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { Command, CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandShortcut } from "@/components/ui/command";
@@ -14,7 +14,7 @@ export interface PaletteActions {
   pickModel: (r: ModelRef) => void;
   openKeys: () => void;
   openModes: () => void;
-  toggleCompare: () => void;
+  openSettings: () => void;
 }
 
 export function CommandPalette({ actions }: { actions: PaletteActions }) {
@@ -50,8 +50,8 @@ export function CommandPalette({ actions }: { actions: PaletteActions }) {
             <Plus /> New chat
           </CommandItem>
           {connections.length > 0 && (
-            <CommandItem onSelect={run(actions.toggleCompare)}>
-              <Columns2 /> Compare models
+            <CommandItem onSelect={run(actions.openSettings)}>
+              <Settings /> Settings
             </CommandItem>
           )}
           <CommandItem onSelect={run(actions.openKeys)}>

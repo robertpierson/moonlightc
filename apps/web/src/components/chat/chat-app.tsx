@@ -5,11 +5,7 @@ import dynamic from "next/dynamic";
 
 // Screens other than chat load on demand, so opening the app only downloads what chat needs.
 const ArtifactPanel = dynamic(() => import("./artifact-panel").then((m) => m.ArtifactPanel), { loading: () => <div className="flex-1" /> });
-const CompareView = dynamic(() => import("./compare-view").then((m) => m.CompareView), { loading: () => <div className="flex-1" /> });
-const LocalModels = dynamic(() => import("@/components/desktop/local-models").then((m) => m.LocalModels), { loading: () => <div className="flex-1" /> });
-const Customize = dynamic(() => import("@/components/customize/customize").then((m) => m.Customize), { loading: () => <div className="flex-1" /> });
-const Connections = dynamic(() => import("@/components/connections/connections").then((m) => m.Connections), { loading: () => <div className="flex-1" /> });
-const ModsView = dynamic(() => import("@/components/mods/mods-view").then((m) => m.ModsView), { loading: () => <div className="flex-1" /> });
+const Settings = dynamic(() => import("@/components/settings/settings").then((m) => m.Settings), { loading: () => <div className="flex-1" /> });
 const Automations = dynamic(() => import("@/components/desktop/automations").then((m) => m.Automations), { loading: () => <div className="flex-1" /> });
 const CodeWorkspace = dynamic(() => import("@/components/code/code-workspace").then((m) => m.CodeWorkspace), { ssr: false, loading: () => <div className="flex-1" /> });
 const Subscriptions = dynamic(() => import("@/components/subscriptions/subscriptions").then((m) => m.Subscriptions), { loading: () => <div className="flex-1" /> });
@@ -18,15 +14,17 @@ const Studio = dynamic(() => import("@/components/studio/studio").then((m) => m.
 const Projects = dynamic(() => import("@/components/desktop/projects").then((m) => m.Projects), { loading: () => <div className="flex-1" /> });
 const Terminals = dynamic(() => import("@/components/desktop/terminals").then((m) => m.Terminals), { ssr: false, loading: () => <div className="flex-1" /> });
 
-import { Columns2, KeyRound, Menu } from "lucide-react";
+import { KeyRound, Menu } from "lucide-react";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { ThemeToggle } from "@/components/theme";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { getState, patchChat, saveChat, update, useStore, type Chat, type ModelRef } from "@/lib/store";
+import { findModel, getState, patchChat, saveChat, update, useStore, type Chat, type ModelRef } from "@/lib/store";
+import { isAuto } from "@/lib/auto-model";
 import type { Artifact } from "@/lib/artifacts";
-import { AppNav, availableViews, type View } from "@/components/desktop/nav";
+import { AppNav, availableViews, SettingsButton, type View } from "@/components/desktop/nav";
+import type { SettingsSection } from "@/components/settings/settings";
 import { applyDistro, LookApplier, useLook } from "@/components/customize/look";
 import { decodeDistro, DISTROS, matchShortcut, type Distro } from "@/lib/customize";
 import { desktop } from "@/lib/desktop";
@@ -46,7 +44,7 @@ import { ModeSelect, ModesDialog, useModes } from "./modes";
 import { CommandPalette } from "./command-palette";
 import { Sidebar } from "./sidebar";
 
-const VIEW_TITLES: Record<View, string> = { chat: "Chat", code: "Code", subscriptions: "Subscriptions", library: "Projects & memory", studio: "Studio", connections: "Connections", models: "Local models", terminal: "Terminal", projects: "My AI Projects", automations: "Automations", mods: "Mods", customize: "Customize" };
+const VIEW_TITLES: Record<View, string> = { chat: "Chat", code: "Code", subscriptions: "Subscriptions", library: "Projects & memory", studio: "Studio", terminal: "Terminal", projects: "My AI Projects", automations: "Automations", settings: "Settings" };
 
 function distroDefaultMode() {
   const s = getState();
@@ -101,9 +99,9 @@ function Inner() {
     }
   });
   const [artifact, setArtifact] = useState<Artifact>();
-  const [comparing, setComparing] = useState(false);
   const [modesOpen, setModesOpen] = useState(false);
   const [view, setView] = useState<View>("chat");
+  const [section, setSection] = useState<SettingsSection>("general");
   const [termOpened, setTermOpened] = useState(false);
   const [launch, setLaunch] = useState<LaunchRequest>();
   const [pendingFiles, setPendingFiles] = useState<FileUIPart[]>();
@@ -116,11 +114,16 @@ function Inner() {
     if (v === "terminal") setTermOpened(true);
     setNavOpen(false);
   };
+  const openSettings = (sec: SettingsSection) => {
+    setSection(sec);
+    go("settings");
+  };
   const modes = useModes();
 
   const chat = chats.find((c) => c.id === activeId) ?? draft;
   const saved = chats.some((c) => c.id === chat.id);
-  const valid = (r?: ModelRef) => !!r && connections.some((c) => c.id === r.connectionId && c.models.some((m) => m.id === r.modelId));
+  const autoReady = useStore((s) => !!findModel(s.autoPicks?.everyday));
+  const valid = (r?: ModelRef) => (isAuto(r) ? autoReady : !!r && connections.some((c) => c.id === r.connectionId && c.models.some((m) => m.id === r.modelId)));
   const chatConns = connections.filter((c) => c.models.length > 0);
   const fallback = chatConns[0] && { connectionId: chatConns[0].id, modelId: chatConns[0].models[0].id };
   const mode = modes.find((m) => m.id === (saved ? chat.modeId : draftMode)) ?? modes[0];
@@ -133,7 +136,6 @@ function Inner() {
     setDraftMode(distroDefaultMode() ?? "general");
     setDraftProject(undefined);
     setArtifact(undefined);
-    setComparing(false);
     setView("chat");
     setNavOpen(false);
   };
@@ -144,18 +146,19 @@ function Inner() {
     if (consumeOAuthResult(hash)) history.replaceState(null, "", location.pathname + location.search);
     if (hash.includes("mcpauth=") || hash.includes("mcperror=")) {
       history.replaceState(null, "", location.pathname + location.search);
-      consumeMcpAuth(hash).then(() => go("connections"));
+      consumeMcpAuth(hash).then(() => openSettings("connectors"));
     }
     return desktop()?.onDeepLink((url) => {
       if (url.startsWith("moonlightc://mcpauth")) {
-        consumeMcpAuth(new URL(url).hash).then(() => go("connections"));
+        consumeMcpAuth(new URL(url).hash).then(() => openSettings("connectors"));
         return;
       }
       if (url.startsWith("moonlightc://oauth")) {
         consumeOAuthResult(new URL(url).hash);
-        go("connections");
+        openSettings("connectors");
       }
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once on open; openSettings only sets state
   }, []);
   // Drop ?distro= from the address once read, so reloading doesn't offer it again.
   useEffect(() => {
@@ -189,12 +192,12 @@ function Inner() {
       onSelect={(id) => {
         setActiveId(id);
         setArtifact(undefined);
-        setComparing(false);
         setView("chat");
         setNavOpen(false);
       }}
       onNew={() => start()}
     />
+    <SettingsButton active={view === "settings"} onClick={() => openSettings(section)} />
     </div>
   );
 
@@ -236,12 +239,9 @@ function Inner() {
               <span className="font-semibold">{VIEW_TITLES[view]}</span>
             </header>
           )}
-          {view === "models" && <LocalModels onChat={() => go("chat")} />}
-          {view === "connections" && <Connections />}
-          {view === "customize" && <Customize availableViews={availableViews()} />}
-          {view === "mods" && <ModsView />}
-          {view === "code" && <CodeWorkspace onConnectGitHub={() => go("connections")} />}
-          {view === "subscriptions" && <Subscriptions onConnectGoogle={() => go("connections")} />}
+          {view === "settings" && <Settings section={section} onSection={setSection} availableViews={availableViews()} onClose={() => go("chat")} onChat={() => go("chat")} />}
+          {view === "code" && <CodeWorkspace onConnectGitHub={() => openSettings("connectors")} />}
+          {view === "subscriptions" && <Subscriptions onConnectGoogle={() => openSettings("connectors")} />}
           {view === "automations" && (
             <Automations
               onOpenChat={(id) => {
@@ -291,9 +291,7 @@ function Inner() {
             <Button variant="ghost" size="icon" className={quick ? "hidden" : "md:hidden"} aria-label="Open chats" onClick={() => setNavOpen(true)}>
               <Menu />
             </Button>
-            {comparing ? (
-              <span className="px-2 font-semibold">Compare models</span>
-            ) : chatConns.length > 0 ? (
+            {chatConns.length > 0 ? (
               <ModelPicker
                 value={model}
                 onChange={(r) => (saved ? patchChat(chat.id, { model: r }) : setDraftModel(r))}
@@ -302,20 +300,12 @@ function Inner() {
               <span className="px-2 font-semibold">MoonlightC</span>
             )}
             <div className="ml-auto flex items-center">
-              {chatConns.length > 0 && (
-                <Button variant={comparing ? "secondary" : "ghost"} size="sm" aria-pressed={comparing} aria-label="Compare" onClick={() => setComparing((c) => !c)}>
-                  <Columns2 /> <span className="hidden sm:inline">Compare</span>
-                </Button>
-              )}
               <Button variant="ghost" size="icon" aria-label="Models and keys" onClick={() => setKeysOpen(true)}>
                 <KeyRound />
               </Button>
               <ThemeToggle />
             </div>
           </header>
-          {comparing ? (
-            <CompareView initial={model} />
-          ) : (
           <ChatView
             key={chat.id}
             chat={chat}
@@ -359,7 +349,6 @@ function Inner() {
             bigInput={look.bigInput}
             projectId={saved ? chat.projectId : (draftProject ?? projectFilter)}
           />
-          )}
           </>)}
         </main>
         {artifact && (
@@ -376,7 +365,7 @@ function Inner() {
           openChat: (id) => {
             setActiveId(id);
             setArtifact(undefined);
-            setComparing(false);
+            setView("chat");
           },
           pickModel: (r) => {
             update((s) => ({ ...s, lastModel: r }));
@@ -385,7 +374,7 @@ function Inner() {
           },
           openKeys: () => setKeysOpen(true),
           openModes: () => setModesOpen(true),
-          toggleCompare: () => setComparing((c) => !c),
+          openSettings: () => openSettings("general"),
         }}
       />
     </TooltipProvider>

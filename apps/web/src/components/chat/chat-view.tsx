@@ -1,6 +1,7 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
+import { classifyTask, isAuto, resolveAuto } from "@/lib/auto-model";
 import { estimateCost } from "@moonc/core";
 import { DefaultChatTransport, lastAssistantMessageIsCompleteWithApprovalResponses, lastAssistantMessageIsCompleteWithToolCalls, type FileUIPart, type UIMessage } from "ai";
 import { ArrowUp, FileText, MousePointerClick, Wrench, KeyRound, Paperclip, Square, X } from "lucide-react";
@@ -77,8 +78,10 @@ export function ChatView({
     return m ? textOf(m) : input;
   };
 
+  const lastUserHasImage = () => !![...messagesRef.current].reverse().find((x) => x.role === "user")?.parts.some((p) => p.type === "file" && p.mediaType.startsWith("image/"));
+
   const request = () => {
-    const found = findModel(model);
+    const found = findModel(isAuto(model) ? resolveAuto(classifyTask(lastUserText(), lastUserHasImage()), getState().autoPicks) : model);
     if (!found) return {};
     const { apiKey, providerId, baseURL } = found.conn;
     return {
@@ -115,7 +118,15 @@ export function ChatView({
   });
   const [transport] = useState(
     // eslint-disable-next-line react-hooks/refs -- the ref is read when a request is sent, not during render
-    () => new DefaultChatTransport({ api: "/api/chat", body: () => latest.current().body ?? {} }),
+    () =>
+      new DefaultChatTransport({
+        api: "/api/chat",
+        // The outgoing messages include the one just sent, which Auto and memory need to look at.
+        prepareSendMessagesRequest: ({ id, messages, body, trigger, messageId }) => {
+          messagesRef.current = messages;
+          return { body: { ...body, id, messages, trigger, messageId, ...(latest.current().body ?? {}) } };
+        },
+      }),
   );
 
 
@@ -188,7 +199,8 @@ export function ChatView({
   }, [messages]);
 
   const needsSearch = !!mode.research && !hasSearchKey;
-  const canSend = !!findModel(model) && !needsSearch;
+  const usable = !!findModel(isAuto(model) ? getState().autoPicks?.everyday : model);
+  const canSend = usable && !needsSearch;
 
   const [attachments, setAttachments] = useState<Attachment[]>(() =>
     chat.messages.length ? [] : (initialFiles ?? []).map((part) => ({ kind: "file" as const, part, size: part.url.length })),
@@ -267,7 +279,7 @@ export function ChatView({
                   Deep Research plans sub-questions, searches and reads many sources, then writes a cited report. It can take a few minutes and uses more tokens.
                 </p>
               )}
-              {!findModel(model) ? (
+              {!usable ? (
                 <Button onClick={onOpenKeys}>
                   <KeyRound /> Connect a model
                 </Button>

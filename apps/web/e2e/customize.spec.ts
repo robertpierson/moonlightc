@@ -1,10 +1,7 @@
-import { expect, test, type Page } from "@playwright/test";
-import { openMenu } from "./helpers";
+import { expect, test } from "@playwright/test";
+import { nav, openMenu } from "./helpers";
 
-async function go(page: Page, section: string) {
-  await openMenu(page);
-  await page.getByRole("button", { name: section, exact: true }).click();
-}
+const go = nav;
 
 test("distros restyle the app and change which sections show", async ({ page }) => {
   await page.goto("/app");
@@ -19,7 +16,7 @@ test("distros restyle the app and change which sections show", async ({ page }) 
   await expect(page.getByLabel("Message", { exact: true })).toHaveClass(/min-h-32/);
   await openMenu(page);
   await expect(page.getByRole("button", { name: "Studio", exact: true }).locator("visible=true")).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Customize", exact: true }).locator("visible=true")).toHaveCount(1);
+  await expect(page.getByRole("button", { name: "Settings", exact: true }).locator("visible=true")).toHaveCount(1);
 });
 
 test("theme picker, editor and reset", async ({ page }) => {

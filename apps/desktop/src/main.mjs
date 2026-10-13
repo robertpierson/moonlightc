@@ -19,6 +19,8 @@ let quick;
 let tray;
 let quitting = false;
 
+// Test runs get their own data folder, so they never touch (or collide with) an installed copy that's running.
+if (!app.isPackaged && process.env.MOONC_E2E_USER_DATA) app.setPath("userData", process.env.MOONC_E2E_USER_DATA);
 if (!app.requestSingleInstanceLock()) app.quit();
 app.setAsDefaultProtocolClient("moonlightc");
 

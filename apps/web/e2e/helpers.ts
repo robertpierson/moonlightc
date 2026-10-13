@@ -10,7 +10,15 @@ export async function openMenu(page: Page) {
   await expect(page.getByRole("dialog")).toBeVisible();
 }
 
+// These live inside Settings now.
+const SETTINGS: Record<string, string> = { Connections: "Connectors", Customize: "Appearance", Mods: "Plugins & mods", "Local models": "Local models" };
+
 export async function nav(page: Page, name: string) {
   await openMenu(page);
+  if (SETTINGS[name]) {
+    await page.getByRole("button", { name: "Settings", exact: true }).click();
+    await page.getByRole("navigation", { name: "Settings" }).getByRole("button", { name: SETTINGS[name], exact: true }).click();
+    return;
+  }
   await page.getByRole("button", { name, exact: true }).click();
 }

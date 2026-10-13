@@ -22,22 +22,20 @@ const FEATURES = [
     ),
   },
   {
-    title: "Ask once, compare answers",
-    body: "Send one prompt to two, three or four models side by side and keep the answer you like.",
+    title: "Auto picks the right model",
+    body: "Choose a model for coding, one for deep thinking and a fast one for quick questions. Auto sends each message to the right one.",
     demo: (
-      <div className="grid gap-3 text-sm">
-        <p className="rounded-lg bg-[var(--line)] px-3 py-2 justify-self-end">Explain tides in one sentence.</p>
-        <div className="grid grid-cols-2 gap-2">
-          {[
-            ["Model A", "The Moon's gravity pulls the oceans into two bulges that Earth rotates through each day."],
-            ["Model B", "Tides are the sea rising and falling as Earth spins under the Moon's and Sun's pull."],
-          ].map(([m, t]) => (
-            <div key={m} className="rounded-lg border border-[var(--line)] p-3">
-              <div className="mb-1 text-xs text-[var(--mist)]">{m}</div>
-              {t}
-            </div>
-          ))}
-        </div>
+      <div className="grid gap-2 text-sm">
+        {[
+          ["Fix this TypeError in my script", "Coding model"],
+          ["Plan a 3-day trip on a budget", "Deep thinking model"],
+          ["What's 15% of 80?", "Quick model"],
+        ].map(([q, m]) => (
+          <div key={q} className="flex items-center justify-between gap-3 rounded-lg border border-[var(--line)] px-3 py-2">
+            <span>{q}</span>
+            <span className="shrink-0 text-xs text-[var(--tide)]">{m}</span>
+          </div>
+        ))}
       </div>
     ),
   },

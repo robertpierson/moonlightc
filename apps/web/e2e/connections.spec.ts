@@ -1,11 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
-import { openMenu } from "./helpers";
+import { nav, openMenu } from "./helpers";
 
 test.skip(!!process.env.BASE_URL, "needs the local mock servers");
 
 async function openConnections(page: Page) {
-  await openMenu(page);
-  await page.getByRole("button", { name: "Connections" }).click();
+  await nav(page, "Connections");
 }
 
 test("add an MCP connector, then the AI uses its tool after the user approves", async ({ page }) => {

@@ -1,41 +1,105 @@
 "use client";
 
-import { Brain, Clock, Code2, Cpu, Receipt, FolderGit2, MessageSquare, Palette, Plug, Puzzle, SlidersHorizontal, SquareTerminal } from "lucide-react";
-import { useEffect, useState } from "react";
-import { Switch } from "@/components/ui/switch";
+import {
+  Brain,
+  Clock,
+  Code2,
+  FolderGit2,
+  MessageSquare,
+  Palette,
+  Receipt,
+  Settings as SettingsIcon,
+  SquareTerminal,
+} from "lucide-react";
+import type { ViewId } from "@/lib/customize";
 import { desktop } from "@/lib/desktop";
 
-export type View = "chat" | "code" | "library" | "subscriptions" | "studio" | "connections" | "models" | "terminal" | "projects" | "automations" | "mods" | "customize";
+export type View =
+  | "chat"
+  | "code"
+  | "library"
+  | "subscriptions"
+  | "studio"
+  | "terminal"
+  | "projects"
+  | "automations"
+  | "settings";
 
-const ITEMS: { id: View; label: string; icon: React.ReactNode; desktopOnly?: boolean }[] = [
-  { id: "chat", label: "Chat", icon: <MessageSquare /> },
-  { id: "code", label: "Code", icon: <Code2 /> },
+const ITEMS: {
+  id: View;
+  label: string;
+  icon: React.ReactNode;
+  desktopOnly?: boolean;
+}[] = [
   { id: "library", label: "Projects & memory", icon: <Brain /> },
   { id: "studio", label: "Studio", icon: <Palette /> },
   { id: "subscriptions", label: "Subscriptions", icon: <Receipt /> },
-  { id: "connections", label: "Connections", icon: <Plug /> },
-  { id: "models", label: "Local models", icon: <Cpu />, desktopOnly: true },
-  { id: "terminal", label: "Terminal", icon: <SquareTerminal />, desktopOnly: true },
-  { id: "projects", label: "My AI Projects", icon: <FolderGit2 />, desktopOnly: true },
-  { id: "automations", label: "Automations", icon: <Clock />, desktopOnly: true },
-  { id: "mods", label: "Mods", icon: <Puzzle /> },
-  { id: "customize", label: "Customize", icon: <SlidersHorizontal /> },
+  {
+    id: "terminal",
+    label: "Terminal",
+    icon: <SquareTerminal />,
+    desktopOnly: true,
+  },
+  {
+    id: "projects",
+    label: "My AI Projects",
+    icon: <FolderGit2 />,
+    desktopOnly: true,
+  },
+  {
+    id: "automations",
+    label: "Automations",
+    icon: <Clock />,
+    desktopOnly: true,
+  },
 ];
 
-/** Sections this device can show (desktop-only ones need the desktop app). */
-export const availableViews = (): View[] => ITEMS.filter((i) => !!desktop() || !i.desktopOnly).map((i) => i.id);
+/** Sections this device can show (desktop-only ones need the desktop app). Chat is always on. */
+export const availableViews = (): ViewId[] => [
+  "chat",
+  "code",
+  ...ITEMS.filter((i) => !!desktop() || !i.desktopOnly).map(
+    (i) => i.id as ViewId,
+  ),
+];
 
-/** App sections. Desktop-only ones appear only when the desktop bridge exists. */
-export function AppNav({ view, onChange, hidden = [] }: { view: View; onChange: (v: View) => void; hidden?: string[] }) {
+/** Chat / Code switch on top, then the other sections. Desktop-only ones appear only in the desktop app. */
+export function AppNav({
+  view,
+  onChange,
+  hidden = [],
+}: {
+  view: View;
+  onChange: (v: View) => void;
+  hidden?: string[];
+}) {
   const isDesktop = !!desktop();
-  const [openAtLogin, setOpenAtLogin] = useState<boolean>();
-  useEffect(() => {
-    desktop()?.settings.get().then((s) => setOpenAtLogin(s.openAtLogin));
-  }, []);
+  const tabs = [
+    { id: "chat" as const, label: "Chat", icon: <MessageSquare /> },
+    { id: "code" as const, label: "Code", icon: <Code2 /> },
+  ].filter((t) => t.id === "chat" || !hidden.includes(t.id));
   return (
-    <div className="border-b p-2">
+    <div className="grid gap-2 border-b p-2">
+      <div
+        aria-label="Workspace"
+        role="group"
+        className={`grid gap-1 rounded-lg bg-muted p-1 ${tabs.length > 1 ? "grid-cols-2" : ""}`}
+      >
+        {tabs.map((t) => (
+          <button
+            key={t.id}
+            aria-current={view === t.id ? "page" : undefined}
+            onClick={() => onChange(t.id)}
+            className="flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-medium aria-[current=page]:bg-background aria-[current=page]:text-foreground aria-[current=page]:shadow-sm aria-[current=page]:ring-1 aria-[current=page]:ring-border [&_svg]:size-4"
+          >
+            {t.icon} {t.label}
+          </button>
+        ))}
+      </div>
       <nav aria-label="Sections" className="grid gap-0.5">
-        {ITEMS.filter((i) => (isDesktop || !i.desktopOnly) && !hidden.includes(i.id)).map((i) => (
+        {ITEMS.filter(
+          (i) => (isDesktop || !i.desktopOnly) && !hidden.includes(i.id),
+        ).map((i) => (
           <button
             key={i.id}
             aria-current={view === i.id ? "page" : undefined}
@@ -46,18 +110,27 @@ export function AppNav({ view, onChange, hidden = [] }: { view: View; onChange: 
           </button>
         ))}
       </nav>
-      {openAtLogin !== undefined && (
-        <label className="mt-2 flex items-center justify-between gap-2 px-2.5 text-xs text-muted-foreground">
-          Start when I sign in to this computer
-          <Switch
-            checked={openAtLogin}
-            onCheckedChange={(v) => {
-              setOpenAtLogin(v);
-              desktop()?.settings.setOpenAtLogin(v);
-            }}
-          />
-        </label>
-      )}
+    </div>
+  );
+}
+
+/** Bottom-of-sidebar button that opens Settings. */
+export function SettingsButton({
+  active,
+  onClick,
+}: {
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <div className="border-t p-2">
+      <button
+        aria-current={active ? "page" : undefined}
+        onClick={onClick}
+        className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-sm hover:bg-accent aria-[current=page]:bg-accent [&_svg]:size-4"
+      >
+        <SettingsIcon /> Settings
+      </button>
     </div>
   );
 }

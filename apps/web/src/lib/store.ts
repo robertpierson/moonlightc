@@ -1,6 +1,7 @@
 "use client";
 
 import type { Connection, ModelInfo } from "@moonc/core";
+import type { AutoPicks } from "./auto-model";
 import type { UIMessage } from "ai";
 import { useSyncExternalStore } from "react";
 import type { Distro, Look } from "./customize";
@@ -38,6 +39,8 @@ export interface Mode {
   research?: boolean;
   builtIn?: boolean;
 }
+
+export const DEFAULT_PINNED_MODES = ["general", "research", "private"];
 
 export const BUILT_IN_MODES: Mode[] = [
   { id: "general", name: "General", instructions: "", builtIn: true },
@@ -151,6 +154,10 @@ interface State {
   automations?: Automation[];
   oauth?: Partial<Record<OAuthProviderId, OAuthAccount>>;
   xToken?: { token: string; enabled: boolean };
+  /** Modes shown at the top of the mode menu; the rest sit under "More options". */
+  pinnedModes?: string[];
+  /** Models assigned to each kind of task, used when the model picker is set to Auto. */
+  autoPicks?: AutoPicks;
   subscriptions?: { items: Subscription[]; remindDays: number; reminded?: Record<string, number>; scannedAt?: number };
   memory?: { enabled: boolean; items: MemoryItem[] };
 }
@@ -307,4 +314,9 @@ export function findModel(ref?: ModelRef) {
 
 export function addMemory(text: string, projectId?: string) {
   update((s) => ({ ...s, memory: { enabled: s.memory?.enabled ?? true, items: [...(s.memory?.items ?? []), { id: crypto.randomUUID(), text, projectId, createdAt: Date.now() }] } }));
+}
+
+/** Forget everything on this device (keys in the desktop keychain are removed by the same save path). */
+export function resetState() {
+  update(() => ({ ...empty }));
 }

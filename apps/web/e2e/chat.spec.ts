@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { openMenu } from "./helpers";
+import { nav, openMenu } from "./helpers";
 
 // These use the local mock provider (e2e/mock-openai.mjs), so they only run against a local server.
 test.skip(!!process.env.BASE_URL, "needs the local mock provider");
@@ -102,8 +102,8 @@ test("private URLs are refused when not testing", async ({ request }) => {
 
 test("private mode never saves, custom modes send their instructions", async ({ page }) => {
   await connectMock(page);
-  await page.getByRole("combobox", { name: "Mode", exact: true }).click();
-  await page.getByRole("option", { name: "Private" }).click();
+  await page.getByRole("button", { name: "Mode", exact: true }).click();
+  await page.getByRole("menuitemradio", { name: "Private" }).click();
   await expect(page.getByRole("heading", { name: "Private chat" })).toBeVisible();
   await send(page, "secret thing");
   await expect(page.getByText("Echo from mock-fast: secret thing")).toBeVisible();
@@ -113,15 +113,16 @@ test("private mode never saves, custom modes send their instructions", async ({ 
   await page.keyboard.press("Escape");
 
   // Custom mode: the instructions reach the provider (the mock echoes "[sys]" when it sees a system message).
-  await page.getByRole("combobox", { name: "Mode", exact: true }).click();
-  await page.getByRole("option", { name: "Create or edit modes…" }).click();
+  await page.getByRole("button", { name: "Mode", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Create or edit modes…" }).click();
   await page.getByRole("button", { name: "New mode" }).click();
   await page.getByLabel("Name").fill("Pirate");
   await page.getByLabel("Instructions (system prompt)").fill("Talk like a pirate.");
   await page.getByRole("button", { name: "Save mode" }).click();
   await page.keyboard.press("Escape");
-  await page.getByRole("combobox", { name: "Mode", exact: true }).click();
-  await page.getByRole("option", { name: "Pirate" }).click();
+  await page.getByRole("button", { name: "Mode", exact: true }).click();
+  await page.getByRole("menuitem", { name: "More options" }).click();
+  await page.getByRole("menuitemradio", { name: "Pirate" }).click();
   await send(page, "ahoy");
   await expect(page.getByText("[sys: Talk like a pirate.] Echo from mock-fast: ahoy")).toBeVisible();
 });
@@ -166,17 +167,23 @@ test("react artifacts render and are interactive", async ({ page }) => {
   await expect(frame.getByRole("button", { name: "count 1" })).toBeVisible();
 });
 
-test("compare sends one prompt to several models", async ({ page }) => {
+test("auto model sends each message to the model set for that kind of task", async ({ page }) => {
   await connectMock(page);
-  await page.getByRole("button", { name: "Compare" }).click();
-  const cols = page.getByRole("region", { name: "Compare column" });
-  await expect(cols).toHaveCount(2);
-  await cols.nth(1).getByRole("combobox", { name: "Choose model" }).click();
+  await nav(page, "Settings");
+  await page.getByRole("button", { name: "Auto model" }).click();
+  await page.getByRole("combobox", { name: "Model for Everyday" }).click();
+  await page.getByRole("option", { name: /mock-fast/ }).click();
+  await page.getByRole("combobox", { name: "Model for Coding" }).click();
   await page.getByRole("option", { name: /mock-other/ }).click();
-  await page.getByLabel("Prompt for all models").fill("same question");
-  await page.getByRole("button", { name: "Send to all models" }).click();
-  await expect(cols.nth(0).getByText("Echo from mock-fast: same question")).toBeVisible();
-  await expect(cols.nth(1).getByText("Echo from mock-other: same question")).toBeVisible();
+  await expect(page.getByText("Auto is ready")).toBeVisible();
+  await nav(page, "Chat");
+  await page.getByRole("combobox", { name: "Choose model" }).click();
+  await page.getByRole("option", { name: /^Auto/ }).click();
+  await expect(page.getByRole("combobox", { name: "Choose model" })).toHaveText(/Auto/);
+  await send(page, "why does my python script crash");
+  await expect(page.getByText("Echo from mock-other: why does my python script crash")).toBeVisible();
+  await send(page, "write a short poem about the sea and the moon for my grandmother please");
+  await expect(page.getByText("Echo from mock-fast: write a short poem")).toBeVisible();
 });
 
 test("command palette switches model and opens dialogs", async ({ page, isMobile }) => {
@@ -242,8 +249,8 @@ test("code interpreter runs Python in the browser and the model sees the output"
 
 test("deep research asks for a search key first", async ({ page }) => {
   await connectMock(page);
-  await page.getByRole("combobox", { name: "Mode", exact: true }).click();
-  await page.getByRole("option", { name: "Deep Research" }).click();
+  await page.getByRole("button", { name: "Mode", exact: true }).click();
+  await page.getByRole("menuitemradio", { name: "Deep Research" }).click();
   await expect(page.getByLabel("Message", { exact: true })).toHaveAttribute("placeholder", "Add a web search key to use Deep Research");
   await page.getByRole("button", { name: "Add a web search key" }).click();
   await expect(page.getByRole("region", { name: "Web search" })).toBeVisible();

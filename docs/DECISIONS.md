@@ -45,3 +45,8 @@ on the Supabase slot (OWNER_TODO #1).
 Why: everything visible works end to end on the device (no accounts needed); keeping it on a protected preview gave the
 owner nothing usable. Account-only features stay hidden until Phase 1. Alternative: wait for the owner (blocked indefinitely).
 Rollback: Vercel "Instant Rollback" to the previous production deployment.
+
+## 2026-10-13 Owner UX requests: Settings, Chat/Code switch, Auto model, no Compare
+- What: removed Compare; Connectors, Plugins & mods, Local models, Appearance, Modes, keys and privacy moved into one Claude-style Settings screen; Chat/Code switch at the top of the sidebar; mode menu shows pinned modes (General, Deep Research, Private) with the rest under "More options"; "Auto" model routes each message by task type to models the user assigns in Settings.
+- Why: owner asked for it (fewer top-level items, coding as its own tab, settings like Claude's).
+- Alternatives: an AI classifier for Auto (costs a model call per message; keyword rules first, upgrade if picks are wrong); keeping Compare behind a setting (owner said not needed).

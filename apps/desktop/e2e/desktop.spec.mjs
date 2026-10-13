@@ -1,9 +1,12 @@
+import path from "node:path";
+import fs from "node:fs";
+import os from "node:os";
 import { _electron as electron, expect, test } from "@playwright/test";
 
 let app;
 let page;
 test.beforeAll(async () => {
-  app = await electron.launch({ args: ["."], env: { ...process.env, MOONC_E2E_AUTO_APPROVE: "1" }, cwd: new URL("..", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1") });
+  app = await electron.launch({ args: ["."], env: { ...process.env, MOONC_E2E_AUTO_APPROVE: "1", MOONC_E2E_USER_DATA: fs.mkdtempSync(path.join(os.tmpdir(), "moonc-e2e-")) }, cwd: new URL("..", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1") });
   page = await app.firstWindow();
   await page.waitForURL(/127\.0\.0\.1:\d+\/app/);
 });
@@ -50,8 +53,14 @@ test("pages can call the local API", async () => {
   expect(status).toBe(400); // same-origin call reaches the handler (bad body)
 });
 
+// Local models lives in Settings.
+async function openLocalModels() {
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await page.getByRole("navigation", { name: "Settings" }).getByRole("button", { name: "Local models" }).click();
+}
+
 test("desktop sections: local models, terminal, projects", async () => {
-  await page.getByRole("button", { name: "Local models" }).click();
+  await openLocalModels();
   await expect(page.getByRole("heading", { name: "Local models" })).toBeVisible();
   await expect(page.getByText(/This computer: .* GB memory/)).toBeVisible({ timeout: 15000 });
   await page.getByRole("button", { name: "Terminal" }).click();
@@ -74,7 +83,7 @@ test("keys are kept in the OS keychain, not in page storage", async () => {
 test("gate: download a local model with one click and chat with it (no cloud involved)", async () => {
   test.setTimeout(10 * 60_000);
   test.skip(!(await page.evaluate(() => window.moonc.ollama.status())).running, "Ollama isn't running on this machine");
-  await page.getByRole("button", { name: "Local models" }).click();
+  await openLocalModels();
   // Use the Hugging Face search + one-click download path with a tiny model to keep the test fast.
   await page.getByLabel("Search Hugging Face models").fill("SmolLM2-135M-Instruct-GGUF");
   await page.getByRole("button", { name: "Search", exact: true }).click();
@@ -110,9 +119,9 @@ test("detects an LM Studio server on this computer and uses its models", async (
   const mock = spawn(process.execPath, ["../web/e2e/mock-openai.mjs"], { env: { ...process.env, MOCK_PORT: "1234" }, stdio: "ignore" });
   try {
     await new Promise((r) => setTimeout(r, 800));
-    await page.getByRole("button", { name: "Local models" }).click();
+    await openLocalModels();
     await page.reload();
-    await page.getByRole("button", { name: "Local models" }).click();
+    await openLocalModels();
     await page.getByRole("button", { name: "Use its models" }).click();
     await expect(page.getByText("LM Studio connected: 2 models.")).toBeVisible();
   } finally {

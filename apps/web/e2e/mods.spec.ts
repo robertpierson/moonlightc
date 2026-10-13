@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
-import { openMenu } from "./helpers";
+import { nav } from "./helpers";
 
 test.skip(!!process.env.BASE_URL, "needs the local mock provider");
 
@@ -15,10 +15,6 @@ async function fakeRegistry(page: Page) {
   });
 }
 
-async function nav(page: Page, name: string) {
-  await openMenu(page);
-  await page.getByRole("button", { name, exact: true }).click();
-}
 
 test("install the example mod: its tool, command, mode, theme and panel all work", async ({ page }) => {
   await fakeRegistry(page);
@@ -53,8 +49,9 @@ test("install the example mod: its tool, command, mode, theme and panel all work
   await expect(page.locator('[data-role="assistant"]').last()).toContainText("three short bullet points");
 
   // Mode and theme from the mod.
-  await page.getByRole("combobox", { name: "Mode", exact: true }).click();
-  await expect(page.getByRole("option", { name: "Explain like I'm 5" })).toBeVisible();
+  await page.getByRole("button", { name: "Mode", exact: true }).click();
+  await page.getByRole("menuitem", { name: "More options" }).click();
+  await expect(page.getByRole("menuitemradio", { name: "Explain like I'm 5" })).toBeVisible();
   await page.keyboard.press("Escape");
   await nav(page, "Customize");
   await page.getByRole("button", { name: "Aurora" }).click();
