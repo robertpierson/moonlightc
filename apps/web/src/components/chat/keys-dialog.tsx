@@ -19,6 +19,82 @@ async function fetchModels(c: { providerId: string; apiKey: string; baseURL?: st
   return data.models;
 }
 
+const SEARCH = [
+  { id: "tavily", name: "Tavily", url: "https://app.tavily.com/home" },
+  { id: "exa", name: "Exa", url: "https://dashboard.exa.ai/api-keys" },
+  { id: "brave", name: "Brave Search", url: "https://api-dashboard.search.brave.com/app/keys" },
+] as const;
+
+function SearchKeySection() {
+  const saved = useStore((s) => s.searchKey);
+  const [provider, setProvider] = useState<(typeof SEARCH)[number]["id"]>("tavily");
+  const [key, setKey] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const p = SEARCH.find((x) => x.id === provider)!;
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError("");
+    const res = await fetch("/api/search-key", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ provider, key }) }).catch(() => null);
+    const data = (await res?.json().catch(() => ({}))) as { error?: string } | undefined;
+    setBusy(false);
+    if (!res?.ok) return setError(data?.error ?? "Couldn't check that key. Try again.");
+    update((s) => ({ ...s, searchKey: { provider, key: key.trim() }, webTools: true }));
+    setKey("");
+    toast.success(`${p.name} web search connected.`);
+  }
+
+  return (
+    <section aria-label="Web search" className="grid gap-3 border-t pt-4">
+      <div>
+        <h3 className="font-medium">Web search</h3>
+        <p className="text-sm text-muted-foreground">Optional. Lets the AI search the web when the Web button is on. Reading links works without a key.</p>
+      </div>
+      {saved ? (
+        <div className="flex items-center gap-2 rounded-lg border p-3 text-sm">
+          <span className="flex-1">
+            {SEARCH.find((x) => x.id === saved.provider)?.name} · key ending {saved.key.slice(-4)}
+          </span>
+          <Button variant="ghost" size="icon" aria-label="Remove search key" onClick={() => update((s) => ({ ...s, searchKey: undefined }))}>
+            <Trash2 />
+          </Button>
+        </div>
+      ) : (
+        <form onSubmit={save} className="grid gap-2">
+          <div className="flex gap-2">
+            <Select value={provider} onValueChange={(v) => setProvider(v as typeof provider)}>
+              <SelectTrigger aria-label="Search provider" className="w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SEARCH.map((x) => (
+                  <SelectItem key={x.id} value={x.id}>
+                    {x.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Input type="password" aria-label="Search API key" autoComplete="off" required placeholder="Paste key" value={key} onChange={(e) => setKey(e.target.value)} />
+          </div>
+          <a href={p.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-primary underline-offset-4 hover:underline">
+            Get a {p.name} key <ExternalLink className="size-3" />
+          </a>
+          {error && (
+            <p role="alert" className="rounded-md bg-destructive/10 p-2 text-sm text-destructive">
+              {error}
+            </p>
+          )}
+          <Button type="submit" variant="outline" disabled={busy}>
+            {busy && <Loader2 className="animate-spin" />} {busy ? "Checking…" : "Check and save search key"}
+          </Button>
+        </form>
+      )}
+    </section>
+  );
+}
+
 export function KeysDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const connections = useStore((s) => s.connections);
   const [providerId, setProviderId] = useState("openrouter");
@@ -164,6 +240,7 @@ export function KeysDialog({ open, onOpenChange }: { open: boolean; onOpenChange
             allow it). Use an API key, or OpenRouter, here instead.
           </p>
         </form>
+        <SearchKeySection />
       </DialogContent>
     </Dialog>
   );

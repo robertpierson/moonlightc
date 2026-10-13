@@ -14,7 +14,7 @@ test.afterEach(() => expect(pageErrors).toEqual([]));
 async function connectMock(page: Page) {
   await page.goto("/app");
   await page.getByRole("button", { name: "Connect a model" }).click();
-  await page.getByLabel("Provider").click();
+  await page.getByLabel("Provider", { exact: true }).click();
   await page.getByRole("option", { name: /Custom/ }).click();
   await page.getByLabel("Base URL").fill("http://127.0.0.1:4010/v1");
   await page.getByRole("button", { name: "Check key and connect" }).click();
@@ -85,9 +85,9 @@ test("stop keeps the partial answer", async ({ page }) => {
 test("a rejected key shows a clear fix", async ({ page }) => {
   await page.goto("/app");
   await page.getByRole("button", { name: "Connect a model" }).click();
-  await page.getByLabel("Provider").click();
+  await page.getByLabel("Provider", { exact: true }).click();
   await page.getByRole("option", { name: "OpenAI", exact: true }).click();
-  await page.getByLabel("API key").fill("sk-not-a-real-key");
+  await page.getByLabel("API key", { exact: true }).fill("sk-not-a-real-key");
   await page.getByRole("button", { name: "Check key and connect" }).click();
   await expect(page.getByRole("alert")).toContainText("OpenAI rejected this key");
 });
@@ -189,4 +189,13 @@ test("command palette switches model and opens dialogs", async ({ page, isMobile
   await page.getByPlaceholder("Type a command, chat or model…").fill("models and keys");
   await page.keyboard.press("Enter");
   await expect(page.getByRole("dialog", { name: "Models and keys" })).toBeVisible();
+});
+
+test("web tools: the model reads a link", async ({ page }) => {
+  await connectMock(page);
+  await page.getByRole("button", { name: "Web" }).click();
+  await send(page, "read https://example.com");
+  await expect(page.getByText("Read Example Domain")).toBeVisible({ timeout: 20000 });
+  await expect(page.locator('[data-role="assistant"]').last()).toContainText("Page says:");
+  await expect(page.locator('[data-role="assistant"]').last()).toContainText("Example Domain");
 });

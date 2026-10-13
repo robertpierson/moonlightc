@@ -4,7 +4,7 @@ import { code } from "@streamdown/code";
 import { createMathPlugin } from "@streamdown/math";
 import { mermaid } from "@streamdown/mermaid";
 import type { UIMessage } from "ai";
-import { AppWindow, Check, Copy, FileText, GitBranch, Pencil, RotateCcw, Volume2, VolumeX } from "lucide-react";
+import { AppWindow, Check, Copy, FileText, GitBranch, Link2, Loader2, Search, Pencil, RotateCcw, Volume2, VolumeX } from "lucide-react";
 import { useState } from "react";
 import { Streamdown } from "streamdown";
 import { Button } from "@/components/ui/button";
@@ -47,6 +47,40 @@ function splitFiles(text: string) {
   const names = [...text.matchAll(FILE_BLOCK)].map((m) => m[1]);
   const blocks = (text.match(FILE_BLOCK) ?? []).join("");
   return { names, blocks, typed: text.replace(FILE_BLOCK, "") };
+}
+
+interface ToolPart {
+  type: "tool-web_search" | "tool-fetch_url";
+  state: string;
+  input?: { query?: string; url?: string };
+  output?: { results?: { title: string; url: string }[]; title?: string; url?: string };
+  errorText?: string;
+}
+
+function ToolCall({ part }: { part: ToolPart }) {
+  const search = part.type === "tool-web_search";
+  const label = search ? `Searched the web: ${part.input?.query ?? "…"}` : `Read ${part.output?.title ?? part.input?.url ?? "a page"}`;
+  if (part.state === "output-error") {
+    return <p className="mb-2 text-sm text-destructive">{search ? "Web search" : "Reading the page"} failed: {part.errorText}</p>;
+  }
+  const done = part.state === "output-available";
+  return (
+    <details className="mb-2 text-sm text-muted-foreground">
+      <summary className="cursor-pointer select-none">
+        {done ? (search ? <Search className="mr-1 inline size-3.5" /> : <Link2 className="mr-1 inline size-3.5" />) : <Loader2 className="mr-1 inline size-3.5 animate-spin" />}
+        {label}
+      </summary>
+      <ul className="mt-1 grid gap-1 border-l-2 pl-3">
+        {(search ? (part.output?.results ?? []) : part.output?.url ? [{ title: part.output.title ?? part.output.url, url: part.output.url }] : []).map((r, i) => (
+          <li key={i} className="truncate">
+            <a href={r.url} target="_blank" rel="noreferrer" className="text-primary underline-offset-4 hover:underline">
+              {r.title || r.url}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </details>
+  );
 }
 
 export function Message({
@@ -152,6 +186,8 @@ export function Message({
                   <summary className="cursor-pointer select-none">Thinking</summary>
                   <div className="mt-1 border-l-2 pl-3 whitespace-pre-wrap">{p.text}</div>
                 </details>
+              ) : p.type === "tool-web_search" || p.type === "tool-fetch_url" ? (
+                <ToolCall key={i} part={p as unknown as ToolPart} />
               ) : p.type === "text" ? (
                 <Streamdown key={i} plugins={plugins} isAnimating={streaming} className="min-w-0">
                   {p.text}

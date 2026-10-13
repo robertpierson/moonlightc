@@ -14,10 +14,26 @@ createServer(async (req, res) => {
     for await (const c of req) raw += c;
     const body = JSON.parse(raw);
     const last = body.messages.at(-1);
-    const prompt = typeof last.content === "string" ? last.content : last.content.map((p) => p.text ?? "").join("");
+    let prompt = typeof last.content === "string" ? last.content : last.content.map((p) => p.text ?? "").join("");
     const slow = prompt.includes("slow");
+    const toolMsg = body.messages.find((m) => m.role === "tool");
+    const url = prompt.match(/read (https:\/\/\S+)/)?.[1];
+    if (body.tools?.some((t) => t.function.name === "fetch_url") && url && !toolMsg) {
+      res.writeHead(200, { "content-type": "text/event-stream" });
+      const call = { index: 0, id: "call_1", type: "function", function: { name: "fetch_url", arguments: JSON.stringify({ url }) } };
+      res.write(`data: ${JSON.stringify({ id: "x", object: "chat.completion.chunk", created: 0, model: body.model, choices: [{ index: 0, delta: { role: "assistant", tool_calls: [call] }, finish_reason: null }] })}
+
+`);
+      res.write(`data: ${JSON.stringify({ id: "x", object: "chat.completion.chunk", created: 0, model: body.model, choices: [{ index: 0, delta: {}, finish_reason: "tool_calls" }] })}
+
+`);
+      return res.end(`data: [DONE]
+
+`);
+    }
     const sys = body.messages.find((m) => m.role === "system");
     const prefix = sys ? `[sys: ${sys.content}] ` : "";
+    if (toolMsg) prompt = "Page says: " + String(toolMsg.content).slice(0, 300);
     const words = slow ? Array.from({ length: 100 }, (_, i) => `word${i} `) : [prefix + "Echo", " from ", body.model, ": ", prompt];
     res.writeHead(200, { "content-type": "text/event-stream" });
     const chunk = (delta, finish = null) =>

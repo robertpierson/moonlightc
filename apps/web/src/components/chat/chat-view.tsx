@@ -3,14 +3,14 @@
 import { useChat } from "@ai-sdk/react";
 import { estimateCost } from "@moonc/core";
 import { DefaultChatTransport, type UIMessage } from "ai";
-import { ArrowUp, FileText, KeyRound, Paperclip, Square, X } from "lucide-react";
+import { ArrowUp, FileText, Globe, KeyRound, Paperclip, Square, X } from "lucide-react";
 import { toast } from "sonner";
 import type { Artifact } from "@/lib/artifacts";
 import { composeText, isSupported, MAX_TOTAL_BYTES, readAttachment, type Attachment } from "@/lib/attachments";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { findModel, getState, saveChat, type Chat, type Mode, type ModelRef } from "@/lib/store";
+import { findModel, getState, saveChat, update, useStore, type Chat, type Mode, type ModelRef } from "@/lib/store";
 import { Message, textOf, type Usage } from "./message";
 
 function costLabel(m: UIMessage): string | undefined {
@@ -57,6 +57,7 @@ export function ChatView({
         modelId: found.model.id,
         instructions: mode.instructions,
         temperature: mode.temperature,
+        tools: getState().webTools ? { search: getState().searchKey } : undefined,
       },
     };
   };
@@ -254,11 +255,29 @@ export function ChatView({
           <Button type="button" variant="ghost" size="icon-sm" aria-label="Attach files" onClick={() => fileInput.current?.click()}>
             <Paperclip />
           </Button>
+          <WebToggle />
           {modeSlot(messages.length > 0)}
         </div>
         </div>
       </form>
     </div>
+  );
+}
+
+function WebToggle() {
+  const on = useStore((s) => !!s.webTools);
+  const hasSearch = useStore((s) => !!s.searchKey);
+  return (
+    <Button
+      type="button"
+      variant={on ? "secondary" : "ghost"}
+      size="sm"
+      aria-pressed={on}
+      title={hasSearch ? "Let the AI search the web and read links" : "Let the AI read links (add a search key in Models and keys to search too)"}
+      onClick={() => update((s) => ({ ...s, webTools: !s.webTools }))}
+    >
+      <Globe /> Web
+    </Button>
   );
 }
 

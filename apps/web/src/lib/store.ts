@@ -81,6 +81,8 @@ interface State {
   favorites: string[]; // `${connectionId}:${modelId}`
   lastModel?: ModelRef;
   modes: Mode[]; // user-made; built-ins live in code
+  searchKey?: { provider: "tavily" | "exa" | "brave"; key: string };
+  webTools?: boolean;
 }
 
 const KEY = "moonc:v1";

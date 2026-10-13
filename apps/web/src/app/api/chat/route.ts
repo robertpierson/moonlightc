@@ -1,6 +1,7 @@
 import { getProvider, languageModel, ProviderError } from "@moonc/core";
-import { APICallError, convertToModelMessages, createUIMessageStreamResponse, streamText, toUIMessageStream, type UIMessage } from "ai";
+import { APICallError, convertToModelMessages, isStepCount, createUIMessageStreamResponse, streamText, toUIMessageStream, type UIMessage } from "ai";
 import { readConnection } from "@/lib/server-guard";
+import { buildTools, readSearchKey, type SearchKey } from "@/lib/tools";
 
 export const maxDuration = 300;
 
@@ -10,6 +11,7 @@ interface Body {
   modelId: string;
   instructions?: string;
   temperature?: number;
+  tools?: { search?: SearchKey };
 }
 
 // Thin streaming proxy: the key arrives with the request, is used for this one call, and is never stored or logged.
@@ -28,6 +30,7 @@ export async function POST(req: Request) {
       temperature: typeof body.temperature === "number" ? Math.min(2, Math.max(0, body.temperature)) : undefined,
       messages: await convertToModelMessages(body.messages),
       abortSignal: req.signal,
+      ...(body.tools ? { tools: buildTools(readSearchKey(body.tools.search)), stopWhen: isStepCount(6) } : {}),
     });
 
     return createUIMessageStreamResponse({

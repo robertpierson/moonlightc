@@ -20,3 +20,10 @@ describe("assertPublicURL", () => {
   it("allows public https", () => expect(() => assertPublicURL(c("https://api.example.com/v1"))).not.toThrow());
   it("ignores built-in providers", () => expect(() => assertPublicURL({ providerId: "openai", apiKey: "k" })).not.toThrow());
 });
+
+import { htmlToText } from "./tools";
+describe("htmlToText", () => {
+  it("drops scripts and tags, keeps text", () => {
+    expect(htmlToText("<head><title>t</title></head><p>Hello &amp; <b>bye</b></p><script>evil()</script>")).toBe("Hello & bye");
+  });
+});
