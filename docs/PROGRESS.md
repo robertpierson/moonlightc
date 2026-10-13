@@ -113,6 +113,3 @@ STATUS: BUILDING
 - 2026-10-13: Phases 6/7 unblocked parts done; 47 web e2e + 8 desktop e2e. Next: Phase 8 customization.
 - 2026-10-13: Phase 4 working on Windows; desktop e2e 8 tests; release workflow triggered.
 - 2026-10-13: Phase 3 done on branch. 38 e2e tests. Next: Phase 4 desktop (Electron) since Supabase still blocked.
-- 2026-10-13: Draft PR https://github.com/robertpierson/moonlightc/pull/1 carries Phase 2; CI green; 27 e2e tests.
-- 2026-10-13: Phase 2 chat core working locally on branch phase-2-chat (device-local storage until Supabase).
-- 2026-10-13: Phase 0 done. Next: Phase 2 provider layer (no DB needed) while Supabase is blocked; Phase 1 resumes when OWNER_TODO #1 is done.
