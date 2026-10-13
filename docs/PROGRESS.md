@@ -37,7 +37,7 @@ STATUS: BUILDING
 - [x] Voice typing (Whisper via OpenAI/Groq key, browser fallback); read aloud
 - [x] Code interpreter (Pyodide in browser worker)
 - [x] Deep Research mode
-- [ ] Azure OpenAI + AWS Bedrock providers
+- [x] Azure OpenAI + AWS Bedrock providers (unit-tested with mocks; real-key check needs owner keys)
 - [x] Projects (instructions + files) and opt-in Memory (save_memory tool, view/edit/delete/search) — on device
 - [x] DB schema + RLS ready (supabase/migrations, PGlite tests 7/7)
 - [ ] NEEDS SUPABASE: accounts sync, cloud key vault, cross-device chats, pgvector memory search
@@ -61,6 +61,7 @@ STATUS: BUILDING
 - [x] Windows installer built + silently installed + verified on this PC (server 200, foreign origin 403)
 - [x] Gate checks: one-click model download + local chat (e2e), Claude Code opens in terminal (e2e). Chat path is local-only (127.0.0.1 -> Ollama).
 - [x] CI release builds: Windows x64/arm64, macOS arm64/x64 (ad-hoc signed), Linux AppImage/deb/rpm x64/arm64 -> DRAFT release v0.1.0
+- [x] Detect LM Studio / llama.cpp servers (desktop)
 - [ ] Desktop SQLite + sync (needs Supabase)
 
 ## Phase 5 (remote control): BLOCKED on Supabase (pairing, relay, MFA). Nothing built yet.
