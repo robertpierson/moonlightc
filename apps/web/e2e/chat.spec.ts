@@ -116,3 +116,21 @@ test("private mode never saves, custom modes send their instructions", async ({ 
   await send(page, "ahoy");
   await expect(page.getByText("[sys: Talk like a pirate.] Echo from mock-fast: ahoy")).toBeVisible();
 });
+
+test("attach a text file and an image", async ({ page }) => {
+  await connectMock(page);
+  await page.locator('input[type="file"]').setInputFiles([
+    { name: "notes.txt", mimeType: "text/plain", buffer: Buffer.from("the secret word is mango") },
+    {
+      name: "dot.png",
+      mimeType: "image/png",
+      buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==", "base64"),
+    },
+  ]);
+  await expect(page.getByRole("list", { name: "Attachments" }).getByText("notes.txt")).toBeVisible();
+  await send(page, "what is the word?");
+  const user = page.locator('[data-role="user"]').last();
+  await expect(user.getByText("notes.txt")).toBeVisible();
+  await expect(user.getByRole("img", { name: "dot.png" })).toBeVisible();
+  await expect(page.locator('[data-role="assistant"]').last()).toContainText("mango");
+});

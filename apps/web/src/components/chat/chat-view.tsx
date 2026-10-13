@@ -3,7 +3,9 @@
 import { useChat } from "@ai-sdk/react";
 import { estimateCost } from "@moonc/core";
 import { DefaultChatTransport, type UIMessage } from "ai";
-import { ArrowUp, KeyRound, Square } from "lucide-react";
+import { ArrowUp, FileText, KeyRound, Paperclip, Square, X } from "lucide-react";
+import { toast } from "sonner";
+import { composeText, isSupported, MAX_TOTAL_BYTES, readAttachment, type Attachment } from "@/lib/attachments";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -86,19 +88,61 @@ export function ChatView({
 
   const canSend = !!findModel(model);
 
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [dragging, setDragging] = useState(false);
+  const fileInput = useRef<HTMLInputElement>(null);
+
+  const addFiles = async (files: FileList | File[]) => {
+    const list = Array.from(files);
+    const bad = list.filter((f) => !isSupported(f));
+    if (bad.length) toast.error(`Can't attach ${bad.map((f) => f.name).join(", ")}. Images, PDFs and text or code files work.`);
+    const read = await Promise.all(list.filter(isSupported).map(readAttachment));
+    setAttachments((prev) => {
+      const next = [...prev, ...read];
+      if (next.reduce((n, a) => n + a.size, 0) > MAX_TOTAL_BYTES) {
+        toast.error("Attachments are limited to 3 MB per message for now. Remove a file or use a smaller one.");
+        return prev;
+      }
+      return next;
+    });
+  };
+
   const submit = (e?: React.FormEvent) => {
     e?.preventDefault();
     const text = input.trim();
-    if (!text || streaming || !canSend) return;
+    if ((!text && attachments.length === 0) || streaming || !canSend) return;
     clearError();
-    sendMessage({ text }, request());
+    const files = attachments.flatMap((a) => (a.kind === "file" ? [a.part] : []));
+    sendMessage({ text: composeText(text, attachments), files }, request());
     setInput("");
+    setAttachments([]);
   };
 
   const lastAssistant = messages.findLastIndex((m) => m.role === "assistant");
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div
+      className="relative flex min-h-0 flex-1 flex-col"
+      onDragOver={(e) => {
+        if (!e.dataTransfer.types.includes("Files")) return;
+        e.preventDefault();
+        setDragging(true);
+      }}
+      onDragLeave={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragging(false);
+      }}
+      onDrop={(e) => {
+        if (!e.dataTransfer.files.length) return;
+        e.preventDefault();
+        setDragging(false);
+        addFiles(e.dataTransfer.files);
+      }}
+    >
+      {dragging && (
+        <div className="pointer-events-none absolute inset-2 z-10 flex items-center justify-center rounded-2xl border-2 border-dashed border-primary bg-background/80 text-lg font-medium">
+          Drop files to attach
+        </div>
+      )}
       <div className="min-h-0 flex-1 overflow-y-auto" aria-live="polite">
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6">
           {messages.length === 0 && (
@@ -121,7 +165,7 @@ export function ChatView({
               costLabel={m.role === "assistant" ? costLabel(m) : undefined}
               onEdit={(text) => {
                 clearError();
-                sendMessage({ text, messageId: m.id }, request());
+                sendMessage({ text, files: m.parts.filter((p) => p.type === "file"), messageId: m.id }, request());
               }}
               onRegenerate={() => {
                 clearError();
@@ -145,12 +189,36 @@ export function ChatView({
 
       <form onSubmit={submit} className="mx-auto w-full max-w-3xl px-4 pb-4">
         <div className="rounded-2xl border bg-card p-2 shadow-sm focus-within:ring-2 focus-within:ring-ring/40">
+        {attachments.length > 0 && (
+          <ul className="flex flex-wrap gap-2 p-1" aria-label="Attachments">
+            {attachments.map((a, i) => (
+              <li key={i} className="flex items-center gap-1.5 rounded-lg border bg-background py-1 pr-1 pl-2 text-xs">
+                {a.kind === "file" && a.part.mediaType.startsWith("image/") ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={a.part.url} alt="" className="size-6 rounded object-cover" />
+                ) : (
+                  <FileText className="size-4" />
+                )}
+                <span className="max-w-40 truncate">{a.kind === "file" ? a.part.filename : a.name}</span>
+                <Button type="button" variant="ghost" size="icon-xs" aria-label={`Remove ${a.kind === "file" ? a.part.filename : a.name}`} onClick={() => setAttachments((p) => p.filter((_, j) => j !== i))}>
+                  <X />
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
         <div className="flex items-end gap-2">
           <Textarea
             aria-label="Message"
             placeholder={canSend ? "Message MoonlightC…" : "Connect a model to start chatting"}
             value={input}
             onChange={(e) => setInput(e.target.value)}
+            onPaste={(e) => {
+              if (e.clipboardData.files.length) {
+                e.preventDefault();
+                addFiles(e.clipboardData.files);
+              }
+            }}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) submit(e);
             }}
@@ -162,12 +230,28 @@ export function ChatView({
               <Square className="fill-current" />
             </Button>
           ) : (
-            <Button type="submit" size="icon-lg" aria-label="Send message" disabled={!input.trim() || !canSend}>
+            <Button type="submit" size="icon-lg" aria-label="Send message" disabled={(!input.trim() && attachments.length === 0) || !canSend}>
               <ArrowUp />
             </Button>
           )}
         </div>
-        <div className="flex items-center">{modeSlot(messages.length > 0)}</div>
+        <div className="flex items-center gap-1">
+          <input
+            ref={fileInput}
+            type="file"
+            multiple
+            hidden
+            aria-label="Attach files"
+            onChange={(e) => {
+              if (e.target.files) addFiles(e.target.files);
+              e.target.value = "";
+            }}
+          />
+          <Button type="button" variant="ghost" size="icon-sm" aria-label="Attach files" onClick={() => fileInput.current?.click()}>
+            <Paperclip />
+          </Button>
+          {modeSlot(messages.length > 0)}
+        </div>
         </div>
       </form>
     </div>

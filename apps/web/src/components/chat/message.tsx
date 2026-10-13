@@ -4,7 +4,7 @@ import { code } from "@streamdown/code";
 import { createMathPlugin } from "@streamdown/math";
 import { mermaid } from "@streamdown/mermaid";
 import type { UIMessage } from "ai";
-import { Check, Copy, GitBranch, Pencil, RotateCcw, Volume2, VolumeX } from "lucide-react";
+import { Check, Copy, FileText, GitBranch, Pencil, RotateCcw, Volume2, VolumeX } from "lucide-react";
 import { useState } from "react";
 import { Streamdown } from "streamdown";
 import { Button } from "@/components/ui/button";
@@ -39,6 +39,15 @@ function Action({ label, onClick, children }: { label: string; onClick: () => vo
   );
 }
 
+const FILE_BLOCK = /<file name="([^"]*)">\n[\s\S]*?\n<\/file>\n\n/g;
+
+/** Split a user message into inlined text files and what the user actually typed. */
+function splitFiles(text: string) {
+  const names = [...text.matchAll(FILE_BLOCK)].map((m) => m[1]);
+  const blocks = (text.match(FILE_BLOCK) ?? []).join("");
+  return { names, blocks, typed: text.replace(FILE_BLOCK, "") };
+}
+
 export function Message({
   message,
   streaming,
@@ -62,6 +71,8 @@ export function Message({
   const [speaking, setSpeaking] = useState(false);
   const text = textOf(message);
   const isUser = message.role === "user";
+  const { names, blocks, typed } = isUser ? splitFiles(text) : { names: [], blocks: "", typed: text };
+  const fileParts = message.parts.filter((p) => p.type === "file");
 
   const copy = async () => {
     await navigator.clipboard.writeText(text);
@@ -94,7 +105,7 @@ export function Message({
             disabled={!draft.trim()}
             onClick={() => {
               setEditing(false);
-              onEdit(draft.trim());
+              onEdit(blocks + draft.trim());
             }}
           >
             Send
@@ -108,7 +119,28 @@ export function Message({
     <div className={`group flex flex-col gap-1 ${isUser ? "items-end" : "items-start"}`} data-role={message.role}>
       <div className={isUser ? "max-w-[85%] rounded-2xl bg-secondary px-4 py-2.5 whitespace-pre-wrap" : "w-full min-w-0"}>
         {isUser ? (
-          text
+          <>
+            {(fileParts.length > 0 || names.length > 0) && (
+              <div className="mb-2 flex flex-wrap gap-2">
+                {fileParts.map((f, i) =>
+                  f.mediaType.startsWith("image/") ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img key={i} src={f.url} alt={f.filename ?? "Attached image"} className="max-h-48 rounded-lg" />
+                  ) : (
+                    <span key={i} className="inline-flex items-center gap-1 rounded-md bg-background/60 px-2 py-1 text-xs">
+                      <FileText className="size-3.5" /> {f.filename ?? "PDF"}
+                    </span>
+                  ),
+                )}
+                {names.map((n, i) => (
+                  <span key={`t${i}`} className="inline-flex items-center gap-1 rounded-md bg-background/60 px-2 py-1 text-xs">
+                    <FileText className="size-3.5" /> {n}
+                  </span>
+                ))}
+              </div>
+            )}
+            {typed}
+          </>
         ) : (
           <>
             {message.parts.map((p, i) =>
@@ -135,7 +167,7 @@ export function Message({
             <Action
               label="Edit and resend"
               onClick={() => {
-                setDraft(text);
+                setDraft(typed);
                 setEditing(true);
               }}
             >
