@@ -1,7 +1,7 @@
 "use client";
 
 import type { UIMessage } from "ai";
-import { KeyRound, Menu } from "lucide-react";
+import { Columns2, KeyRound, Menu } from "lucide-react";
 import { useState, useSyncExternalStore } from "react";
 import { ThemeToggle } from "@/components/theme";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { getState, patchChat, saveChat, useStore, type Chat, type ModelRef } fro
 import type { Artifact } from "@/lib/artifacts";
 import { ArtifactPanel } from "./artifact-panel";
 import { ChatView } from "./chat-view";
+import { CompareView } from "./compare-view";
 import { KeysDialog } from "./keys-dialog";
 import { ModelPicker } from "./model-picker";
 import { ModeSelect, useModes } from "./modes";
@@ -36,6 +37,7 @@ function Inner() {
   const [draftModel, setDraftModel] = useState<ModelRef>();
   const [draftMode, setDraftMode] = useState("general");
   const [artifact, setArtifact] = useState<Artifact>();
+  const [comparing, setComparing] = useState(false);
   const modes = useModes();
 
   const chat = chats.find((c) => c.id === activeId) ?? draft;
@@ -51,6 +53,7 @@ function Inner() {
     setDraftModel(undefined);
     setDraftMode("general");
     setArtifact(undefined);
+    setComparing(false);
     setNavOpen(false);
   };
 
@@ -67,6 +70,7 @@ function Inner() {
       onSelect={(id) => {
         setActiveId(id);
         setArtifact(undefined);
+        setComparing(false);
         setNavOpen(false);
       }}
       onNew={() => start()}
@@ -89,7 +93,9 @@ function Inner() {
             <Button variant="ghost" size="icon" className="md:hidden" aria-label="Open chats" onClick={() => setNavOpen(true)}>
               <Menu />
             </Button>
-            {connections.length > 0 ? (
+            {comparing ? (
+              <span className="px-2 font-semibold">Compare models</span>
+            ) : connections.length > 0 ? (
               <ModelPicker
                 value={model}
                 onChange={(r) => (saved ? patchChat(chat.id, { model: r }) : setDraftModel(r))}
@@ -98,12 +104,20 @@ function Inner() {
               <span className="px-2 font-semibold">MoonlightC</span>
             )}
             <div className="ml-auto flex items-center">
+              {connections.length > 0 && (
+                <Button variant={comparing ? "secondary" : "ghost"} size="sm" aria-pressed={comparing} aria-label="Compare" onClick={() => setComparing((c) => !c)}>
+                  <Columns2 /> <span className="hidden sm:inline">Compare</span>
+                </Button>
+              )}
               <Button variant="ghost" size="icon" aria-label="Models and keys" onClick={() => setKeysOpen(true)}>
                 <KeyRound />
               </Button>
               <ThemeToggle />
             </div>
           </header>
+          {comparing ? (
+            <CompareView initial={model} />
+          ) : (
           <ChatView
             key={chat.id}
             chat={chat}
@@ -120,6 +134,7 @@ function Inner() {
             onOpenKeys={() => setKeysOpen(true)}
             onOpenArtifact={setArtifact}
           />
+          )}
         </main>
         {artifact && (
           <aside className="fixed inset-0 z-40 md:static md:z-auto md:w-[45%] md:shrink-0 md:border-l">

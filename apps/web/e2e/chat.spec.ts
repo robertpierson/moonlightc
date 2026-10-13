@@ -156,3 +156,16 @@ test("react artifacts render and are interactive", async ({ page }) => {
   await frame.getByRole("button", { name: "count 0" }).click({ timeout: 20000 });
   await expect(frame.getByRole("button", { name: "count 1" })).toBeVisible();
 });
+
+test("compare sends one prompt to several models", async ({ page }) => {
+  await connectMock(page);
+  await page.getByRole("button", { name: "Compare" }).click();
+  const cols = page.getByRole("region", { name: "Compare column" });
+  await expect(cols).toHaveCount(2);
+  await cols.nth(1).getByRole("combobox", { name: "Choose model" }).click();
+  await page.getByRole("option", { name: /mock-other/ }).click();
+  await page.getByLabel("Prompt for all models").fill("same question");
+  await page.getByRole("button", { name: "Send to all models" }).click();
+  await expect(cols.nth(0).getByText("Echo from mock-fast: same question")).toBeVisible();
+  await expect(cols.nth(1).getByText("Echo from mock-other: same question")).toBeVisible();
+});

@@ -63,8 +63,8 @@ export function Message({
   streaming: boolean;
   isLast: boolean;
   costLabel?: string;
-  onEdit: (text: string) => void;
-  onRegenerate: () => void;
+  onEdit?: (text: string) => void;
+  onRegenerate?: () => void;
   onBranch?: () => void;
   onOpenArtifact?: (a: Artifact) => void;
 }) {
@@ -108,7 +108,7 @@ export function Message({
             disabled={!draft.trim()}
             onClick={() => {
               setEditing(false);
-              onEdit(blocks + draft.trim());
+              onEdit?.(blocks + draft.trim());
             }}
           >
             Send
@@ -176,7 +176,7 @@ export function Message({
             {copied ? <Check /> : <Copy />}
           </Action>
           {isUser ? (
-            <Action
+            onEdit && <Action
               label="Edit and resend"
               onClick={() => {
                 setDraft(typed);
@@ -190,7 +190,7 @@ export function Message({
               <Action label={speaking ? "Stop reading" : "Read aloud"} onClick={speak}>
                 {speaking ? <VolumeX /> : <Volume2 />}
               </Action>
-              {isLast && (
+              {isLast && onRegenerate && (
                 <Action label="Regenerate" onClick={onRegenerate}>
                   <RotateCcw />
                 </Action>
