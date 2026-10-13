@@ -50,6 +50,23 @@ Report vulnerabilities privately through GitHub's "Report a vulnerability" butto
 - Mod code runs in an opaque-origin sandbox and communicates only through `postMessage`, with messages checked against
   the sandbox's window.
 
+## Files the AI can use (desktop)
+- Folders are added only through the native folder picker in the desktop main process (`files:grant`); the list lives in `userData/file-grants.json`, which the renderer can't write.
+- The local server re-reads the list on every call and resolves every path with the OS `realpath` (links and Windows short names included) before checking it is inside a shared folder. `..`, absolute paths elsewhere and links pointing out are refused (unit-tested).
+- Reading is allowed; writing always needs the person's "Allow once" in the chat. Every list/search/read/write is appended to `userData/file-audit.jsonl` and shown in Settings > Files.
+
+## Chrome extension (`apps/extension`)
+- The page bridge runs only on moonlightc.vercel.app (the published zip strips the localhost entries used by tests); the background script also checks the sender's origin against the same list.
+- Only tabs the person shares from the toolbar popup are usable; a banner (closed shadow root) shows on each, with Stop. Sharing ends after 15 idle minutes; Alt+Shift+M stops all.
+- Risky clicks and submits (buy, pay, send, delete, submit…) are confirmed in an extension popup window that web pages can't draw over or click; Deny is focused by default; no answer in 2 minutes means no.
+- Actions are logged in `chrome.storage.local` and shown in the popup.
+
+## Claude plugins
+- Fetched from public GitHub in the browser; nothing executes. Skills and commands are text for the model; agents become modes. Local (stdio) MCP servers from plugins go through the same desktop approval dialog as any local connector. Hooks, `bin/`, LSP and monitors are refused and listed before install.
+
+## Usage stats
+- `/api/track` keeps only event names and short `[\w.:/-]` values (unit-tested), plus country, device type, OS and browser. No message content, file names or keys. EU/EEA/UK/CH: nothing is recorded without consent. Anonymous events are limited to download counts.
+
 ## Not built yet (tracked in PROGRESS.md)
 - Remote control from other devices (SPEC §8): MFA, device pairing and approval, relay, remote screen/terminal/files.
 - Accounts, RLS and Supabase Vault (Phase 1).
