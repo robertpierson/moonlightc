@@ -6,7 +6,17 @@ import { DefaultChatTransport, lastAssistantMessageIsCompleteWithApprovalRespons
 import { ArrowUp, FileText, Wrench, KeyRound, Paperclip, Square, X } from "lucide-react";
 import { toast } from "sonner";
 import type { Artifact } from "@/lib/artifacts";
+import { callModTool, modToolName } from "@/lib/mods";
+import { fillCommand } from "@moonc/mods-sdk";
 import { runPython } from "@/lib/python";
+
+/** "/tldr some text" -> the installed mod command's prompt with the text filled in. */
+function expandCommand(text: string) {
+  const m = text.match(/^(\/[a-z0-9-]+)(?:\s+([\s\S]*))?$/);
+  if (!m) return text;
+  const cmd = (getState().mods ?? []).filter((x) => x.enabled).flatMap((x) => x.manifest.commands).find((c) => c.name === m[1]);
+  return cmd ? fillCommand(cmd.prompt, m[2] ?? "") : text;
+}
 import { composeText, isSupported, MAX_TOTAL_BYTES, readAttachment, type Attachment } from "@/lib/attachments";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -64,6 +74,9 @@ export function ChatView({
         temperature: mode.temperature,
         tools: getState().webTools || mode.research ? { search: getState().searchKey } : undefined,
         research: mode.research || undefined,
+        modTools: (getState().mods ?? [])
+          .filter((m) => m.enabled && m.code)
+          .flatMap((m) => m.manifest.tools.map((t) => ({ name: modToolName(m.manifest.id, t.name), description: `${t.description} (from the ${m.manifest.name} mod)`, inputSchema: t.inputSchema }))),
         mcp: (getState().mcpServers ?? []).filter((m) => m.enabled).map(({ id, name, kind, url, token, command, args, policy }) => ({ id, name, kind, url, token, command, args, policy })),
       },
     };
@@ -85,7 +98,20 @@ export function ChatView({
     transport,
     sendAutomaticallyWhen: (o) => lastAssistantMessageIsCompleteWithToolCalls(o) || lastAssistantMessageIsCompleteWithApprovalResponses(o),
     onToolCall: async ({ toolCall }) => {
-      if (toolCall.dynamic || toolCall.toolName !== "run_python") return;
+      if (toolCall.dynamic) return;
+      if (toolCall.toolName.startsWith("mod_")) {
+        const mod = (getState().mods ?? []).find((m) => m.manifest.tools.some((t) => modToolName(m.manifest.id, t.name) === toolCall.toolName));
+        const t = mod?.manifest.tools.find((x) => modToolName(mod.manifest.id, x.name) === toolCall.toolName);
+        try {
+          if (!mod || !t) throw new Error("That mod isn't installed anymore.");
+          const output = await callModTool(mod.manifest.id, t.name, toolCall.input);
+          addToolOutput({ tool: toolCall.toolName, toolCallId: toolCall.toolCallId, output: output ?? null } as never);
+        } catch (e) {
+          addToolOutput({ tool: toolCall.toolName, toolCallId: toolCall.toolCallId, output: { error: e instanceof Error ? e.message : String(e) } } as never);
+        }
+        return;
+      }
+      if (toolCall.toolName !== "run_python") return;
       const { output, error } = await runPython((toolCall.input as { code: string }).code);
       addToolOutput({ tool: "run_python", toolCallId: toolCall.toolCallId, output: error ? { output, error } : { output } });
     },
@@ -143,7 +169,7 @@ export function ChatView({
     if ((!text && attachments.length === 0) || streaming || !canSend) return;
     clearError();
     const files = attachments.flatMap((a) => (a.kind === "file" ? [a.part] : []));
-    sendMessage({ text: composeText(text, attachments), files }, request());
+    sendMessage({ text: composeText(expandCommand(text), attachments), files }, request());
     setInput("");
     setAttachments([]);
   };

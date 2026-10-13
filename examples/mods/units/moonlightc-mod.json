@@ -1,0 +1,29 @@
+{
+  "id": "units",
+  "name": "Unit Converter",
+  "version": "1.0.0",
+  "description": "Exact unit conversions for length, weight, temperature, volume and speed, plus a quick converter panel.",
+  "author": "MoonlightC",
+  "homepage": "https://github.com/robertpierson/moonlightc-mods/tree/main/mods/units",
+  "permissions": ["tools", "panel"],
+  "script": "mod.js",
+  "tools": [
+    {
+      "name": "convert_units",
+      "description": "Convert a number between units exactly. Supports length (mm, cm, m, km, in, ft, yd, mi), weight (mg, g, kg, oz, lb, st), temperature (c, f, k), volume (ml, l, tsp, tbsp, cup, floz, gal) and speed (kmh, mph, ms, knot).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "value": { "type": "number" },
+          "from": { "type": "string", "description": "Unit to convert from, e.g. km" },
+          "to": { "type": "string", "description": "Unit to convert to, e.g. mi" }
+        },
+        "required": ["value", "from", "to"]
+      }
+    }
+  ],
+  "panel": { "title": "Unit converter" },
+  "commands": [{ "name": "/tldr", "description": "Summarize text in three bullet points", "prompt": "Summarize this in exactly three short bullet points:\n\n{{input}}" }],
+  "personas": [{ "name": "Explain like I'm 5", "instructions": "Explain everything simply, with short sentences and everyday examples a five-year-old would understand." }],
+  "themes": [{ "name": "Aurora", "tokens": { "primary": "#2fbf9b", "accent": "#e6f7f2", "sidebar": "#f2faf7" } }]
+}

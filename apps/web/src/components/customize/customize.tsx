@@ -59,7 +59,7 @@ export function applyDistro(d: Distro) {
   toast.success(`${d.name} applied.`);
 }
 
-const SECTION_LABEL: Record<ViewId, string> = { chat: "Chat", studio: "Studio", connections: "Connections", models: "Local models", terminal: "Terminal", projects: "My AI Projects", customize: "Customize" };
+const SECTION_LABEL: Record<ViewId, string> = { chat: "Chat", studio: "Studio", connections: "Connections", models: "Local models", terminal: "Terminal", projects: "My AI Projects", mods: "Mods", customize: "Customize" };
 
 function download(name: string, text: string) {
   const a = document.createElement("a");
@@ -105,6 +105,7 @@ export function Customize({ availableViews }: { availableViews: ViewId[] }) {
   const custom = useStore((s) => s.customDistros) ?? [];
   const [saveName, setSaveName] = useState("");
   const [importText, setImportText] = useState("");
+  const modThemes = (useStore((s) => s.mods) ?? []).filter((m) => m.enabled).flatMap((m) => m.manifest.themes);
 
   const current = (): Distro => ({ id: `my-${Date.now().toString(36)}`, name: saveName.trim() || "My distro", description: "", look, onlyLocal: false });
 
@@ -209,6 +210,16 @@ export function Customize({ availableViews }: { availableViews: ViewId[] }) {
               </button>
             ))}
           </div>
+          {modThemes.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              <span className="self-center text-sm text-muted-foreground">From mods:</span>
+              {modThemes.map((t) => (
+                <Button key={t.name} variant="outline" size="sm" onClick={() => setLook({ theme: "moonlight", overrides: Object.fromEntries(Object.entries(t.tokens).filter(([k]) => (EDITABLE as readonly string[]).includes(k))) })}>
+                  {t.name}
+                </Button>
+              ))}
+            </div>
+          )}
           <details>
             <summary className="cursor-pointer text-sm text-muted-foreground">Theme editor</summary>
             <div className="mt-3 grid gap-4">

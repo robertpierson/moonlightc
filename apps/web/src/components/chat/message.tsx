@@ -89,7 +89,7 @@ interface ConnectorPart {
 }
 
 function ConnectorCall({ part, onApproval }: { part: ConnectorPart; onApproval?: (id: string, approved: boolean) => void }) {
-  const [server, tool] = part.toolName.includes("__") ? part.toolName.split("__") : ["", part.toolName];
+  const [server, tool] = part.toolName.includes("__") ? part.toolName.replace(/^mod_/, "").split("__") : ["", part.toolName];
   const label = `${tool.replace(/_/g, " ")}${server ? ` (${server.replace(/_/g, " ")})` : ""}`;
   if (part.state === "approval-requested" && !part.approval?.isAutomatic) {
     return (
@@ -258,6 +258,8 @@ export function Message({
                 <PythonCall key={i} part={p as unknown as PyPart} />
               ) : p.type === "tool-web_search" || p.type === "tool-fetch_url" ? (
                 <ToolCall key={i} part={p as unknown as ToolPart} />
+              ) : p.type.startsWith("tool-mod_") ? (
+                <ConnectorCall key={i} part={{ ...(p as unknown as ConnectorPart), toolName: p.type.slice(5) }} onApproval={onApproval} />
               ) : p.type === "dynamic-tool" ? (
                 <ConnectorCall key={i} part={p as unknown as ConnectorPart} onApproval={onApproval} />
               ) : p.type === "text" ? (

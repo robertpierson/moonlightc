@@ -13,17 +13,20 @@ createServer(async (req, res) => {
     let raw = "";
     for await (const c of req) raw += c;
     const body = JSON.parse(raw);
-    const last = body.messages.at(-1);
+    const last = body.messages.findLast((m) => m.role === "user");
     let prompt = typeof last.content === "string" ? last.content : last.content.map((p) => p.text ?? "").join("");
     const slow = prompt.includes("slow");
-    const toolMsg = body.messages.find((m) => m.role === "tool");
+    const toolMsg = body.messages.at(-1).role === "tool" ? body.messages.at(-1) : undefined;
     const url = prompt.match(/read (https:\/\/\S+)/)?.[1];
     const py = prompt.match(/python: (.+)/)?.[1];
     const add = prompt.match(/add (\d+) (\d+)/);
-    const addTool = body.tools?.find((t) => t.function.name.endsWith("__add"))?.function.name;
-    if (addTool && add && !toolMsg) {
+    const conv = prompt.match(/convert ([\d.]+) (\w+) to (\w+)/);
+    const convTool = body.tools?.find((t) => t.function.name.endsWith("__convert_units"))?.function.name;
+    const addTool = conv && convTool ? convTool : body.tools?.find((t) => t.function.name.endsWith("__add"))?.function.name;
+    const args = conv && convTool ? { value: Number(conv[1]), from: conv[2], to: conv[3] } : add && { a: Number(add[1]), b: Number(add[2]) };
+    if (addTool && args && !toolMsg) {
       res.writeHead(200, { "content-type": "text/event-stream" });
-      const call = { index: 0, id: "call_add", type: "function", function: { name: addTool, arguments: JSON.stringify({ a: Number(add[1]), b: Number(add[2]) }) } };
+      const call = { index: 0, id: "call_add", type: "function", function: { name: addTool, arguments: JSON.stringify(args) } };
       res.write(`data: ${JSON.stringify({ id: "x", object: "chat.completion.chunk", created: 0, model: body.model, choices: [{ index: 0, delta: { role: "assistant", tool_calls: [call] }, finish_reason: null }] })}
 
 `);

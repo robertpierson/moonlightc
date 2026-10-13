@@ -13,7 +13,11 @@ import { BUILT_IN_MODES, update, useStore, type Mode } from "@/lib/store";
 
 export function useModes() {
   const custom = useStore((s) => s.modes);
-  return [...BUILT_IN_MODES, ...custom];
+  const mods = useStore((s) => s.mods);
+  const fromMods: Mode[] = (mods ?? [])
+    .filter((m) => m.enabled)
+    .flatMap((m) => m.manifest.personas.map((p, i) => ({ id: `mod:${m.manifest.id}:${i}`, name: p.name, instructions: p.instructions, temperature: p.temperature, builtIn: true })));
+  return [...BUILT_IN_MODES, ...custom, ...fromMods];
 }
 
 const MANAGE = "__manage";

@@ -1,5 +1,5 @@
 import { getProvider, languageModel, ProviderError } from "@moonc/core";
-import { APICallError, convertToModelMessages, isStepCount, createUIMessageStreamResponse, streamText, toUIMessageStream, type UIMessage } from "ai";
+import { APICallError, convertToModelMessages, isStepCount, jsonSchema, tool, type ToolSet, createUIMessageStreamResponse, streamText, toUIMessageStream, type UIMessage } from "ai";
 import { readConnection } from "@/lib/server-guard";
 import { mcpTools, readServers } from "@/lib/mcp-server";
 import { buildTools, readSearchKey, type SearchKey } from "@/lib/tools";
@@ -15,6 +15,17 @@ interface Body {
   tools?: { search?: SearchKey };
   research?: boolean;
   mcp?: unknown;
+  modTools?: unknown;
+}
+
+function readModTools(v: unknown): ToolSet {
+  const out: ToolSet = {};
+  if (!Array.isArray(v)) return out;
+  for (const t of v.slice(0, 50)) {
+    if (!t || typeof t.name !== "string" || !/^mod_[a-z0-9_]+__[A-Za-z0-9_]{1,40}$/.test(t.name) || t.inputSchema?.type !== "object") continue;
+    out[t.name] = tool({ description: String(t.description ?? "").slice(0, 500), inputSchema: jsonSchema(t.inputSchema) });
+  }
+  return out;
 }
 
 // Thin streaming proxy: the key arrives with the request, is used for this one call, and is never stored or logged.
@@ -31,7 +42,7 @@ export async function POST(req: Request) {
     const servers = readServers(body.mcp);
     const mcp = servers.length ? await mcpTools(servers) : undefined;
     const builtIn = body.tools ? buildTools(readSearchKey(body.tools.search)) : {};
-    const tools = { ...builtIn, ...mcp?.tools };
+    const tools = { ...builtIn, ...mcp?.tools, ...readModTools(body.modTools) };
     const hasTools = Object.keys(tools).length > 0;
 
     const result = streamText({
