@@ -5,6 +5,7 @@ import { estimateCost } from "@moonc/core";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { ArrowUp, FileText, KeyRound, Paperclip, Square, X } from "lucide-react";
 import { toast } from "sonner";
+import type { Artifact } from "@/lib/artifacts";
 import { composeText, isSupported, MAX_TOTAL_BYTES, readAttachment, type Attachment } from "@/lib/attachments";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,7 @@ export function ChatView({
   modeSlot,
   onBranch,
   onOpenKeys,
+  onOpenArtifact,
 }: {
   chat: Chat;
   model?: ModelRef;
@@ -38,6 +40,7 @@ export function ChatView({
   modeSlot: (started: boolean) => React.ReactNode;
   onBranch: (messages: UIMessage[]) => void;
   onOpenKeys: () => void;
+  onOpenArtifact: (a: Artifact) => void;
 }) {
   const [input, setInput] = useState("");
   const bottom = useRef<HTMLDivElement>(null);
@@ -171,6 +174,7 @@ export function ChatView({
                 clearError();
                 regenerate(request());
               }}
+              onOpenArtifact={onOpenArtifact}
               onBranch={mode.private ? undefined : () => onBranch(messages.slice(0, i + 1))}
             />
           ))}

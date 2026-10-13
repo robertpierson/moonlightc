@@ -4,11 +4,12 @@ import { code } from "@streamdown/code";
 import { createMathPlugin } from "@streamdown/math";
 import { mermaid } from "@streamdown/mermaid";
 import type { UIMessage } from "ai";
-import { Check, Copy, FileText, GitBranch, Pencil, RotateCcw, Volume2, VolumeX } from "lucide-react";
+import { AppWindow, Check, Copy, FileText, GitBranch, Pencil, RotateCcw, Volume2, VolumeX } from "lucide-react";
 import { useState } from "react";
 import { Streamdown } from "streamdown";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { extractArtifacts, type Artifact } from "@/lib/artifacts";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import "katex/dist/katex.min.css";
 import "streamdown/styles.css";
@@ -56,6 +57,7 @@ export function Message({
   onEdit,
   onRegenerate,
   onBranch,
+  onOpenArtifact,
 }: {
   message: UIMessage;
   streaming: boolean;
@@ -64,6 +66,7 @@ export function Message({
   onEdit: (text: string) => void;
   onRegenerate: () => void;
   onBranch?: () => void;
+  onOpenArtifact?: (a: Artifact) => void;
 }) {
   const [copied, setCopied] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -158,6 +161,15 @@ export function Message({
           </>
         )}
       </div>
+      {!streaming && !isUser && onOpenArtifact && (
+        <div className="flex flex-wrap gap-2">
+          {extractArtifacts(text).map((a, i) => (
+            <Button key={i} variant="outline" size="sm" onClick={() => onOpenArtifact(a)}>
+              <AppWindow /> Open {a.title}
+            </Button>
+          ))}
+        </div>
+      )}
       {!streaming && text && (
         <div className="flex items-center gap-0.5 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
           <Action label={copied ? "Copied" : "Copy"} onClick={copy}>

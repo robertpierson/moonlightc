@@ -134,3 +134,25 @@ test("attach a text file and an image", async ({ page }) => {
   await expect(user.getByRole("img", { name: "dot.png" })).toBeVisible();
   await expect(page.locator('[data-role="assistant"]').last()).toContainText("mango");
 });
+
+test("artifacts open in a sandbox that can't read the app's keys", async ({ page }) => {
+  await connectMock(page);
+  const html = "<title>Probe</title><p id=out>…</p><script>let r;try{r=localStorage.getItem('moonc:v1')?'LEAK':'none'}catch(e){r='blocked'}document.getElementById('out').textContent=r</script>";
+  await send(page, "```html\n" + html + "\n```");
+  await page.getByRole("button", { name: "Open Probe" }).click();
+  const frame = page.frameLocator('iframe[title="Probe"]');
+  await expect(frame.locator("#out")).toHaveText("blocked");
+  await page.getByRole("tab", { name: "Code" }).click();
+  await expect(page.getByLabel("Artifact code")).toHaveValue(/<title>Probe<\/title>/);
+  await page.getByRole("button", { name: "Close artifact" }).click();
+  await expect(page.getByRole("region", { name: "Artifact" })).toHaveCount(0);
+});
+
+test("react artifacts render and are interactive", async ({ page }) => {
+  await connectMock(page);
+  await send(page, "```jsx\nimport { useState } from 'react';\nexport default function App() {\n  const [n, setN] = useState(0);\n  return <button onClick={() => setN(n + 1)}>count {n}</button>;\n}\n```");
+  await page.getByRole("button", { name: "Open React artifact 1" }).click();
+  const frame = page.frameLocator('iframe[title="React artifact 1"]');
+  await frame.getByRole("button", { name: "count 0" }).click({ timeout: 20000 });
+  await expect(frame.getByRole("button", { name: "count 1" })).toBeVisible();
+});

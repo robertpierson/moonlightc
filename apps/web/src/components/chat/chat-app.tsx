@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { getState, patchChat, saveChat, useStore, type Chat, type ModelRef } from "@/lib/store";
+import type { Artifact } from "@/lib/artifacts";
+import { ArtifactPanel } from "./artifact-panel";
 import { ChatView } from "./chat-view";
 import { KeysDialog } from "./keys-dialog";
 import { ModelPicker } from "./model-picker";
@@ -33,6 +35,7 @@ function Inner() {
   const [keysOpen, setKeysOpen] = useState(false);
   const [draftModel, setDraftModel] = useState<ModelRef>();
   const [draftMode, setDraftMode] = useState("general");
+  const [artifact, setArtifact] = useState<Artifact>();
   const modes = useModes();
 
   const chat = chats.find((c) => c.id === activeId) ?? draft;
@@ -47,6 +50,7 @@ function Inner() {
     setActiveId(undefined);
     setDraftModel(undefined);
     setDraftMode("general");
+    setArtifact(undefined);
     setNavOpen(false);
   };
 
@@ -62,6 +66,7 @@ function Inner() {
       activeId={saved ? chat.id : undefined}
       onSelect={(id) => {
         setActiveId(id);
+        setArtifact(undefined);
         setNavOpen(false);
       }}
       onNew={() => start()}
@@ -113,8 +118,14 @@ function Inner() {
             )}
             onBranch={branch}
             onOpenKeys={() => setKeysOpen(true)}
+            onOpenArtifact={setArtifact}
           />
         </main>
+        {artifact && (
+          <aside className="fixed inset-0 z-40 md:static md:z-auto md:w-[45%] md:shrink-0 md:border-l">
+            <ArtifactPanel key={artifact.code} artifact={artifact} onClose={() => setArtifact(undefined)} />
+          </aside>
+        )}
       </div>
       <KeysDialog open={keysOpen} onOpenChange={setKeysOpen} />
     </TooltipProvider>
