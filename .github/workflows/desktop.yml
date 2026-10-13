@@ -18,7 +18,7 @@ jobs:
           - os: windows-latest
             args: --win nsis --x64 --arm64
           - os: macos-latest
-            args: --mac dmg --universal
+            args: --mac dmg --arm64 --x64
           - os: ubuntu-latest
             args: --linux AppImage deb rpm --x64 -c.npmRebuild=true
           - os: ubuntu-24.04-arm
