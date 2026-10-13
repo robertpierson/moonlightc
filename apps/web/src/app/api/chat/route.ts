@@ -16,6 +16,7 @@ interface Body {
   research?: boolean;
   mcp?: unknown;
   modTools?: unknown;
+  memory?: boolean;
 }
 
 function readModTools(v: unknown): ToolSet {
@@ -42,7 +43,10 @@ export async function POST(req: Request) {
     const servers = readServers(body.mcp);
     const mcp = servers.length ? await mcpTools(servers) : undefined;
     const builtIn = body.tools ? buildTools(readSearchKey(body.tools.search)) : {};
-    const tools = { ...builtIn, ...mcp?.tools, ...readModTools(body.modTools) };
+    const memoryTool: ToolSet = body.memory
+      ? { save_memory: tool({ description: "Remember a lasting fact about the user for future chats.", inputSchema: jsonSchema({ type: "object", properties: { fact: { type: "string" } }, required: ["fact"] }) }) }
+      : {};
+    const tools = { ...builtIn, ...mcp?.tools, ...readModTools(body.modTools), ...memoryTool };
     const hasTools = Object.keys(tools).length > 0;
 
     const result = streamText({

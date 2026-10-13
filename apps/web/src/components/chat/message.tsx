@@ -1,7 +1,7 @@
 "use client";
 
 import type { UIMessage } from "ai";
-import { AppWindow, Check, Copy, FileText, GitBranch, Link2, Loader2, Plug, Search, Terminal, Pencil, RotateCcw, Volume2, VolumeX } from "lucide-react";
+import { AppWindow, Brain, Check, Copy, FileText, GitBranch, Link2, Loader2, Plug, Search, Terminal, Pencil, RotateCcw, Volume2, VolumeX } from "lucide-react";
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
@@ -258,6 +258,10 @@ export function Message({
                 <PythonCall key={i} part={p as unknown as PyPart} />
               ) : p.type === "tool-web_search" || p.type === "tool-fetch_url" ? (
                 <ToolCall key={i} part={p as unknown as ToolPart} />
+              ) : p.type === "tool-save_memory" ? (
+                <p key={i} className="mb-2 flex items-center gap-1 text-sm text-muted-foreground">
+                  <Brain className="size-3.5" /> Remembered: {String((p as unknown as { input?: { fact?: string } }).input?.fact ?? "")}
+                </p>
               ) : p.type.startsWith("tool-mod_") ? (
                 <ConnectorCall key={i} part={{ ...(p as unknown as ConnectorPart), toolName: p.type.slice(5) }} onApproval={onApproval} />
               ) : p.type === "dynamic-tool" ? (

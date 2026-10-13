@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { deleteChat, patchChat, useStore, type Chat } from "@/lib/store";
 import { InstallApp } from "@/components/site/install-app";
 import { textOf } from "./message";
@@ -19,8 +20,22 @@ function exportMarkdown(c: Chat) {
   URL.revokeObjectURL(a.href);
 }
 
-export function Sidebar({ activeId, onSelect, onNew }: { activeId?: string; onSelect: (id: string) => void; onNew: () => void }) {
-  const chats = useStore((s) => s.chats);
+export function Sidebar({
+  activeId,
+  onSelect,
+  onNew,
+  projectFilter,
+  onProjectFilter,
+}: {
+  activeId?: string;
+  onSelect: (id: string) => void;
+  onNew: () => void;
+  projectFilter?: string;
+  onProjectFilter: (id?: string) => void;
+}) {
+  const allChats = useStore((s) => s.chats);
+  const projects = useStore((s) => s.projects) ?? [];
+  const chats = useMemo(() => (projectFilter ? allChats.filter((c) => c.projectId === projectFilter) : allChats), [allChats, projectFilter]);
   const [q, setQ] = useState("");
   const [renaming, setRenaming] = useState<string>();
 
@@ -36,6 +51,21 @@ export function Sidebar({ activeId, onSelect, onNew }: { activeId?: string; onSe
       <Button onClick={onNew} className="justify-start">
         <Plus /> New chat
       </Button>
+      {projects.length > 0 && (
+        <Select value={projectFilter ?? "all"} onValueChange={(v) => onProjectFilter(v === "all" ? undefined : v)}>
+          <SelectTrigger aria-label="Show chats from" className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All chats</SelectItem>
+            {projects.map((p) => (
+              <SelectItem key={p.id} value={p.id}>
+                {p.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
       <div className="relative">
         <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input aria-label="Search chats" placeholder="Search chats" value={q} onChange={(e) => setQ(e.target.value)} className="pl-8" />

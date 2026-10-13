@@ -1,14 +1,15 @@
 "use client";
 
-import { Cpu, FolderGit2, MessageSquare, Palette, Plug, Puzzle, SlidersHorizontal, SquareTerminal } from "lucide-react";
+import { Brain, Cpu, FolderGit2, MessageSquare, Palette, Plug, Puzzle, SlidersHorizontal, SquareTerminal } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Switch } from "@/components/ui/switch";
 import { desktop } from "@/lib/desktop";
 
-export type View = "chat" | "studio" | "connections" | "models" | "terminal" | "projects" | "mods" | "customize";
+export type View = "chat" | "library" | "studio" | "connections" | "models" | "terminal" | "projects" | "mods" | "customize";
 
 const ITEMS: { id: View; label: string; icon: React.ReactNode; desktopOnly?: boolean }[] = [
   { id: "chat", label: "Chat", icon: <MessageSquare /> },
+  { id: "library", label: "Projects & memory", icon: <Brain /> },
   { id: "studio", label: "Studio", icon: <Palette /> },
   { id: "connections", label: "Connections", icon: <Plug /> },
   { id: "models", label: "Local models", icon: <Cpu />, desktopOnly: true },

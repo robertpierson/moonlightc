@@ -17,6 +17,8 @@ import { decodeDistro, DISTROS, matchShortcut, type Distro } from "@/lib/customi
 import { Connections } from "@/components/connections/connections";
 import { ModHost } from "@/components/mods/mod-host";
 import { ModsView } from "@/components/mods/mods-view";
+import { Library } from "@/components/library/library";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Studio } from "@/components/studio/studio";
 import type { FileUIPart } from "ai";
 import { Projects } from "@/components/desktop/projects";
@@ -29,7 +31,7 @@ import { ModeSelect, ModesDialog, useModes } from "./modes";
 import { CommandPalette } from "./command-palette";
 import { Sidebar } from "./sidebar";
 
-const VIEW_TITLES: Record<View, string> = { chat: "Chat", studio: "Studio", connections: "Connections", models: "Local models", terminal: "Terminal", projects: "My AI Projects", mods: "Mods", customize: "Customize" };
+const VIEW_TITLES: Record<View, string> = { chat: "Chat", library: "Projects & memory", studio: "Studio", connections: "Connections", models: "Local models", terminal: "Terminal", projects: "My AI Projects", mods: "Mods", customize: "Customize" };
 
 function distroDefaultMode() {
   const s = getState();
@@ -73,6 +75,9 @@ function Inner() {
   const [termOpened, setTermOpened] = useState(false);
   const [launch, setLaunch] = useState<LaunchRequest>();
   const [pendingFiles, setPendingFiles] = useState<FileUIPart[]>();
+  const [draftProject, setDraftProject] = useState<string>();
+  const [projectFilter, setProjectFilter] = useState<string>();
+  const projects = useStore((s) => s.projects) ?? [];
   const [quick] = useState(() => new URLSearchParams(location.search).has("quick"));
   const go = (v: View) => {
     setView(v);
@@ -94,6 +99,7 @@ function Inner() {
     setActiveId(undefined);
     setDraftModel(undefined);
     setDraftMode(distroDefaultMode() ?? "general");
+    setDraftProject(undefined);
     setArtifact(undefined);
     setComparing(false);
     setView("chat");
@@ -122,6 +128,8 @@ function Inner() {
     <div className="flex h-full min-h-0 flex-col">
       <AppNav view={view} onChange={go} hidden={look.hidden} />
     <Sidebar
+      projectFilter={projectFilter}
+      onProjectFilter={setProjectFilter}
       activeId={saved ? chat.id : undefined}
       onSelect={(id) => {
         setActiveId(id);
@@ -174,6 +182,15 @@ function Inner() {
           {view === "connections" && <Connections />}
           {view === "customize" && <Customize availableViews={availableViews()} />}
           {view === "mods" && <ModsView />}
+          {view === "library" && (
+            <Library
+              onOpenProject={(id) => {
+                start();
+                setDraftProject(id);
+                setProjectFilter(id);
+              }}
+            />
+          )}
           {view === "studio" && (
             <Studio
               onOpenKeys={() => setKeysOpen(true)}
@@ -237,17 +254,42 @@ function Inner() {
             model={model}
             mode={mode}
             modeSlot={(started) => (
+              <>
+              {projects.length > 0 && (
+                <Select
+                  value={(saved ? chat.projectId : (draftProject ?? projectFilter)) ?? "none"}
+                  onValueChange={(v) => {
+                    const id = v === "none" ? undefined : v;
+                    if (saved) patchChat(chat.id, { projectId: id });
+                    else setDraftProject(id);
+                  }}
+                >
+                  <SelectTrigger size="sm" aria-label="Project" className="h-8 w-auto max-w-40 gap-1 border-0 bg-transparent shadow-none dark:bg-transparent">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No project</SelectItem>
+                    {projects.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
               <ModeSelect
                 value={mode.id}
                 lockPrivate={saved || started}
                 onChange={(id) => (saved ? patchChat(chat.id, { modeId: id }) : setDraftMode(id))}
               />
+              </>
             )}
             onBranch={branch}
             onOpenKeys={() => setKeysOpen(true)}
             onOpenArtifact={setArtifact}
             initialFiles={pendingFiles}
             bigInput={look.bigInput}
+            projectId={saved ? chat.projectId : (draftProject ?? projectFilter)}
           />
           )}
           </>)}

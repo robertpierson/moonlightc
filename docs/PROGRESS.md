@@ -38,7 +38,9 @@ STATUS: BUILDING
 - [x] Code interpreter (Pyodide in browser worker)
 - [x] Deep Research mode
 - [ ] Azure OpenAI + AWS Bedrock providers
-- [ ] NEEDS SUPABASE: accounts sync, key vault (cloud), projects, memory (pgvector), cross-device chats
+- [x] Projects (instructions + files) and opt-in Memory (save_memory tool, view/edit/delete/search) — on device
+- [x] DB schema + RLS ready (supabase/migrations, PGlite tests 7/7)
+- [ ] NEEDS SUPABASE: accounts sync, cloud key vault, cross-device chats, pgvector memory search
 
 ## Phase 3 (on branch phase-2-chat)
 - [x] Home: WebGL moon hero (phase follows scroll), provider marquee, feature story (built features only), privacy/open source, download CTA, FAQ, footer
@@ -95,6 +97,7 @@ STATUS: BUILDING
 - No Docker, so no local Supabase stack; test against the hosted project.
 
 ## Notes (last 10)
+- 2026-10-13: Projects & memory on device; 74 web e2e; DB migration + offline RLS tests ready for when Supabase exists.
 - 2026-10-13: Phase 8 done on branch; 56 web e2e. Mod registry repo created (public, MIT).
 - 2026-10-13: Phases 6/7 unblocked parts done; 47 web e2e + 8 desktop e2e. Next: Phase 8 customization.
 - 2026-10-13: Phase 4 working on Windows; desktop e2e 8 tests; release workflow triggered.

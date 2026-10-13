@@ -6,6 +6,8 @@ import { DefaultChatTransport, lastAssistantMessageIsCompleteWithApprovalRespons
 import { ArrowUp, FileText, Wrench, KeyRound, Paperclip, Square, X } from "lucide-react";
 import { toast } from "sonner";
 import type { Artifact } from "@/lib/artifacts";
+import { buildInstructions, relevantMemories } from "@/lib/context";
+import { addMemory } from "@/components/library/library";
 import { callModTool, modToolName } from "@/lib/mods";
 import { fillCommand } from "@moonc/mods-sdk";
 import { runPython } from "@/lib/python";
@@ -47,6 +49,7 @@ export function ChatView({
   onOpenArtifact,
   initialFiles,
   bigInput,
+  projectId,
 }: {
   chat: Chat;
   model?: ModelRef;
@@ -57,11 +60,18 @@ export function ChatView({
   onOpenArtifact: (a: Artifact) => void;
   initialFiles?: FileUIPart[];
   bigInput?: boolean;
+  projectId?: string;
 }) {
   const [input, setInput] = useState("");
   const hasSearchKey = useStore((s) => !!s.searchKey);
   const bottom = useRef<HTMLDivElement>(null);
   // The key and model travel with each request, so switching models mid-chat just works.
+  const messagesRef = useRef<UIMessage[]>(chat.messages);
+  const lastUserText = () => {
+    const m = [...messagesRef.current].reverse().find((x) => x.role === "user");
+    return m ? textOf(m) : input;
+  };
+
   const request = () => {
     const found = findModel(model);
     if (!found) return {};
@@ -70,7 +80,13 @@ export function ChatView({
       body: {
         connection: { apiKey, providerId, baseURL },
         modelId: found.model.id,
-        instructions: mode.instructions,
+        instructions: buildInstructions({
+          mode: mode.instructions,
+          project: getState().projects?.find((p) => p.id === projectId),
+          memoryOn: !!getState().memory?.enabled && !mode.private,
+          memories: relevantMemories(getState().memory?.items ?? [], lastUserText(), projectId),
+        }),
+        memory: (!!getState().memory?.enabled && !mode.private) || undefined,
         temperature: mode.temperature,
         tools: getState().webTools || mode.research ? { search: getState().searchKey } : undefined,
         research: mode.research || undefined,
@@ -92,6 +108,7 @@ export function ChatView({
     () => new DefaultChatTransport({ api: "/api/chat", body: () => latest.current().body ?? {} }),
   );
 
+
   const { messages, sendMessage, status, stop, regenerate, error, clearError, addToolOutput, addToolApprovalResponse } = useChat({
     id: chat.id,
     messages: chat.messages,
@@ -99,6 +116,12 @@ export function ChatView({
     sendAutomaticallyWhen: (o) => lastAssistantMessageIsCompleteWithToolCalls(o) || lastAssistantMessageIsCompleteWithApprovalResponses(o),
     onToolCall: async ({ toolCall }) => {
       if (toolCall.dynamic) return;
+      if (toolCall.toolName === "save_memory") {
+        const fact = String((toolCall.input as { fact?: string }).fact ?? "").slice(0, 500).trim();
+        if (fact) addMemory(fact, projectId);
+        addToolOutput({ tool: "save_memory", toolCallId: toolCall.toolCallId, output: { saved: !!fact } } as never);
+        return;
+      }
       if (toolCall.toolName.startsWith("mod_")) {
         const mod = (getState().mods ?? []).find((m) => m.manifest.tools.some((t) => modToolName(m.manifest.id, t.name) === toolCall.toolName));
         const t = mod?.manifest.tools.find((x) => modToolName(mod.manifest.id, x.name) === toolCall.toolName);
@@ -118,6 +141,9 @@ export function ChatView({
   });
 
   const streaming = status === "streaming" || status === "submitted";
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
 
   // Persist whenever a turn settles (including after Stop, which keeps the partial answer).
   useEffect(() => {
@@ -129,6 +155,7 @@ export function ChatView({
       title: saved.title || (first ? textOf(first).slice(0, 60) : "New chat"),
       model,
       modeId: mode.id,
+      projectId,
       messages,
       updatedAt: Date.now(),
     });

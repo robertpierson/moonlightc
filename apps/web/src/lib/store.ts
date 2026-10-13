@@ -92,11 +92,27 @@ export interface McpServer {
   policy: Record<string, "ask" | "always" | "never">;
 }
 
+export interface Project {
+  id: string;
+  name: string;
+  instructions: string;
+  files: { name: string; text: string }[];
+  createdAt: number;
+}
+
+export interface MemoryItem {
+  id: string;
+  text: string;
+  projectId?: string;
+  createdAt: number;
+}
+
 export interface Chat {
   id: string;
   title: string;
   model?: ModelRef;
   modeId?: string;
+  projectId?: string;
   messages: UIMessage[];
   pinned?: boolean;
   updatedAt: number;
@@ -115,6 +131,8 @@ interface State {
   distroId?: string;
   customDistros?: Distro[];
   mods?: InstalledMod[];
+  projects?: Project[];
+  memory?: { enabled: boolean; items: MemoryItem[] };
 }
 
 const KEY = "moonc:v1";

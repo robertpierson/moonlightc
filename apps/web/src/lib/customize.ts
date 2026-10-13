@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const VIEWS = ["chat", "studio", "connections", "models", "terminal", "projects", "mods", "customize"] as const;
+export const VIEWS = ["chat", "library", "studio", "connections", "models", "terminal", "projects", "mods", "customize"] as const;
 export type ViewId = (typeof VIEWS)[number];
 
 export const THEMES = [

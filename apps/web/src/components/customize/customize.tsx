@@ -59,7 +59,7 @@ export function applyDistro(d: Distro) {
   toast.success(`${d.name} applied.`);
 }
 
-const SECTION_LABEL: Record<ViewId, string> = { chat: "Chat", studio: "Studio", connections: "Connections", models: "Local models", terminal: "Terminal", projects: "My AI Projects", mods: "Mods", customize: "Customize" };
+const SECTION_LABEL: Record<ViewId, string> = { chat: "Chat", library: "Projects & memory", studio: "Studio", connections: "Connections", models: "Local models", terminal: "Terminal", projects: "My AI Projects", mods: "Mods", customize: "Customize" };
 
 function download(name: string, text: string) {
   const a = document.createElement("a");
