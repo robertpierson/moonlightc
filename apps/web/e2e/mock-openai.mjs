@@ -87,6 +87,14 @@ createServer(async (req, res) => {
 
 `);
     }
+    const skillName = prompt.match(/use skill (\S+)/)?.[1];
+    if (skillName && body.tools?.some((t) => t.function.name === "load_skill") && !toolMsg) {
+      res.writeHead(200, { "content-type": "text/event-stream" });
+      const call = { index: 0, id: "call_skill", type: "function", function: { name: "load_skill", arguments: JSON.stringify({ name: skillName }) } };
+      res.write(`data: ${JSON.stringify({ id: "x", object: "chat.completion.chunk", created: 0, model: body.model, choices: [{ index: 0, delta: { role: "assistant", tool_calls: [call] }, finish_reason: null }] })}\n\n`);
+      res.write(`data: ${JSON.stringify({ id: "x", object: "chat.completion.chunk", created: 0, model: body.model, choices: [{ index: 0, delta: {}, finish_reason: "tool_calls" }] })}\n\n`);
+      return res.end("data: [DONE]\n\n");
+    }
     const rememberFact = prompt.match(/remember that (.+)/)?.[1];
     if (rememberFact && body.tools?.some((t) => t.function.name === "save_memory") && !toolMsg) {
       res.writeHead(200, { "content-type": "text/event-stream" });

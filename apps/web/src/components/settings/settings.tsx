@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { ModelPicker } from "@/components/chat/model-picker";
 import { KeysPanel } from "@/components/chat/keys-dialog";
 import { ModesManager } from "@/components/chat/modes";
+import { ClaudePlugins } from "./claude-plugins";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
@@ -72,7 +73,12 @@ export function Settings({ section, onSection, availableViews, onClose, onChat }
           </Page>
         )}
         {section === "connectors" && <Connections />}
-        {section === "plugins" && <ModsView />}
+        {section === "plugins" && (
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <ClaudePlugins />
+            <ModsView />
+          </div>
+        )}
         {section === "local" && <LocalModels onChat={onChat} />}
         {section === "appearance" && <Customize availableViews={availableViews} />}
         {section === "privacy" && <Privacy />}

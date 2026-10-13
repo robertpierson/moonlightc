@@ -2,6 +2,7 @@
 
 import type { Connection, ModelInfo } from "@moonc/core";
 import type { AutoPicks } from "./auto-model";
+import type { ClaudePlugin } from "./claude-plugins";
 import type { UIMessage } from "ai";
 import { useSyncExternalStore } from "react";
 import type { Distro, Look } from "./customize";
@@ -158,6 +159,8 @@ interface State {
   pinnedModes?: string[];
   /** Models assigned to each kind of task, used when the model picker is set to Auto. */
   autoPicks?: AutoPicks;
+  /** Claude Code plugins installed from GitHub (skills, commands, agents, MCP servers). */
+  plugins?: ClaudePlugin[];
   subscriptions?: { items: Subscription[]; remindDays: number; reminded?: Record<string, number>; scannedAt?: number };
   memory?: { enabled: boolean; items: MemoryItem[] };
 }

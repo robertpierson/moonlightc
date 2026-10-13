@@ -19,6 +19,7 @@ interface Body {
   mcp?: unknown;
   modTools?: unknown;
   memory?: boolean;
+  skills?: boolean;
   computer?: boolean;
   google?: { accessToken?: string };
   accounts?: { spotify?: string; slack?: string; discord?: string; x?: string };
@@ -104,6 +105,10 @@ export async function POST(req: Request) {
     const memoryTool: ToolSet = body.memory
       ? { save_memory: tool({ description: "Remember a lasting fact about the user for future chats.", inputSchema: jsonSchema({ type: "object", properties: { fact: { type: "string" } }, required: ["fact"] }) }) }
       : {};
+    // Plugin skills live on the device; the model asks for one and the browser hands it over.
+    const skillTool: ToolSet = body.skills
+      ? { load_skill: tool({ description: "Load the full instructions of one of your skills (name as plugin:skill).", inputSchema: jsonSchema({ type: "object", properties: { name: { type: "string" } }, required: ["name"] }) }) }
+      : {};
     const desktopComputer = body.computer && process.env.MOONC_DESKTOP === "1";
     // Screenshots must reach the model as images; OpenAI-compatible APIs only accept text in tool results.
     const visionTools = ["anthropic", "openai", "google", "azure", "bedrock"].includes(getProvider(c.providerId).kind) || process.env.MOONC_E2E_AUTO_APPROVE === "1";
@@ -114,7 +119,7 @@ export async function POST(req: Request) {
     const acc = body.accounts ?? {};
     const slack = typeof acc.slack === "string" ? slackTools(acc.slack) : undefined;
     const accountTools = { ...(typeof acc.spotify === "string" ? spotifyTools(acc.spotify) : {}), ...slack?.tools, ...(typeof acc.discord === "string" ? discordTools(acc.discord) : {}), ...(typeof acc.x === "string" ? xTools(acc.x) : {}) };
-    const tools = { ...builtIn, ...mcp?.tools, ...google?.tools, ...accountTools, ...readModTools(body.modTools), ...memoryTool, ...(desktopComputer ? { computer: computerTool } : {}), ...(body.code ? codeTools : {}) };
+    const tools = { ...builtIn, ...mcp?.tools, ...google?.tools, ...accountTools, ...readModTools(body.modTools), ...memoryTool, ...skillTool, ...(desktopComputer ? { computer: computerTool } : {}), ...(body.code ? codeTools : {}) };
     const hasTools = Object.keys(tools).length > 0;
 
     const result = streamText({

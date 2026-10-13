@@ -18,7 +18,7 @@ import { XCard } from "./x";
 
 const GITHUB_MCP = "https://api.githubcopilot.com/mcp/";
 
-async function fetchTools(s: Partial<McpServer>) {
+export async function fetchTools(s: Partial<McpServer>) {
   const res = await fetch("/api/mcp", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(s) });
   const data = (await res.json().catch(() => ({}))) as { tools?: McpServer["tools"]; error?: string; needsAuth?: boolean };
   if (data.needsAuth) throw new NeedsSignIn();
@@ -26,9 +26,9 @@ async function fetchTools(s: Partial<McpServer>) {
   return data.tools;
 }
 
-class NeedsSignIn extends Error {}
+export class NeedsSignIn extends Error {}
 
-const save = (s: McpServer) => update((st) => ({ ...st, mcpServers: [...(st.mcpServers ?? []).filter((x) => x.id !== s.id), s] }));
+export const save = (s: McpServer) => update((st) => ({ ...st, mcpServers: [...(st.mcpServers ?? []).filter((x) => x.id !== s.id), s] }));
 const patch = (id: string, p: Partial<McpServer>) => update((st) => ({ ...st, mcpServers: (st.mcpServers ?? []).map((x) => (x.id === id ? { ...x, ...p } : x)) }));
 
 function AddConnector({ preset, onDone }: { preset?: "github"; onDone: () => void }) {

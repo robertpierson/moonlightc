@@ -48,7 +48,12 @@ export function useModes() {
         builtIn: true,
       })),
     );
-  return [...BUILT_IN_MODES, ...custom, ...fromMods];
+  // Agents from Claude plugins become modes: their instructions are the agent's prompt.
+  const plugins = useStore((s) => s.plugins);
+  const fromPlugins: Mode[] = (plugins ?? [])
+    .filter((p) => p.enabled)
+    .flatMap((p) => p.agents.map((a) => ({ id: `plugin:${p.id}:${a.name}`, name: a.name, instructions: a.body, builtIn: true })));
+  return [...BUILT_IN_MODES, ...custom, ...fromMods, ...fromPlugins];
 }
 
 /** The mode menu: the main modes first, everything else under "More options". */

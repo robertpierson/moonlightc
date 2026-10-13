@@ -120,7 +120,8 @@ function Inner() {
   };
   const modes = useModes();
 
-  const chat = chats.find((c) => c.id === activeId) ?? draft;
+  // A new chat is saved after its first message; read the saved copy from then on so mode and model changes stick.
+  const chat = chats.find((c) => c.id === (activeId ?? draft.id)) ?? draft;
   const saved = chats.some((c) => c.id === chat.id);
   const autoReady = useStore((s) => !!findModel(s.autoPicks?.everyday));
   const valid = (r?: ModelRef) => (isAuto(r) ? autoReady : !!r && connections.some((c) => c.id === r.connectionId && c.models.some((m) => m.id === r.modelId)));

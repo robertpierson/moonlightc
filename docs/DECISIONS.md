@@ -50,3 +50,8 @@ Rollback: Vercel "Instant Rollback" to the previous production deployment.
 - What: removed Compare; Connectors, Plugins & mods, Local models, Appearance, Modes, keys and privacy moved into one Claude-style Settings screen; Chat/Code switch at the top of the sidebar; mode menu shows pinned modes (General, Deep Research, Private) with the rest under "More options"; "Auto" model routes each message by task type to models the user assigns in Settings.
 - Why: owner asked for it (fewer top-level items, coding as its own tab, settings like Claude's).
 - Alternatives: an AI classifier for Auto (costs a model call per message; keyword rules first, upgrade if picks are wrong); keeping Compare behind a setting (owner said not needed).
+
+## 2026-10-13 Claude plugins run inside MoonlightC (partial support, shown honestly)
+- What: install Claude Code plugins from GitHub in the browser (GitHub tree API + raw files, the visitor's own rate limit). Skills: listed in the instructions, full text loaded on demand through a browser-side load_skill tool. Commands: slash commands with $ARGUMENTS/$1. Agents: modes. MCP: remote servers connect like other connectors; stdio only in the desktop app with its approval prompt. Hooks, bin/, LSP, monitors and shell snippets are listed as not supported before install.
+- Why: owner wants "the same plugins as Claude". These parts map cleanly onto a chat app; the rest needs Claude Code's local runtime.
+- Alternatives: server-side fetching (shared Vercel IP would hit GitHub's anonymous limit fast); running hooks/scripts (unsafe in a browser, needs a sandbox).
