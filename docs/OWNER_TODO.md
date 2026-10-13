@@ -60,6 +60,12 @@ For each one, after step 3 add the two values in Vercel exactly like step 6 of s
 3. On the same page copy **Client ID** into `DISCORD_CLIENT_ID`; click **Reset Secret**, copy it into `DISCORD_CLIENT_SECRET`.
 
 ---
+## Try this yourself: sign in with OpenRouter (easiest way to get every model)
+1. Open https://moonlightc.vercel.app/app (or the desktop app, now 0.2.1).
+2. Click **Sign in with OpenRouter** under "What can I help with?".
+3. Sign in or sign up on OpenRouter and approve. (New OpenRouter accounts need a few dollars of credit for most models; some models are free.)
+4. You land back in MoonlightC with hundreds of models in the model menu.
+
 ## Try this yourself: theme, profile and the updated desktop app
 1. Open MoonlightC on your PC (it was updated to 0.2.0 and is already running).
 2. Bottom left, click **Add your name**: type your name and pick a picture.
