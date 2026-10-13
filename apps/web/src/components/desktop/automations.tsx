@@ -72,7 +72,7 @@ function Editor({ onDone }: { onDone: () => void }) {
         <Switch checked={a.webTools} onCheckedChange={(v) => setA({ ...a, webTools: v })} />
       </label>
       <label className="flex items-center justify-between text-sm">
-        Let it use connector tools set to &quot;Always allow&quot;
+        Let it use Google (read only) and connector tools set to &quot;Always allow&quot;
         <Switch checked={a.connectors} onCheckedChange={(v) => setA({ ...a, connectors: v })} />
       </label>
       <div className="flex gap-2">

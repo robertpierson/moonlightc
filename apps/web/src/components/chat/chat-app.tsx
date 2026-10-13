@@ -27,6 +27,8 @@ import type { Artifact } from "@/lib/artifacts";
 import { AppNav, availableViews, type View } from "@/components/desktop/nav";
 import { applyDistro, LookApplier, useLook } from "@/components/customize/look";
 import { decodeDistro, DISTROS, matchShortcut, type Distro } from "@/lib/customize";
+import { desktop } from "@/lib/desktop";
+import { consumeOAuthResult } from "@/lib/oauth-client";
 import { ModHost } from "@/components/mods/mod-host";
 import { AutomationRunner } from "@/components/desktop/automation-runner";
 import { ComputerBanner } from "@/components/desktop/computer-banner";
@@ -132,6 +134,16 @@ function Inner() {
     setNavOpen(false);
   };
 
+  // Sign-in results for connectors arrive in the address fragment (web) or a moonlightc:// link (desktop).
+  useEffect(() => {
+    if (consumeOAuthResult(location.hash)) history.replaceState(null, "", location.pathname + location.search);
+    return desktop()?.onDeepLink((url) => {
+      if (url.startsWith("moonlightc://oauth")) {
+        consumeOAuthResult(new URL(url).hash);
+        go("connections");
+      }
+    });
+  }, []);
   // Drop ?distro= from the address once read, so reloading doesn't offer it again.
   useEffect(() => {
     if (new URLSearchParams(location.search).has("distro")) history.replaceState(null, "", location.pathname);

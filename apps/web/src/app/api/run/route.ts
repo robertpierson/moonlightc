@@ -1,6 +1,15 @@
 import { getProvider, languageModel, ProviderError } from "@moonc/core";
 import { generateText, isStepCount } from "ai";
+import { googleTools } from "@/lib/google-tools";
 import { mcpTools, readServers } from "@/lib/mcp-server";
+
+// Unattended runs can read Gmail, Calendar and Drive but can't create anything (no one is there to approve).
+function googleReadOnly(token: unknown) {
+  if (typeof token !== "string" || !token) return {};
+  const { tools } = googleTools(token);
+  delete tools.calendar_create;
+  return tools;
+}
 import { readConnection } from "@/lib/server-guard";
 import { buildTools, readSearchKey } from "@/lib/tools";
 
@@ -24,7 +33,7 @@ export async function POST(req: Request) {
         model: languageModel(c, String(body.modelId)),
         instructions: typeof body.instructions === "string" ? body.instructions.slice(0, 20000) : undefined,
         prompt,
-        tools: { ...(body.tools ? buildTools(readSearchKey(body.tools.search)) : {}), ...alwaysOnly },
+        tools: { ...(body.tools ? buildTools(readSearchKey(body.tools.search)) : {}), ...alwaysOnly, ...googleReadOnly(body.google?.accessToken) },
         stopWhen: isStepCount(10),
         abortSignal: req.signal,
       });

@@ -64,6 +64,11 @@ contextBridge.exposeInMainWorld("moonc", {
     },
   },
   mcp: { approve: (command, args) => invoke("mcp:approve", command, args) },
+  onDeepLink: (cb) => {
+    const fn = (_e, url) => typeof url === "string" && url.startsWith("moonlightc://") && cb(url);
+    ipcRenderer.on("deep-link", fn);
+    return () => ipcRenderer.removeListener("deep-link", fn);
+  },
   notify: (title, body) => invoke("notify", title, body),
   openExternal: (url) => invoke("open-external", url),
   openPath: (p, editor) => invoke("open-path", p, editor),

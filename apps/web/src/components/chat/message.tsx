@@ -275,6 +275,8 @@ export function Message({
                 <p key={i} className="mb-2 flex items-center gap-1 text-sm text-muted-foreground">
                   <Brain className="size-3.5" /> Remembered: {String((p as unknown as { input?: { fact?: string } }).input?.fact ?? "")}
                 </p>
+              ) : /^tool-(gmail|calendar|drive)_/.test(p.type) ? (
+                <ConnectorCall key={i} part={{ ...(p as unknown as ConnectorPart), toolName: `google__${p.type.slice(5)}` }} onApproval={onApproval} />
               ) : p.type.startsWith("tool-mod_") ? (
                 <ConnectorCall key={i} part={{ ...(p as unknown as ConnectorPart), toolName: p.type.slice(5) }} onApproval={onApproval} />
               ) : p.type === "dynamic-tool" ? (

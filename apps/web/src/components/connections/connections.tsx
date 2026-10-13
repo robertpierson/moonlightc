@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { desktop } from "@/lib/desktop";
 import { update, useStore, type McpServer } from "@/lib/store";
 import { GitHubDashboard } from "./github";
+import { GoogleCard } from "./google";
 
 const GITHUB_MCP = "https://api.githubcopilot.com/mcp/";
 
@@ -209,6 +210,7 @@ export function Connections() {
           </div>
         </section>
         {adding && <AddConnector key={adding} preset={adding === "github" ? "github" : undefined} onDone={() => setAdding(undefined)} />}
+        <GoogleCard />
         {github?.token && <GitHubDashboard token={github.token} />}
         {servers.length > 0 && (
           <ul className="grid gap-3" aria-label="Your connectors">

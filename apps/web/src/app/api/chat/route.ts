@@ -1,6 +1,7 @@
 import { getProvider, languageModel, ProviderError } from "@moonc/core";
 import { APICallError, convertToModelMessages, isStepCount, jsonSchema, tool, type ToolSet, createUIMessageStreamResponse, streamText, toUIMessageStream, type UIMessage } from "ai";
 import { readConnection } from "@/lib/server-guard";
+import { googleTools } from "@/lib/google-tools";
 import { mcpTools, readServers } from "@/lib/mcp-server";
 import { buildTools, readSearchKey, type SearchKey } from "@/lib/tools";
 
@@ -18,6 +19,7 @@ interface Body {
   modTools?: unknown;
   memory?: boolean;
   computer?: boolean;
+  google?: { accessToken?: string };
 }
 
 const COMPUTER_INSTRUCTIONS = `You can use this person's computer with the computer tool. Start with a screenshot. Coordinates are pixels in the latest screenshot. Work step by step and take a screenshot after anything changes. Before any step that deletes, buys, sends a message or installs something, set destructive: true and explain why in reason; the person will be asked. If something looks wrong, stop and explain.`;
@@ -86,7 +88,8 @@ export async function POST(req: Request) {
     if (desktopComputer && !visionTools) {
       throw new ProviderError("Computer use needs a Claude, GPT or Gemini model connected with its own key (Anthropic, OpenAI, Google, Azure or Bedrock). Pick one in the model menu.");
     }
-    const tools = { ...builtIn, ...mcp?.tools, ...readModTools(body.modTools), ...memoryTool, ...(desktopComputer ? { computer: computerTool } : {}) };
+    const google = typeof body.google?.accessToken === "string" ? googleTools(body.google.accessToken) : undefined;
+    const tools = { ...builtIn, ...mcp?.tools, ...google?.tools, ...readModTools(body.modTools), ...memoryTool, ...(desktopComputer ? { computer: computerTool } : {}) };
     const hasTools = Object.keys(tools).length > 0;
 
     const result = streamText({
@@ -96,7 +99,7 @@ export async function POST(req: Request) {
       temperature: typeof body.temperature === "number" ? Math.min(2, Math.max(0, body.temperature)) : undefined,
       messages: await convertToModelMessages(body.messages),
       abortSignal: req.signal,
-      ...(hasTools ? { tools, toolApproval: mcp?.approval, stopWhen: isStepCount(body.research || desktopComputer ? 40 : 8) } : {}),
+      ...(hasTools ? { tools, toolApproval: { ...mcp?.approval, ...google?.approval }, stopWhen: isStepCount(body.research || desktopComputer ? 40 : 8) } : {}),
       onEnd: async () => {
         await mcp?.close();
       },

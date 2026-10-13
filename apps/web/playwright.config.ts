@@ -17,6 +17,16 @@ export default defineConfig({
     : [
         { command: "node e2e/mock-openai.mjs", url: "http://127.0.0.1:4010/v1/models", reuseExistingServer: false },
         { command: "node e2e/mock-mcp.mjs", port: 4020, reuseExistingServer: false },
-        { command: "pnpm start", url: baseURL, reuseExistingServer: true, env: { MOONC_ALLOW_PRIVATE_URLS: "1" } },
+        { command: "node e2e/mock-google.mjs", port: 4030, reuseExistingServer: false },
+        { command: "pnpm start", url: baseURL, reuseExistingServer: true, env: {
+            MOONC_ALLOW_PRIVATE_URLS: "1",
+            // Fake Google so the sign-in and Gmail flow can be tested end to end.
+            GOOGLE_CLIENT_ID: "test-client",
+            GOOGLE_CLIENT_SECRET: "test-secret",
+            MOONC_TEST_GOOGLE_AUTH_URL: "http://127.0.0.1:4030/auth",
+            MOONC_TEST_GOOGLE_TOKEN_URL: "http://127.0.0.1:4030/token",
+            MOONC_TEST_GOOGLE_API: "http://127.0.0.1:4030",
+          },
+        },
       ],
 });

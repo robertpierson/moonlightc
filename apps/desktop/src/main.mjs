@@ -215,6 +215,13 @@ handle("open-path", (_e, p, editor) => projects.openPath(p, editor));
 handle("notify", (_e, title, body) => new Notification({ title, body }).show());
 
 // ---------- Lifecycle ----------
+// macOS delivers moonlightc:// links here; Windows/Linux pass them as a command-line argument (below).
+let pendingLink = process.argv.find((a) => a.startsWith("moonlightc://"));
+app.on("open-url", (e, url) => {
+  e.preventDefault();
+  if (win) win.webContents.send("deep-link", url);
+  else pendingLink = url;
+});
 app.on("second-instance", (_e, argv) => {
   win?.show();
   win?.focus();
@@ -232,6 +239,7 @@ app.whenReady().then(async () => {
   }
   createWindow();
   createTray();
+  if (pendingLink) win.webContents.once("did-finish-load", () => setTimeout(() => win.webContents.send("deep-link", pendingLink), 1500));
   if (!globalShortcut.register("Alt+Space", toggleQuickAsk)) console.warn("Alt+Space is taken by another app.");
 });
 

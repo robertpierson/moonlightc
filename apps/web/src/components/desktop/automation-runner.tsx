@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { desktop } from "@/lib/desktop";
+import { googleToken } from "@/lib/oauth-client";
 import { nextRun, type Schedule } from "@/lib/schedule";
 import { findModel, getState, update, type ModelRef } from "@/lib/store";
 
@@ -36,6 +37,7 @@ export async function runOnce(a: Automation) {
         prompt: a.prompt,
         tools: a.webTools ? { search: st.searchKey } : undefined,
         mcp: a.connectors ? (st.mcpServers ?? []).filter((m) => m.enabled) : [],
+        google: a.connectors ? { accessToken: await googleToken() } : undefined,
       }),
     }).catch(() => null);
     const d = (await res?.json().catch(() => ({}))) as { text?: string; error?: string } | undefined;

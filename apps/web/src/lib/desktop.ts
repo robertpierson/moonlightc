@@ -102,6 +102,8 @@ export interface MooncBridge {
     approve(command: string, args: string[]): Promise<boolean>;
   };
   notify(title: string, body: string): Promise<void>;
+  /** moonlightc:// links opened on this computer (for example, returning from a sign-in in the browser). */
+  onDeepLink(cb: (url: string) => void): () => void;
   openExternal(url: string): Promise<void>;
   openPath(path: string, app?: "vscode" | "cursor"): Promise<void>;
 }

@@ -19,6 +19,25 @@ Creating MoonlightC's database would require a paid plan. Pick ONE option:
 2. Click **Change subscription plan** > **Pro**, and confirm.
 3. Tell Claude: "upgraded, continue".
 
+
+## 2. Let MoonlightC connect to Google (Gmail, Calendar, Drive) — about 10 minutes
+This makes the **Connect Google** button appear. Google is free for this.
+1. Open https://console.cloud.google.com/projectcreate , Project name: **MoonlightC**, click **Create**. Wait, then make sure **MoonlightC** is selected at the top.
+2. Open https://console.cloud.google.com/apis/library/gmail.googleapis.com and click **Enable**. Do the same for
+   https://console.cloud.google.com/apis/library/calendar-json.googleapis.com and https://console.cloud.google.com/apis/library/drive.googleapis.com
+3. Open https://console.cloud.google.com/auth/branding , click **Get started**. App name: **MoonlightC**, support email: your email, click **Next**.
+   Audience: **External**, **Next**. Contact email: your email, **Next**, tick the agreement, **Create**.
+4. Open https://console.cloud.google.com/auth/audience , under **Test users** click **Add users**, type your Gmail address, **Save**.
+5. Open https://console.cloud.google.com/auth/clients , click **Create client**. Application type: **Web application**. Name: **MoonlightC web**.
+   Under **Authorized redirect URIs** click **Add URI** and paste exactly: `https://moonlightc.vercel.app/api/oauth/google/callback`
+   Click **Create**. A box shows **Client ID** and **Client secret** — keep it open.
+6. Open https://vercel.com/app-project21/moonlightc/settings/environment-variables . Add three variables (click **Add Another** between them), all environments ticked:
+   - Key `GOOGLE_CLIENT_ID`, value: the Client ID from step 5
+   - Key `GOOGLE_CLIENT_SECRET`, value: the Client secret from step 5
+   - Key `OAUTH_STATE_SECRET`, value: any long random text (for example, mash the keyboard for 40 characters)
+   Click **Save**.
+7. Tell Claude: "Google done". Claude redeploys and tests it.
+
 ---
 ## Try this yourself: Phase 0 (setup)
 1. Open https://moonlightc.vercel.app on your PC and phone. You should see "MoonlightC" and one line about it.

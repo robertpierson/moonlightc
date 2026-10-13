@@ -93,6 +93,15 @@ export interface McpServer {
   policy: Record<string, "ask" | "always" | "never">;
 }
 
+export interface OAuthAccount {
+  accessToken: string;
+  refreshToken?: string;
+  expiresAt: number;
+  email?: string;
+  scopes: string[];
+  enabled: boolean;
+}
+
 export interface Project {
   id: string;
   name: string;
@@ -134,6 +143,7 @@ interface State {
   mods?: InstalledMod[];
   projects?: Project[];
   automations?: Automation[];
+  oauth?: { google?: OAuthAccount };
   memory?: { enabled: boolean; items: MemoryItem[] };
 }
 
@@ -164,7 +174,15 @@ function load() {
       const searchKey = state.searchKey && { ...state.searchKey, key: state.searchKey.key || ((await b.secrets.get("search")) ?? "") };
       const mcpServers =
         state.mcpServers && (await Promise.all(state.mcpServers.map(async (m) => (m.token === "" ? { ...m, token: (await b.secrets.get(`mcp:${m.id}`)) ?? "" } : m))));
-      update((s) => ({ ...s, connections, searchKey, mcpServers }));
+      let oauth = state.oauth;
+      if (oauth?.google && !oauth.google.accessToken) {
+        const raw = await b.secrets.get("oauth:google");
+        if (raw) {
+          const t = JSON.parse(raw) as { a: string; r?: string };
+          oauth = { google: { ...oauth.google, accessToken: t.a, refreshToken: t.r } };
+        }
+      }
+      update((s) => ({ ...s, connections, searchKey, mcpServers, oauth }));
     });
   }
 }
@@ -178,12 +196,16 @@ function persist(prev: State) {
     if (state.searchKey?.key && state.searchKey.key !== prev.searchKey?.key) b.secrets.set("search", state.searchKey.key);
     for (const m of state.mcpServers ?? []) if (m.token && prev.mcpServers?.find((p) => p.id === m.id)?.token !== m.token) b.secrets.set(`mcp:${m.id}`, m.token);
     for (const m of prev.mcpServers ?? []) if (!state.mcpServers?.some((x) => x.id === m.id)) b.secrets.set(`mcp:${m.id}`, null);
+    const g = state.oauth?.google;
+    if (g?.accessToken && g.accessToken !== prev.oauth?.google?.accessToken) b.secrets.set("oauth:google", JSON.stringify({ a: g.accessToken, r: g.refreshToken }));
+    if (!g && prev.oauth?.google) b.secrets.set("oauth:google", null);
     else if (prev.searchKey) b.secrets.set("search", null);
     saved = {
       ...state,
       connections: state.connections.map((c) => ({ ...c, apiKey: "" })),
       searchKey: state.searchKey && { ...state.searchKey, key: "" },
       mcpServers: state.mcpServers?.map((m) => ({ ...m, token: m.token ? "" : undefined })),
+      oauth: state.oauth?.google ? { google: { ...state.oauth.google, accessToken: "", refreshToken: state.oauth.google.refreshToken ? "" : undefined } } : state.oauth,
     };
   }
   localStorage.setItem(KEY, JSON.stringify(saved));
