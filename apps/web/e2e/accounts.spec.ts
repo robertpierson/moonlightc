@@ -10,7 +10,7 @@ test("sign-in page works and explains a wrong password", async ({ page }) => {
   await page.getByLabel("Email").fill(`nobody-${Date.now()}@example.com`);
   await page.getByLabel("Password").fill("not-the-right-password");
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await expect(page.getByRole("alert")).toContainText("don't match");
+  await expect(page.getByRole("alert").filter({ hasText: "don't match" })).toBeVisible();
   await page.getByRole("button", { name: "New here? Create an account" }).click();
   await expect(page.getByRole("heading", { name: "Create your account" })).toBeVisible();
   await page.getByRole("button", { name: "Back to sign in" }).click();

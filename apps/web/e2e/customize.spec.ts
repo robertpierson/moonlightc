@@ -66,8 +66,8 @@ test("shortcuts can be rebound", async ({ page, isMobile }) => {
 
 test("profile name and picture, and saving your own theme", async ({ page }) => {
   await page.goto("/app");
-  await openMenu(page);
-  await page.getByRole("button", { name: "Add your name" }).click();
+  await nav(page, "Settings");
+  await page.getByRole("navigation", { name: "Settings" }).getByRole("button", { name: "Profile" }).click();
   await page.getByLabel("Your name").fill("Shawn Moon");
   // A 1x1 PNG is enough to exercise the picture path.
   const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==", "base64");
@@ -76,7 +76,7 @@ test("profile name and picture, and saving your own theme", async ({ page }) => 
   await go(page, "Chat");
   await expect(page.getByRole("heading", { name: "What can I help with, Shawn?" })).toBeVisible();
   await openMenu(page);
-  await expect(page.getByRole("button", { name: "Shawn Moon" }).locator("visible=true")).toHaveCount(1);
+  await expect(page.getByText("Shawn Moon").locator("visible=true")).toHaveCount(1);
   await page.keyboard.press("Escape");
 
   await go(page, "Customize");
