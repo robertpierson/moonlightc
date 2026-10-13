@@ -11,7 +11,7 @@ STATUS: BUILDING
 - [ ] 5 Devices and remote control (§8 safety)
 - [~] 6 Creative studio: images, video, audio, gallery
 - [~] 7 Connections and automations: MCP client, GitHub, Google, Discord, Spotify, Notion, Slack, YouTube, custom MCP, subscriptions, scheduled agents, deep research
-- [ ] 8 Customization: distros, themes/editor, layout, mods SDK and store
+- [x] 8 Customization (on branch; drag/dock deferred): distros, themes/editor, layout, mods SDK and store
 - [ ] 9 Hardening: security review, RLS audit, perf, a11y, docs, v1.0 release
 
 ## Phase 0 tasks
@@ -76,6 +76,15 @@ STATUS: BUILDING
 - [ ] OAuth connectors (Google/Gmail, Discord, Spotify, Notion, Slack, YouTube): need Supabase + owner OAuth apps
 - [ ] Scheduled agents (pg_cron) + subscriptions hub: need Supabase + Gmail
 
+## Phase 8 (customization, on branch)
+- [x] Distros: Moon, Studio, Forge, Command, Offline + save/export/import/share link (validated, asks before applying)
+- [x] Themes: Moonlight, Silver, Graphite, Midnight, Paper, High contrast; editor (8 tokens, roundness, wallpaper + tint)
+- [x] Layout: hide sections, sidebar left/right, compact, big input; rebindable shortcuts (palette, new chat)
+- [x] Mods: packages/mods-sdk, Mod Store (registry https://github.com/robertpierson/moonlightc-mods), permission review, sandboxed tools/panels, commands, modes, themes; docs/MODDING.md; example Unit Converter
+- [x] README with screenshots, CONTRIBUTING, issue templates
+- [x] Gate (local): switching distros restyles the app; installing the example mod adds a working tool (e2e)
+- [ ] Drag/dock/undock panels (deferred: no panel system worth docking yet)
+
 ## Owner steps completed
 (none yet)
 
@@ -86,6 +95,7 @@ STATUS: BUILDING
 - No Docker, so no local Supabase stack; test against the hosted project.
 
 ## Notes (last 10)
+- 2026-10-13: Phase 8 done on branch; 56 web e2e. Mod registry repo created (public, MIT).
 - 2026-10-13: Phases 6/7 unblocked parts done; 47 web e2e + 8 desktop e2e. Next: Phase 8 customization.
 - 2026-10-13: Phase 4 working on Windows; desktop e2e 8 tests; release workflow triggered.
 - 2026-10-13: Phase 3 done on branch. 38 e2e tests. Next: Phase 4 desktop (Electron) since Supabase still blocked.
