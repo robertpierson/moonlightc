@@ -1,0 +1,15 @@
+name: Bug report
+description: Something doesn't work
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes: { label: What happened?, description: Steps to reproduce and what you expected instead. }
+    validations: { required: true }
+  - type: dropdown
+    id: where
+    attributes: { label: Where?, options: [Website / web app, Windows app, macOS app, Linux app, Phone (web app)] }
+    validations: { required: true }
+  - type: input
+    id: version
+    attributes: { label: Version, description: "Desktop: Help > About. Web: leave empty." }

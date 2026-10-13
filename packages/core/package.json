@@ -11,10 +11,16 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@ai-sdk/amazon-bedrock": "^5.0.113",
     "@ai-sdk/anthropic": "4.0.79",
+    "@ai-sdk/azure": "^4.0.99",
+    "@ai-sdk/elevenlabs": "3.0.60",
+    "@ai-sdk/fal": "3.0.60",
     "@ai-sdk/google": "4.0.94",
     "@ai-sdk/openai": "4.0.92",
     "@ai-sdk/openai-compatible": "3.0.68",
+    "@ai-sdk/replicate": "3.0.60",
+    "@ai-sdk/xai": "5.0.21",
     "ai": "7.0.138"
   },
   "devDependencies": {

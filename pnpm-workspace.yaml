@@ -1,9 +1,14 @@
 packages:
   - apps/*
   - packages/*
+  - supabase
 allowBuilds:
+  electron-winstaller: true
+  node-pty: true
+  electron: true
   sharp: true
   unrs-resolver: true
+  '@jitsi/robotjs': true
 minimumReleaseAgeExclude:
   - '@ai-sdk/anthropic@4.0.79'
   - '@ai-sdk/gateway@4.0.111'
@@ -13,3 +18,9 @@ minimumReleaseAgeExclude:
   - '@ai-sdk/provider-utils@5.0.59'
   - '@ai-sdk/provider@4.0.27'
   - ai@7.0.138
+  - '@ai-sdk/mcp@2.0.74'
+  - '@ai-sdk/react@4.0.141'
+  - '@ai-sdk/elevenlabs@3.0.60'
+  - '@ai-sdk/fal@3.0.60'
+  - '@ai-sdk/replicate@3.0.60'
+  - '@ai-sdk/xai@5.0.21'

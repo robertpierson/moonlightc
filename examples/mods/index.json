@@ -1,0 +1,10 @@
+{
+  "mods": [
+    {
+      "id": "units",
+      "name": "Unit Converter",
+      "description": "Exact unit conversions as an AI tool, a converter panel, a /tldr command, an \"Explain like I'm 5\" mode and the Aurora theme.",
+      "manifest": "https://raw.githubusercontent.com/robertpierson/moonlightc-mods/main/mods/units/moonlightc-mod.json"
+    }
+  ]
+}

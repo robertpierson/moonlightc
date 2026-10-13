@@ -63,3 +63,32 @@ describe.runIf(process.env.LIVE)("live", () => {
     expect(models.some((m) => m.pricing)).toBe(true);
   });
 });
+
+describe("Azure and Bedrock", () => {
+  it("lists Azure deployments with the api-key header", async () => {
+    const seen: { url: string; key?: string }[] = [];
+    const f = (async (url: string, init: RequestInit) => {
+      seen.push({ url, key: (init.headers as Record<string, string>)["api-key"] });
+      return new Response(JSON.stringify({ data: [{ id: "my-gpt", model: "gpt-5" }] }));
+    }) as unknown as typeof fetch;
+    const out = await listModels({ providerId: "azure", apiKey: "k1", baseURL: "https://res.openai.azure.com/" }, f);
+    expect(out).toEqual([{ id: "my-gpt", name: "my-gpt (gpt-5)" }]);
+    expect(seen[0]).toEqual({ url: "https://res.openai.azure.com/openai/deployments?api-version=2022-12-01", key: "k1" });
+  });
+  it("refuses endpoints that aren't Azure", async () => {
+    await expect(listModels({ providerId: "azure", apiKey: "k", baseURL: "https://evil.example.com" })).rejects.toThrow(/Azure OpenAI endpoint/);
+  });
+  it("lists Bedrock inference profiles and models for a region", async () => {
+    const f = (async (url: string) =>
+      new Response(
+        JSON.stringify(
+          url.includes("inference-profiles")
+            ? { inferenceProfileSummaries: [{ inferenceProfileId: "us.anthropic.claude-x", inferenceProfileName: "US Claude X" }] }
+            : { modelSummaries: [{ modelId: "amazon.nova-pro-v1:0", modelName: "Nova Pro", providerName: "Amazon" }] },
+        ),
+      )) as unknown as typeof fetch;
+    const out = await listModels({ providerId: "bedrock", apiKey: "k", baseURL: "us-east-1" }, f);
+    expect(out.map((m) => m.id)).toEqual(["us.anthropic.claude-x", "amazon.nova-pro-v1:0"]);
+    await expect(listModels({ providerId: "bedrock", apiKey: "k", baseURL: "mars-1" }, f)).rejects.toThrow(/region/);
+  });
+});

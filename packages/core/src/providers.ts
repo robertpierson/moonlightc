@@ -1,10 +1,12 @@
+import { createAmazonBedrock } from "@ai-sdk/amazon-bedrock";
 import { createAnthropic } from "@ai-sdk/anthropic";
+import { createAzure } from "@ai-sdk/azure";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import type { LanguageModel } from "ai";
 
-type Kind = "anthropic" | "google" | "openai" | "compat";
+type Kind = "anthropic" | "google" | "openai" | "compat" | "media" | "azure" | "bedrock";
 
 export interface ProviderDef {
   id: string;
@@ -16,6 +18,10 @@ export interface ProviderDef {
   baseURL?: string;
   /** Model list URL when it differs from `${baseURL}/models`. */
   modelsURL?: string;
+  /** Runs on the user's computer; only offered in the desktop app. */
+  local?: boolean;
+  /** Images/video/audio only (Creative Studio), no chat models. */
+  media?: boolean;
 }
 
 export const PROVIDERS: ProviderDef[] = [
@@ -30,7 +36,13 @@ export const PROVIDERS: ProviderDef[] = [
   { id: "together", name: "Together AI", kind: "compat", baseURL: "https://api.together.xyz/v1", keyUrl: "https://api.together.ai/settings/api-keys" },
   { id: "perplexity", name: "Perplexity", kind: "compat", baseURL: "https://api.perplexity.ai", modelsURL: "https://api.perplexity.ai/v1/models", keyUrl: "https://www.perplexity.ai/account/api/keys" },
   { id: "cohere", name: "Cohere", kind: "compat", baseURL: "https://api.cohere.ai/compatibility/v1", keyUrl: "https://dashboard.cohere.com/api-keys" },
+  { id: "azure", name: "Azure OpenAI", kind: "azure", keyUrl: "https://portal.azure.com/#view/Microsoft_Azure_ProjectOxford/CognitiveServicesHub/~/OpenAI" },
+  { id: "bedrock", name: "AWS Bedrock", kind: "bedrock", keyUrl: "https://console.aws.amazon.com/bedrock/home#/api-keys" },
+  { id: "ollama", name: "Ollama (on this computer)", kind: "compat", baseURL: "http://127.0.0.1:11434/v1", keyUrl: "", local: true },
   { id: "custom", name: "Custom (OpenAI-compatible URL)", kind: "compat", keyUrl: "" },
+  { id: "fal", name: "fal (images, video, audio)", kind: "media", media: true, keyUrl: "https://fal.ai/dashboard/keys" },
+  { id: "replicate", name: "Replicate (images, video)", kind: "media", media: true, keyUrl: "https://replicate.com/account/api-tokens" },
+  { id: "elevenlabs", name: "ElevenLabs (voices)", kind: "media", media: true, keyUrl: "https://elevenlabs.io/app/settings/api-keys" },
 ];
 
 export function getProvider(id: string): ProviderDef {
@@ -66,8 +78,70 @@ function resolveBaseURL(p: ProviderDef, c: Connection): string {
 const NON_CHAT = /embed|tts|whisper|dall-e|moderation|transcribe|rerank|image|audio|realtime|speech|sora|guard/i;
 
 /** Fetch the live model list. Doubles as key validation: it throws a human-readable error on a bad key. */
+/** Azure: the resource endpoint, e.g. https://my-resource.openai.azure.com */
+export function azureEndpoint(c: Connection) {
+  const u = c.baseURL?.trim().replace(/\/+$/, "").replace(/\/openai(\/v1)?$/, "");
+  if (!u || !/^https:\/\/[a-z0-9-]+\.(openai\.azure\.com|cognitiveservices\.azure\.com|services\.ai\.azure\.com)$/i.test(u)) {
+    throw new ProviderError("Enter your Azure OpenAI endpoint, like https://my-resource.openai.azure.com (Azure portal > your resource > Keys and Endpoint).");
+  }
+  return u;
+}
+
+/** Bedrock: the AWS region, e.g. us-east-1 */
+export function bedrockRegion(c: Connection) {
+  const r = c.baseURL?.trim();
+  if (!r || !/^[a-z]{2}(-gov)?-[a-z]+-\d$/.test(r)) throw new ProviderError("Enter the AWS region where you use Bedrock, like us-east-1.");
+  return r;
+}
+
+async function listAzure(c: Connection, fetchFn: typeof fetch): Promise<ModelInfo[]> {
+  const base = azureEndpoint(c);
+  const get = async (url: string) => {
+    let res: Response;
+    try {
+      res = await fetchFn(url, { headers: { "api-key": c.apiKey } });
+    } catch {
+      throw new ProviderError("Couldn't reach your Azure resource. Check the endpoint address.");
+    }
+    if (res.status === 401 || res.status === 403) throw new ProviderError("Azure rejected this key. Copy Key 1 from your resource's Keys and Endpoint page.");
+    return res.ok ? ((await res.json()) as { data?: { id: string; model?: string }[] }) : undefined;
+  };
+  // Deployments are what you actually call; fall back to the resource's model list.
+  const deps = await get(`${base}/openai/deployments?api-version=2022-12-01`);
+  if (deps?.data?.length) return deps.data.map((d) => ({ id: d.id, name: d.model ? `${d.id} (${d.model})` : d.id }));
+  const models = await get(`${base}/openai/v1/models`);
+  if (!models) throw new ProviderError("Azure returned an error. Check the endpoint and try again.");
+  return (models.data ?? []).filter((m) => !NON_CHAT.test(m.id)).map((m) => ({ id: m.id, name: m.id }));
+}
+
+async function listBedrock(c: Connection, fetchFn: typeof fetch): Promise<ModelInfo[]> {
+  const region = bedrockRegion(c);
+  const get = async (path: string) => {
+    let res: Response;
+    try {
+      res = await fetchFn(`https://bedrock.${region}.amazonaws.com${path}`, { headers: { authorization: `Bearer ${c.apiKey}` } });
+    } catch {
+      throw new ProviderError("Couldn't reach AWS Bedrock. Check your internet connection and the region.");
+    }
+    if (res.status === 401 || res.status === 403) throw new ProviderError("AWS rejected this Bedrock API key, or it can't list models in that region.");
+    if (!res.ok) throw new ProviderError(`AWS Bedrock returned an error (${res.status}).`);
+    return res.json();
+  };
+  const [fm, ip] = await Promise.all([
+    get("/foundation-models?byOutputModality=TEXT&byInferenceType=ON_DEMAND") as Promise<{ modelSummaries?: { modelId: string; modelName: string; providerName: string }[] }>,
+    (get("/inference-profiles?maxResults=1000") as Promise<{ inferenceProfileSummaries?: { inferenceProfileId: string; inferenceProfileName: string }[] }>).catch(() => ({ inferenceProfileSummaries: [] })),
+  ]);
+  return [
+    ...(ip.inferenceProfileSummaries ?? []).map((p) => ({ id: p.inferenceProfileId, name: p.inferenceProfileName })),
+    ...(fm.modelSummaries ?? []).map((m) => ({ id: m.modelId, name: `${m.providerName} ${m.modelName}` })),
+  ];
+}
+
 export async function listModels(c: Connection, fetchFn: typeof fetch = fetch): Promise<ModelInfo[]> {
   const p = getProvider(c.providerId);
+  if (p.media) throw new ProviderError(`${p.name} is for the Creative Studio, not chat.`);
+  if (p.kind === "azure") return listAzure(c, fetchFn);
+  if (p.kind === "bedrock") return listBedrock(c, fetchFn);
   let url: string;
   const headers: Record<string, string> = {};
   if (p.kind === "anthropic") {
@@ -139,6 +213,12 @@ export function languageModel(c: Connection, modelId: string): LanguageModel {
       return createGoogleGenerativeAI({ apiKey: c.apiKey })(modelId);
     case "openai":
       return createOpenAI({ apiKey: c.apiKey })(modelId);
+    case "media":
+      throw new ProviderError(`${p.name} is for the Creative Studio, not chat.`);
+    case "azure":
+      return createAzure({ baseURL: `${azureEndpoint(c)}/openai`, apiKey: c.apiKey })(modelId);
+    case "bedrock":
+      return createAmazonBedrock({ region: bedrockRegion(c), apiKey: c.apiKey })(modelId);
     case "compat":
       return createOpenAICompatible({
         name: p.id,
@@ -154,4 +234,18 @@ export function languageModel(c: Connection, modelId: string): LanguageModel {
 export function estimateCost(m: ModelInfo, inputTokens: number, outputTokens: number): number | undefined {
   if (!m.pricing) return undefined;
   return (inputTokens * m.pricing.input + outputTokens * m.pricing.output) / 1e6;
+}
+
+// Fixed, long-lived Whisper ids (not "latest" aliases). Only OpenAI and Groq offer Whisper over the API.
+const WHISPER: Record<string, { baseURL: string; model: string }> = {
+  openai: { baseURL: "https://api.openai.com/v1", model: "whisper-1" },
+  groq: { baseURL: "https://api.groq.com/openai/v1", model: "whisper-large-v3-turbo" },
+};
+
+export const canTranscribe = (providerId: string) => providerId in WHISPER;
+
+export function transcriptionModel(c: Connection) {
+  const w = WHISPER[c.providerId];
+  if (!w) throw new ProviderError("Voice typing needs an OpenAI or Groq key.");
+  return createOpenAI({ apiKey: c.apiKey, baseURL: w.baseURL }).transcription(w.model);
 }
