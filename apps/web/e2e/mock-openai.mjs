@@ -18,9 +18,11 @@ createServer(async (req, res) => {
     const slow = prompt.includes("slow");
     const toolMsg = body.messages.find((m) => m.role === "tool");
     const url = prompt.match(/read (https:\/\/\S+)/)?.[1];
-    if (body.tools?.some((t) => t.function.name === "fetch_url") && url && !toolMsg) {
+    const py = prompt.match(/python: (.+)/)?.[1];
+    if (body.tools && (url || py) && !toolMsg) {
       res.writeHead(200, { "content-type": "text/event-stream" });
-      const call = { index: 0, id: "call_1", type: "function", function: { name: "fetch_url", arguments: JSON.stringify({ url }) } };
+      const fn = url ? { name: "fetch_url", arguments: JSON.stringify({ url }) } : { name: "run_python", arguments: JSON.stringify({ code: py }) };
+      const call = { index: 0, id: "call_1", type: "function", function: fn };
       res.write(`data: ${JSON.stringify({ id: "x", object: "chat.completion.chunk", created: 0, model: body.model, choices: [{ index: 0, delta: { role: "assistant", tool_calls: [call] }, finish_reason: null }] })}
 
 `);
@@ -33,7 +35,7 @@ createServer(async (req, res) => {
     }
     const sys = body.messages.find((m) => m.role === "system");
     const prefix = sys ? `[sys: ${sys.content}] ` : "";
-    if (toolMsg) prompt = "Page says: " + String(toolMsg.content).slice(0, 300);
+    if (toolMsg) prompt = "Tool says: " + String(toolMsg.content).slice(0, 300);
     const words = slow ? Array.from({ length: 100 }, (_, i) => `word${i} `) : [prefix + "Echo", " from ", body.model, ": ", prompt];
     res.writeHead(200, { "content-type": "text/event-stream" });
     const chunk = (delta, finish = null) =>

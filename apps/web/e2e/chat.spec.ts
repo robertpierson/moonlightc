@@ -193,10 +193,10 @@ test("command palette switches model and opens dialogs", async ({ page, isMobile
 
 test("web tools: the model reads a link", async ({ page }) => {
   await connectMock(page);
-  await page.getByRole("button", { name: "Web" }).click();
+  await page.getByRole("button", { name: "Tools" }).click();
   await send(page, "read https://example.com");
   await expect(page.getByText("Read Example Domain")).toBeVisible({ timeout: 20000 });
-  await expect(page.locator('[data-role="assistant"]').last()).toContainText("Page says:");
+  await expect(page.locator('[data-role="assistant"]').last()).toContainText("Tool says:");
   await expect(page.locator('[data-role="assistant"]').last()).toContainText("Example Domain");
 });
 
@@ -228,4 +228,13 @@ test.describe("voice typing", () => {
     expect(res.status()).toBe(400);
     expect((await res.json()).error).toMatch(/key/);
   });
+});
+
+test("code interpreter runs Python in the browser and the model sees the output", async ({ page }) => {
+  await connectMock(page);
+  await page.getByRole("button", { name: "Tools" }).click();
+  await send(page, "python: print(6*7)");
+  await expect(page.getByText("Ran Python", { exact: true })).toBeVisible({ timeout: 60000 });
+  await expect(page.locator('[data-role="assistant"]').last()).toContainText("Tool says:", { timeout: 20000 });
+  await expect(page.locator('[data-role="assistant"]').last()).toContainText("42");
 });

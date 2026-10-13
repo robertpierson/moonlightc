@@ -98,6 +98,12 @@ export function buildTools(searchKey?: SearchKey): ToolSet {
       execute: async ({ url }) => fetchPage(url),
     }),
   };
+  // Runs in the user's browser (Pyodide). No execute here: the client runs it and returns the output.
+  tools.run_python = tool({
+    description:
+      "Run Python code in a sandbox in the user's browser and get printed output. Use for math, data analysis and checking code. numpy, pandas and other pure-Python or Pyodide packages are available. Print what you need.",
+    inputSchema: z.object({ code: z.string() }),
+  });
   if (searchKey) {
     tools.web_search = tool({
       description: "Search the web for current information. Cite the URLs you use.",

@@ -4,7 +4,7 @@ import { code } from "@streamdown/code";
 import { createMathPlugin } from "@streamdown/math";
 import { mermaid } from "@streamdown/mermaid";
 import type { UIMessage } from "ai";
-import { AppWindow, Check, Copy, FileText, GitBranch, Link2, Loader2, Search, Pencil, RotateCcw, Volume2, VolumeX } from "lucide-react";
+import { AppWindow, Check, Copy, FileText, GitBranch, Link2, Loader2, Search, Terminal, Pencil, RotateCcw, Volume2, VolumeX } from "lucide-react";
 import { useState } from "react";
 import { Streamdown } from "streamdown";
 import { Button } from "@/components/ui/button";
@@ -79,6 +79,33 @@ function ToolCall({ part }: { part: ToolPart }) {
           </li>
         ))}
       </ul>
+    </details>
+  );
+}
+
+interface PyPart {
+  state: string;
+  input?: { code?: string };
+  output?: { output?: string; error?: string };
+  errorText?: string;
+}
+
+function PythonCall({ part }: { part: PyPart }) {
+  const done = part.state === "output-available" || part.state === "output-error";
+  const failed = part.state === "output-error" || !!part.output?.error;
+  return (
+    <details className="mb-2 text-sm text-muted-foreground">
+      <summary className="cursor-pointer select-none">
+        {done ? <Terminal className="mr-1 inline size-3.5" /> : <Loader2 className="mr-1 inline size-3.5 animate-spin" />}
+        {done ? (failed ? "Ran Python (error)" : "Ran Python") : "Running Python in your browser…"}
+      </summary>
+      <pre className="mt-1 overflow-x-auto rounded-md bg-muted p-2 font-mono text-xs">{part.input?.code}</pre>
+      {done && (
+        <pre className="mt-1 overflow-x-auto rounded-md border p-2 font-mono text-xs whitespace-pre-wrap">
+          {part.output?.output}
+          {part.output?.error ?? part.errorText}
+        </pre>
+      )}
     </details>
   );
 }
@@ -186,6 +213,8 @@ export function Message({
                   <summary className="cursor-pointer select-none">Thinking</summary>
                   <div className="mt-1 border-l-2 pl-3 whitespace-pre-wrap">{p.text}</div>
                 </details>
+              ) : p.type === "tool-run_python" ? (
+                <PythonCall key={i} part={p as unknown as PyPart} />
               ) : p.type === "tool-web_search" || p.type === "tool-fetch_url" ? (
                 <ToolCall key={i} part={p as unknown as ToolPart} />
               ) : p.type === "text" ? (

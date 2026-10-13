@@ -2,10 +2,11 @@
 
 import { useChat } from "@ai-sdk/react";
 import { estimateCost } from "@moonc/core";
-import { DefaultChatTransport, type UIMessage } from "ai";
-import { ArrowUp, FileText, Globe, KeyRound, Paperclip, Square, X } from "lucide-react";
+import { DefaultChatTransport, lastAssistantMessageIsCompleteWithToolCalls, type UIMessage } from "ai";
+import { ArrowUp, FileText, Wrench, KeyRound, Paperclip, Square, X } from "lucide-react";
 import { toast } from "sonner";
 import type { Artifact } from "@/lib/artifacts";
+import { runPython } from "@/lib/python";
 import { composeText, isSupported, MAX_TOTAL_BYTES, readAttachment, type Attachment } from "@/lib/attachments";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -45,8 +46,6 @@ export function ChatView({
 }) {
   const [input, setInput] = useState("");
   const bottom = useRef<HTMLDivElement>(null);
-  const [transport] = useState(() => new DefaultChatTransport({ api: "/api/chat" }));
-
   // The key and model travel with each request, so switching models mid-chat just works.
   const request = () => {
     const found = findModel(model);
@@ -63,10 +62,26 @@ export function ChatView({
     };
   };
 
-  const { messages, sendMessage, status, stop, regenerate, error, clearError } = useChat({
+  // Automatic resubmits (after a browser-side tool runs) don't pass options, so the transport reads the latest request.
+  const latest = useRef(request);
+  useEffect(() => {
+    latest.current = request;
+  });
+  const [transport] = useState(
+    // eslint-disable-next-line react-hooks/refs -- the ref is read when a request is sent, not during render
+    () => new DefaultChatTransport({ api: "/api/chat", body: () => latest.current().body ?? {} }),
+  );
+
+  const { messages, sendMessage, status, stop, regenerate, error, clearError, addToolOutput } = useChat({
     id: chat.id,
     messages: chat.messages,
     transport,
+    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
+    onToolCall: async ({ toolCall }) => {
+      if (toolCall.dynamic || toolCall.toolName !== "run_python") return;
+      const { output, error } = await runPython((toolCall.input as { code: string }).code);
+      addToolOutput({ tool: "run_python", toolCallId: toolCall.toolCallId, output: error ? { output, error } : { output } });
+    },
   });
 
   const streaming = status === "streaming" || status === "submitted";
@@ -275,10 +290,10 @@ function WebToggle() {
       variant={on ? "secondary" : "ghost"}
       size="sm"
       aria-pressed={on}
-      title={hasSearch ? "Let the AI search the web and read links" : "Let the AI read links (add a search key in Models and keys to search too)"}
+      title={hasSearch ? "Let the AI search the web, read links and run Python" : "Let the AI read links and run Python (add a search key in Models and keys to search the web too)"}
       onClick={() => update((s) => ({ ...s, webTools: !s.webTools }))}
     >
-      <Globe /> Web
+      <Wrench /> Tools
     </Button>
   );
 }
