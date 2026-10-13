@@ -51,6 +51,18 @@ contextBridge.exposeInMainWorld("moonc", {
     get: () => invoke("settings:get"),
     setOpenAtLogin: (on) => invoke("settings:openAtLogin", on),
   },
+  computer: {
+    start: (task) => invoke("computer:start", task),
+    stop: () => invoke("computer:stop"),
+    act: (a) => invoke("computer:act", a),
+    status: () => invoke("computer:status"),
+    audit: () => invoke("computer:audit"),
+    onState: (cb) => {
+      const fn = (_e, st) => cb(st);
+      ipcRenderer.on("computer:state", fn);
+      return () => ipcRenderer.removeListener("computer:state", fn);
+    },
+  },
   mcp: { approve: (command, args) => invoke("mcp:approve", command, args) },
   notify: (title, body) => invoke("notify", title, body),
   openExternal: (url) => invoke("open-external", url),

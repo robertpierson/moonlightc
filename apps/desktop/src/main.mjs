@@ -4,6 +4,7 @@ import fs from "node:fs";
 import net from "node:net";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import * as computer from "./computer.mjs";
 import { hardware } from "./hardware.mjs";
 import * as ollama from "./ollama.mjs";
 import * as projects from "./projects.mjs";
@@ -39,7 +40,7 @@ async function startServer() {
   const port = await freePort();
   server = spawn(process.execPath, [entry], {
     cwd: path.dirname(entry),
-    env: { ...process.env, MOONC_MCP_ALLOWLIST: mcpAllowlist(), NODE_PATH: path.join(root, "deps", ".pnpm", "node_modules"), ELECTRON_RUN_AS_NODE: "1", PORT: String(port), HOSTNAME: "127.0.0.1", MOONC_DESKTOP: "1", NODE_ENV: "production" },
+    env: { ...process.env, MOONC_E2E_AUTO_APPROVE: app.isPackaged ? "" : (process.env.MOONC_E2E_AUTO_APPROVE ?? ""), MOONC_MCP_ALLOWLIST: mcpAllowlist(), NODE_PATH: path.join(root, "deps", ".pnpm", "node_modules"), ELECTRON_RUN_AS_NODE: "1", PORT: String(port), HOSTNAME: "127.0.0.1", MOONC_DESKTOP: "1", NODE_ENV: "production" },
     stdio: ["ignore", "pipe", "pipe"],
     windowsHide: true,
   });
@@ -161,6 +162,12 @@ handle("ollama:status", () => ollama.status());
 handle("ollama:install", (e) => ollama.install((pct, stage) => e.sender.send("ollama:install-progress", pct, stage)));
 handle("ollama:start", () => ollama.start());
 handle("ollama:stop", () => ollama.stop());
+handle("computer:start", (_e, task) => computer.start(win, task));
+handle("computer:stop", () => computer.stop("stopped in the app"));
+handle("computer:act", (_e, a) => computer.act(win, a ?? {}));
+handle("computer:status", () => computer.status());
+handle("computer:audit", () => computer.readAudit());
+computer.onState((st) => BrowserWindow.getAllWindows().forEach((w) => !w.isDestroyed() && w.webContents.send("computer:state", st)));
 handle("terminals:tools", () => terminals.tools());
 handle("terminals:create", (e, opts) => terminals.create(e.sender, opts));
 const on = (channel, fn) =>
@@ -230,6 +237,7 @@ app.whenReady().then(async () => {
 
 app.on("before-quit", () => {
   quitting = true;
+  computer.stop("app closed");
   terminals.killAll();
   server?.kill();
 });

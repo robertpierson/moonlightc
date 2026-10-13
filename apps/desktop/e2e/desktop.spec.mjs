@@ -3,7 +3,7 @@ import { _electron as electron, expect, test } from "@playwright/test";
 let app;
 let page;
 test.beforeAll(async () => {
-  app = await electron.launch({ args: ["."], cwd: new URL("..", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1") });
+  app = await electron.launch({ args: ["."], env: { ...process.env, MOONC_E2E_AUTO_APPROVE: "1" }, cwd: new URL("..", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1") });
   page = await app.firstWindow();
   await page.waitForURL(/127\.0\.0\.1:\d+\/app/);
 });
@@ -147,5 +147,63 @@ test("automations run on a schedule or on demand and keep a history", async () =
     await expect(page.locator('[data-role="assistant"]').last()).toContainText("summarize my day");
   } finally {
     mock.kill();
+  }
+});
+
+test("computer use: approval, overlay, screenshot, real input, audit log, stop and panic hotkey", async () => {
+  const robot = (await import("@jitsi/robotjs")).default;
+  await page.getByRole("button", { name: "Chat", exact: true }).click();
+  expect(await page.evaluate(() => window.moonc.computer.start("e2e check"))).toBe(true);
+  await expect(page.getByRole("status").filter({ hasText: "The AI is using this PC: e2e check" })).toBeVisible();
+  const overlayOpen = () => app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().some((w) => w.webContents.getURL().startsWith("data:text/html")));
+  await expect.poll(overlayOpen).toBe(true); // the on-screen frame
+
+  const shot = await page.evaluate(() => window.moonc.computer.act({ action: "screenshot" }));
+  expect(shot.width).toBeLessThanOrEqual(1280);
+  expect(shot.image.length).toBeGreaterThan(1000);
+
+  await page.evaluate(() => window.moonc.computer.act({ action: "move", x: 40, y: 40 }));
+  const after = robot.getMousePos();
+  expect(Math.abs(after.x - 40 * (robot.getScreenSize().width / shot.width))).toBeLessThan(3);
+
+  await page.getByRole("button", { name: "Stop", exact: true }).click();
+  await expect(page.getByRole("status").filter({ hasText: "The AI is using this PC" })).toHaveCount(0);
+  await expect.poll(overlayOpen).toBe(false);
+  await expect(page.evaluate(() => window.moonc.computer.act({ action: "screenshot" }))).rejects.toThrow(/No computer-use session/);
+
+  // The global panic hotkey ends a session from anywhere.
+  await page.evaluate(() => window.moonc.computer.start("panic check"));
+  robot.keyTap("m", ["control", "alt", "shift"]);
+  await expect.poll(() => page.evaluate(() => window.moonc.computer.status().then((s) => s.active))).toBe(false);
+
+  const log = await page.evaluate(() => window.moonc.computer.audit());
+  const actions = log.map((e) => e.action);
+  for (const a of ["session.start", "step", "session.end"]) expect(actions).toContain(a);
+  expect(log.find((e) => e.action === "session.end")?.reason).toBe("panic hotkey");
+});
+
+test("computer use through chat: the model takes a screenshot after the PC approves", async () => {
+  const { spawn } = await import("node:child_process");
+  const mock = spawn(process.execPath, ["../web/e2e/mock-openai.mjs"], { env: { ...process.env, MOCK_PORT: "4012" }, stdio: "ignore" });
+  try {
+    await new Promise((r) => setTimeout(r, 800));
+    await page.evaluate(async () => {
+      const res = await fetch("/api/models", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ providerId: "custom", apiKey: "", baseURL: "http://127.0.0.1:4012/v1" }) });
+      const { models } = await res.json();
+      const s = JSON.parse(localStorage.getItem("moonc:v1") || "{}");
+      s.connections = [...(s.connections || []).filter((c) => c.id !== "mock4012"), { id: "mock4012", providerId: "custom", apiKey: "", baseURL: "http://127.0.0.1:4012/v1", label: "Mock PC", models, addedAt: 0 }];
+      s.lastModel = { connectionId: "mock4012", modelId: "mock-fast" };
+      localStorage.setItem("moonc:v1", JSON.stringify(s));
+    });
+    await page.reload();
+    await page.getByRole("button", { name: "New chat" }).click();
+    await page.getByRole("button", { name: "Use this PC" }).click();
+    await page.getByLabel("Message", { exact: true }).fill("please use the computer");
+    await page.getByRole("button", { name: "Send message" }).click();
+    await expect(page.getByText("Looked at the screen")).toBeVisible({ timeout: 20000 });
+    await expect(page.locator('[data-role="assistant"]').last()).toContainText("Tool says", { timeout: 20000 });
+  } finally {
+    mock.kill();
+    await page.evaluate(() => window.moonc.computer.stop());
   }
 });

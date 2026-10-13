@@ -1,7 +1,7 @@
 "use client";
 
 import type { UIMessage } from "ai";
-import { AppWindow, Brain, Check, Copy, FileText, GitBranch, Link2, Loader2, Plug, Search, Terminal, Pencil, RotateCcw, Volume2, VolumeX } from "lucide-react";
+import { AppWindow, Brain, Check, MousePointerClick, Copy, FileText, GitBranch, Link2, Loader2, Plug, Search, Terminal, Pencil, RotateCcw, Volume2, VolumeX } from "lucide-react";
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
@@ -77,6 +77,15 @@ function ToolCall({ part }: { part: ToolPart }) {
       </ul>
     </details>
   );
+}
+
+function describeComputer(i?: Record<string, unknown>) {
+  if (!i) return "Using the computer…";
+  if (i.action === "type") return `Typed ${String(i.text ?? "").length} characters`;
+  if (i.action === "key") return `Pressed ${String(i.keys)}`;
+  if (i.action === "screenshot") return "Looked at the screen";
+  if (typeof i.x === "number") return `${String(i.action).replace("_", " ")} at ${Math.round(i.x)}, ${Math.round(Number(i.y))}`;
+  return String(i.action);
 }
 
 interface ConnectorPart {
@@ -258,6 +267,10 @@ export function Message({
                 <PythonCall key={i} part={p as unknown as PyPart} />
               ) : p.type === "tool-web_search" || p.type === "tool-fetch_url" ? (
                 <ToolCall key={i} part={p as unknown as ToolPart} />
+              ) : p.type === "tool-computer" ? (
+                <p key={i} className="mb-1 flex items-center gap-1 text-xs text-muted-foreground">
+                  <MousePointerClick className="size-3.5" /> {describeComputer((p as unknown as { input?: Record<string, unknown> }).input)}
+                </p>
               ) : p.type === "tool-save_memory" ? (
                 <p key={i} className="mb-2 flex items-center gap-1 text-sm text-muted-foreground">
                   <Brain className="size-3.5" /> Remembered: {String((p as unknown as { input?: { fact?: string } }).input?.fact ?? "")}

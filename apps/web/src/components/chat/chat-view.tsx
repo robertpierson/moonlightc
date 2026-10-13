@@ -3,13 +3,14 @@
 import { useChat } from "@ai-sdk/react";
 import { estimateCost } from "@moonc/core";
 import { DefaultChatTransport, lastAssistantMessageIsCompleteWithApprovalResponses, lastAssistantMessageIsCompleteWithToolCalls, type FileUIPart, type UIMessage } from "ai";
-import { ArrowUp, FileText, Wrench, KeyRound, Paperclip, Square, X } from "lucide-react";
+import { ArrowUp, FileText, MousePointerClick, Wrench, KeyRound, Paperclip, Square, X } from "lucide-react";
 import { toast } from "sonner";
 import type { Artifact } from "@/lib/artifacts";
 import { buildInstructions, relevantMemories } from "@/lib/context";
 import { addMemory } from "@/components/library/library";
 import { callModTool, modToolName } from "@/lib/mods";
 import { fillCommand } from "@moonc/mods-sdk";
+import { desktop, type ComputerAction } from "@/lib/desktop";
 import { runPython } from "@/lib/python";
 
 /** "/tldr some text" -> the installed mod command's prompt with the text filled in. */
@@ -63,6 +64,7 @@ export function ChatView({
   projectId?: string;
 }) {
   const [input, setInput] = useState("");
+  const [computerOn, setComputerOn] = useState(false);
   const hasSearchKey = useStore((s) => !!s.searchKey);
   const bottom = useRef<HTMLDivElement>(null);
   // The key and model travel with each request, so switching models mid-chat just works.
@@ -87,6 +89,7 @@ export function ChatView({
           memories: relevantMemories(getState().memory?.items ?? [], lastUserText(), projectId),
         }),
         memory: (!!getState().memory?.enabled && !mode.private) || undefined,
+        computer: computerOn || undefined,
         temperature: mode.temperature,
         tools: getState().webTools || mode.research ? { search: getState().searchKey } : undefined,
         research: mode.research || undefined,
@@ -116,6 +119,17 @@ export function ChatView({
     sendAutomaticallyWhen: (o) => lastAssistantMessageIsCompleteWithToolCalls(o) || lastAssistantMessageIsCompleteWithApprovalResponses(o),
     onToolCall: async ({ toolCall }) => {
       if (toolCall.dynamic) return;
+      if (toolCall.toolName === "computer") {
+        const bridge = desktop();
+        try {
+          if (!bridge) throw new Error("Computer use works in the desktop app.");
+          const output = await bridge.computer.act(toolCall.input as ComputerAction);
+          addToolOutput({ tool: "computer", toolCallId: toolCall.toolCallId, output } as never);
+        } catch (e) {
+          addToolOutput({ tool: "computer", toolCallId: toolCall.toolCallId, output: { error: e instanceof Error ? e.message : String(e) } } as never);
+        }
+        return;
+      }
       if (toolCall.toolName === "save_memory") {
         const fact = String((toolCall.input as { fact?: string }).fact ?? "").slice(0, 500).trim();
         if (fact) addMemory(fact, projectId);
@@ -190,10 +204,16 @@ export function ChatView({
     });
   };
 
-  const submit = (e?: React.FormEvent) => {
+  const submit = async (e?: React.FormEvent) => {
     e?.preventDefault();
     const text = input.trim();
     if ((!text && attachments.length === 0) || streaming || !canSend) return;
+    // Computer use: the person at the PC must approve each session in a native dialog first.
+    if (computerOn && !(await desktop()!.computer.status()).active && !(await desktop()!.computer.start(text))) {
+      toast("Computer use wasn't allowed, so the AI won't control this PC.");
+      setComputerOn(false);
+      return;
+    }
     clearError();
     const files = attachments.flatMap((a) => (a.kind === "file" ? [a.part] : []));
     sendMessage({ text: composeText(expandCommand(text), attachments), files }, request());
@@ -348,6 +368,18 @@ export function ChatView({
           </Button>
           <MicButton onText={(t) => setInput((v) => (v ? `${v} ${t}` : t))} />
           <WebToggle />
+          {desktop() && (
+            <Button
+              type="button"
+              variant={computerOn ? "secondary" : "ghost"}
+              size="sm"
+              aria-pressed={computerOn}
+              title="Let the AI see and control this PC (you'll be asked first)"
+              onClick={() => setComputerOn((v) => !v)}
+            >
+              <MousePointerClick /> Use this PC
+            </Button>
+          )}
           {modeSlot(messages.length > 0)}
         </div>
         </div>

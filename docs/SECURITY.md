@@ -29,6 +29,17 @@ Report vulnerabilities privately through GitHub's "Report a vulnerability" butto
   a native OS dialog. The approval list is written by the main process; the web layer can't add to it.
 - The bundled server listens on 127.0.0.1 on a random port.
 
+## AI computer use (desktop, this PC)
+- Each session must be approved by the person at the PC in a native dialog (pages can't approve it themselves).
+- A blue frame and a banner show the whole time; the in-app banner has a Stop button.
+- Global panic hotkey **Ctrl+Alt+Shift+M** ends the session from anywhere. Sessions end by themselves after 15 minutes.
+- Steps the model marks destructive, plus keystrokes/commands that look destructive (Delete, `rm -rf`, `format`,
+  `Remove-Item`…), require a second native confirmation; refusing ends the session.
+- Every session and step is written to an audit log (`computer-audit.jsonl` in the app's data folder). Typed text is
+  recorded only as a length, never its content.
+- Only models that can see screenshots in tool results are allowed (Claude, GPT, Gemini via their own APIs, Azure, Bedrock).
+- The test-only auto-approve switch is ignored by installed (packaged) builds.
+
 ## Connectors (MCP)
 - Every tool defaults to **Ask every time**; the chat shows the tool's input and waits for Allow/Deny.
 - Users can set Always allow or Never per tool. Tools set to Never are not offered to the model at all.
@@ -40,5 +51,5 @@ Report vulnerabilities privately through GitHub's "Report a vulnerability" butto
   the sandbox's window.
 
 ## Not built yet (tracked in PROGRESS.md)
-- Remote control and devices (SPEC §8) with MFA, pairing approval, session indicators and a panic hotkey.
+- Remote control from other devices (SPEC §8): MFA, device pairing and approval, relay, remote screen/terminal/files.
 - Accounts, RLS and Supabase Vault (Phase 1).

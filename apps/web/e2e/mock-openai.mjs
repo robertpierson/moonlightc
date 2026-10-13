@@ -20,6 +20,19 @@ createServer(async (req, res) => {
     const url = prompt.match(/read (https:\/\/\S+)/)?.[1];
     const py = prompt.match(/python: (.+)/)?.[1];
     const add = prompt.match(/add (\d+) (\d+)/);
+    if (prompt.includes("use the computer") && body.tools?.some((t) => t.function.name === "computer") && !toolMsg) {
+      res.writeHead(200, { "content-type": "text/event-stream" });
+      const call = { index: 0, id: "call_pc", type: "function", function: { name: "computer", arguments: JSON.stringify({ action: "screenshot" }) } };
+      res.write(`data: ${JSON.stringify({ id: "x", object: "chat.completion.chunk", created: 0, model: body.model, choices: [{ index: 0, delta: { role: "assistant", tool_calls: [call] }, finish_reason: null }] })}
+
+`);
+      res.write(`data: ${JSON.stringify({ id: "x", object: "chat.completion.chunk", created: 0, model: body.model, choices: [{ index: 0, delta: {}, finish_reason: "tool_calls" }] })}
+
+`);
+      return res.end(`data: [DONE]
+
+`);
+    }
     const rememberFact = prompt.match(/remember that (.+)/)?.[1];
     if (rememberFact && body.tools?.some((t) => t.function.name === "save_memory") && !toolMsg) {
       res.writeHead(200, { "content-type": "text/event-stream" });

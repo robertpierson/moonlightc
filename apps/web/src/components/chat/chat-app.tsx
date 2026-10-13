@@ -18,6 +18,7 @@ import { Connections } from "@/components/connections/connections";
 import { ModHost } from "@/components/mods/mod-host";
 import { ModsView } from "@/components/mods/mods-view";
 import { AutomationRunner, Automations } from "@/components/desktop/automations";
+import { ComputerBanner } from "@/components/desktop/computer-banner";
 import { Library } from "@/components/library/library";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Studio } from "@/components/studio/studio";
@@ -172,6 +173,7 @@ function Inner() {
         </Sheet>
 
         <main className="flex min-w-0 flex-1 flex-col">
+          <ComputerBanner />
           {view !== "chat" && !quick && (
             <header className="flex h-12 shrink-0 items-center gap-1 border-b px-2 md:hidden">
               <Button variant="ghost" size="icon" aria-label="Open chats" onClick={() => setNavOpen(true)}>

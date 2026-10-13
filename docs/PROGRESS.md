@@ -64,7 +64,9 @@ STATUS: BUILDING
 - [x] Detect LM Studio / llama.cpp servers (desktop)
 - [ ] Desktop SQLite + sync (needs Supabase)
 
-## Phase 5 (remote control): BLOCKED on Supabase (pairing, relay, MFA). Nothing built yet.
+## Phase 5 (remote control)
+- [x] Local AI computer use on this PC: native per-session approval, overlay frame + in-app banner, Ctrl+Alt+Shift+M panic, 15-min timeout, destructive-step confirmation, audit log + viewer; vision-capable models only (12 desktop e2e)
+- [ ] BLOCKED on Supabase: device registry, pairing/approval, MFA, relay (Realtime + WebRTC), remote screen/terminal/files, remote local-model chat
 
 ## Phase 6 (studio, on branch)
 - [x] Studio: image/video/voice via fal, OpenAI, Google, xAI, Replicate, ElevenLabs; live model lists (fal catalog, Replicate collections, provider /models)
@@ -99,6 +101,7 @@ STATUS: BUILDING
 - No Docker, so no local Supabase stack; test against the hosted project.
 
 ## Notes (last 10)
+- 2026-10-13: Local computer use with full §8 safety set (approval, overlay, panic key verified by real keypress in e2e).
 - 2026-10-13: Automations (desktop) + Azure/Bedrock + LM Studio detection; 76 web + 10 desktop e2e.
 - 2026-10-13: Projects & memory on device; 74 web e2e; DB migration + offline RLS tests ready for when Supabase exists.
 - 2026-10-13: Phase 8 done on branch; 56 web e2e. Mod registry repo created (public, MIT).

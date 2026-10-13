@@ -17,7 +17,41 @@ interface Body {
   mcp?: unknown;
   modTools?: unknown;
   memory?: boolean;
+  computer?: boolean;
 }
+
+const COMPUTER_INSTRUCTIONS = `You can use this person's computer with the computer tool. Start with a screenshot. Coordinates are pixels in the latest screenshot. Work step by step and take a screenshot after anything changes. Before any step that deletes, buys, sends a message or installs something, set destructive: true and explain why in reason; the person will be asked. If something looks wrong, stop and explain.`;
+
+// Runs in the desktop app (the browser executes it through the bridge and returns a screenshot).
+const computerTool = tool({
+  description: "Look at and operate the person's computer: screenshot, click, double_click, right_click, move, type, key (like ctrl+s), scroll (amount: negative = down), wait.",
+  inputSchema: jsonSchema({
+    type: "object",
+    properties: {
+      action: { type: "string", enum: ["screenshot", "click", "double_click", "right_click", "move", "type", "key", "scroll", "wait"] },
+      x: { type: "number" },
+      y: { type: "number" },
+      text: { type: "string" },
+      keys: { type: "string" },
+      amount: { type: "number" },
+      ms: { type: "number" },
+      destructive: { type: "boolean" },
+      reason: { type: "string" },
+    },
+    required: ["action"],
+  }),
+  toModelOutput: ({ output }) => {
+    const o = output as { image?: string; width?: number; height?: number; note?: string; error?: string };
+    if (!o?.image) return { type: "content", value: [{ type: "text", text: o?.note ?? o?.error ?? "Done." }] };
+    return {
+      type: "content",
+      value: [
+        { type: "text", text: `Screenshot ${o.width}x${o.height}.` },
+        { type: "file", mediaType: "image/png", data: { type: "data", data: o.image } },
+      ],
+    };
+  },
+});
 
 function readModTools(v: unknown): ToolSet {
   const out: ToolSet = {};
@@ -46,16 +80,23 @@ export async function POST(req: Request) {
     const memoryTool: ToolSet = body.memory
       ? { save_memory: tool({ description: "Remember a lasting fact about the user for future chats.", inputSchema: jsonSchema({ type: "object", properties: { fact: { type: "string" } }, required: ["fact"] }) }) }
       : {};
-    const tools = { ...builtIn, ...mcp?.tools, ...readModTools(body.modTools), ...memoryTool };
+    const desktopComputer = body.computer && process.env.MOONC_DESKTOP === "1";
+    // Screenshots must reach the model as images; OpenAI-compatible APIs only accept text in tool results.
+    const visionTools = ["anthropic", "openai", "google", "azure", "bedrock"].includes(getProvider(c.providerId).kind) || process.env.MOONC_E2E_AUTO_APPROVE === "1";
+    if (desktopComputer && !visionTools) {
+      throw new ProviderError("Computer use needs a Claude, GPT or Gemini model connected with its own key (Anthropic, OpenAI, Google, Azure or Bedrock). Pick one in the model menu.");
+    }
+    const tools = { ...builtIn, ...mcp?.tools, ...readModTools(body.modTools), ...memoryTool, ...(desktopComputer ? { computer: computerTool } : {}) };
     const hasTools = Object.keys(tools).length > 0;
 
     const result = streamText({
       model: languageModel(c, body.modelId),
-      instructions: typeof body.instructions === "string" && body.instructions ? body.instructions.slice(0, 20000) : undefined,
+      instructions:
+        [typeof body.instructions === "string" ? body.instructions.slice(0, 80000) : "", desktopComputer ? COMPUTER_INSTRUCTIONS : ""].filter(Boolean).join("\n\n") || undefined,
       temperature: typeof body.temperature === "number" ? Math.min(2, Math.max(0, body.temperature)) : undefined,
       messages: await convertToModelMessages(body.messages),
       abortSignal: req.signal,
-      ...(hasTools ? { tools, toolApproval: mcp?.approval, stopWhen: isStepCount(body.research ? 40 : 8) } : {}),
+      ...(hasTools ? { tools, toolApproval: mcp?.approval, stopWhen: isStepCount(body.research || desktopComputer ? 40 : 8) } : {}),
       onEnd: async () => {
         await mcp?.close();
       },

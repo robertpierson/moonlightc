@@ -38,6 +38,20 @@ export interface AiProject {
   resume?: string; // command to resume in a terminal
 }
 
+export interface ComputerAction {
+  action: "screenshot" | "click" | "double_click" | "right_click" | "move" | "type" | "key" | "scroll" | "wait";
+  x?: number;
+  y?: number;
+  text?: string;
+  keys?: string;
+  amount?: number;
+  ms?: number;
+  destructive?: boolean;
+  reason?: string;
+}
+
+export type ComputerState = { active: false } | { active: true; task: string; startedAt: number; endsAt: number };
+
 export interface MooncBridge {
   platform: NodeJS.Platform;
   arch: string;
@@ -73,6 +87,15 @@ export interface MooncBridge {
   settings: {
     get(): Promise<{ openAtLogin: boolean }>;
     setOpenAtLogin(on: boolean): Promise<void>;
+  };
+  computer: {
+    /** Native "Let the AI control this PC?" dialog. Resolves true if allowed. */
+    start(task: string): Promise<boolean>;
+    stop(): Promise<void>;
+    act(a: ComputerAction): Promise<{ image: string; width: number; height: number } | { stopped: true; note: string }>;
+    status(): Promise<ComputerState>;
+    audit(): Promise<{ at: string; session: string | null; action: string; [k: string]: unknown }[]>;
+    onState(cb: (s: ComputerState) => void): () => void;
   };
   mcp: {
     /** Native "Allow this program?" dialog. Returns true if the user allowed it. */

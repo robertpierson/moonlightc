@@ -12,9 +12,10 @@
     "bundle-web": "node scripts/bundle-web.mjs",
     "dist": "pnpm bundle-web && electron-builder --publish never",
     "typecheck": "tsc --noEmit -p .",
-    "test": "node --test src/*.test.mjs"
+    "test": "node --test src/safety.test.mjs"
   },
   "dependencies": {
+    "@jitsi/robotjs": "0.6.24",
     "node-pty": "1.1.0",
     "systeminformation": "5.33.15"
   },
