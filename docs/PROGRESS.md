@@ -9,8 +9,8 @@ STATUS: BUILDING
 - [x] 3 Marketing site, download page, PWA (built on branch phase-2-chat; ships to prod with Phase 1+2)
 - [~] 4 Desktop app: Electron, offline SQLite + sync, Ollama manager, Model Store, terminals, My AI Projects, tray/hotkey, CI release builds
 - [ ] 5 Devices and remote control (§8 safety)
-- [ ] 6 Creative studio: images, video, audio, gallery
-- [ ] 7 Connections and automations: MCP client, GitHub, Google, Discord, Spotify, Notion, Slack, YouTube, custom MCP, subscriptions, scheduled agents, deep research
+- [~] 6 Creative studio: images, video, audio, gallery
+- [~] 7 Connections and automations: MCP client, GitHub, Google, Discord, Spotify, Notion, Slack, YouTube, custom MCP, subscriptions, scheduled agents, deep research
 - [ ] 8 Customization: distros, themes/editor, layout, mods SDK and store
 - [ ] 9 Hardening: security review, RLS audit, perf, a11y, docs, v1.0 release
 
@@ -61,6 +61,21 @@ STATUS: BUILDING
 - [ ] CI release builds (workflow desktop.yml -> draft release) — first run in progress
 - [ ] Desktop SQLite + sync (needs Supabase)
 
+## Phase 5 (remote control): BLOCKED on Supabase (pairing, relay, MFA). Nothing built yet.
+
+## Phase 6 (studio, on branch)
+- [x] Studio: image/video/voice via fal, OpenAI, Google, xAI, Replicate, ElevenLabs; live model lists (fal catalog, Replicate collections, provider /models)
+- [x] Video via startVideo + polling (no function timeouts); video downloaded from provider URL in browser
+- [x] Gallery on device (IndexedDB): remix, download, send image to chat; Supabase Storage mirror later
+- [x] e2e with faked provider routes; unit tests for model listing
+- [ ] Gate needs real fal key (owner) — see OWNER_TODO
+
+## Phase 7 (connections, on branch)
+- [x] MCP client: custom URL connectors, desktop local commands (native approval dialog + allowlist), per-tool ask/always/never, in-chat approval
+- [x] GitHub connector via token: live stats dashboard + GitHub MCP (46 tools) — verified with real GitHub
+- [ ] OAuth connectors (Google/Gmail, Discord, Spotify, Notion, Slack, YouTube): need Supabase + owner OAuth apps
+- [ ] Scheduled agents (pg_cron) + subscriptions hub: need Supabase + Gmail
+
 ## Owner steps completed
 (none yet)
 
@@ -71,6 +86,7 @@ STATUS: BUILDING
 - No Docker, so no local Supabase stack; test against the hosted project.
 
 ## Notes (last 10)
+- 2026-10-13: Phases 6/7 unblocked parts done; 47 web e2e + 8 desktop e2e. Next: Phase 8 customization.
 - 2026-10-13: Phase 4 working on Windows; desktop e2e 8 tests; release workflow triggered.
 - 2026-10-13: Phase 3 done on branch. 38 e2e tests. Next: Phase 4 desktop (Electron) since Supabase still blocked.
 - 2026-10-13: Draft PR https://github.com/robertpierson/moonlightc/pull/1 carries Phase 2; CI green; 27 e2e tests.

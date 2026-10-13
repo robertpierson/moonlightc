@@ -33,3 +33,11 @@ These go live at moonlightc.vercel.app once sign-in (step 1 above) is done. Unti
 4. Ask anything. Press the square **Stop** button mid-answer: the partial answer stays.
 5. Click **Compare** at the top, pick a second model, and send one question to both.
 6. Open the preview on your phone and use the browser menu to **Install** / **Add to Home screen**.
+
+---
+## Optional: try the Studio and GitHub (preview link from PR #1)
+1. Make a fal key: open https://fal.ai/dashboard/keys, sign in, click **Add key**, copy it. (fal charges per image/video from your own balance.)
+2. In MoonlightC click the key icon (**Models and keys**), choose **fal (images, video, audio)**, paste, click **Check key and connect**.
+3. Click **Studio**, describe an image, click **Generate**. Then the **Video** tab, describe a short clip, **Generate** (takes 1–5 minutes).
+4. Click **Connections** > **Connect GitHub**. Make a token at https://github.com/settings/personal-access-tokens/new (Repository access: All repositories; Permissions: Contents, Issues, Pull requests = Read). Paste it and click **Connect**. Your real GitHub numbers appear.
+5. In a chat, turn on nothing extra and ask: "What are my open pull requests?" Click **Allow once** when it asks.
