@@ -89,7 +89,9 @@
           ]
         }
       ],
-      "category": "public.app-category.productivity"
+      "category": "public.app-category.productivity",
+      "identity": "-",
+      "x64ArchFiles": "**/node_modules/node-pty/prebuilds/**"
     },
     "linux": {
       "target": [

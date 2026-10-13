@@ -73,6 +73,7 @@ test("keys are kept in the OS keychain, not in page storage", async () => {
 
 test("gate: download a local model with one click and chat with it (no cloud involved)", async () => {
   test.setTimeout(10 * 60_000);
+  test.skip(!(await page.evaluate(() => window.moonc.ollama.status())).running, "Ollama isn't running on this machine");
   await page.getByRole("button", { name: "Local models" }).click();
   // Use the Hugging Face search + one-click download path with a tiny model to keep the test fast.
   await page.getByLabel("Search Hugging Face models").fill("SmolLM2-135M-Instruct-GGUF");
