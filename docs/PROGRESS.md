@@ -3,7 +3,7 @@ STATUS: BUILDING
 # MoonlightC progress
 
 ## Phases (SPEC §14)
-- [ ] 0 Setup: prerequisites, GitHub repo, Supabase project, Vercel project, monorepo scaffold, CI — gate: `pnpm build` green, empty app live at moonlightc.vercel.app
+- [x] 0 Setup: prerequisites, GitHub repo, Supabase project, Vercel project, monorepo scaffold, CI — gate: `pnpm build` green, empty app live at moonlightc.vercel.app
 - [ ] 1 Accounts and metrics: sign-in methods, identity linking, onboarding, profiles, PostHog, /admin, privacy, terms
 - [ ] 2 Chat core: provider registry, key vault, model picker, streaming/stop, chats, projects, attachments, artifacts, memory, modes, compare, search
 - [ ] 3 Marketing site, download page, PWA
@@ -16,18 +16,19 @@ STATUS: BUILDING
 
 ## Phase 0 tasks
 - [x] Check prerequisites (node 22, pnpm 11, git, gh logged in as robertpierson; Vercel + Supabase via MCP)
-- [ ] Monorepo scaffold (pnpm + turbo, apps/web Next.js)
-- [ ] GitHub repo `moonlightc` (public, MIT)
-- [ ] Vercel project `moonlightc` linked to repo
-- [ ] Supabase project (BLOCKED: free-plan limit, see OWNER_TODO #1)
-- [ ] CI (GitHub Actions: typecheck, lint, test, build, Playwright)
-- [ ] Gate verified
+- [x] Monorepo scaffold (pnpm + turbo, apps/web Next.js 16.4)
+- [x] GitHub repo https://github.com/robertpierson/moonlightc (public, MIT)
+- [x] Vercel project `moonlightc` (team app-project21, root apps/web, git-connected; main = production)
+- [ ] Supabase project (BLOCKED: free-plan limit 2 active, see OWNER_TODO #1) — create in org umzghxzngixiedodscaa, us-east-2
+- [x] CI (GitHub Actions: typecheck, lint, test, build, Playwright) green
+- [x] Gate verified: build green, https://moonlightc.vercel.app 200, Playwright desktop+mobile pass on prod
 
 ## Owner steps completed
 (none yet)
 
 ## Known issues
-(none)
+- Vercel MCP returns 403/404 for this team; use Vercel CLI (logged in as robertpierson196-1427). In Git Bash prefix `vercel api` with MSYS_NO_PATHCONV=1.
+- No Docker, so no local Supabase stack; test against the hosted project.
 
 ## Notes (last 10)
-- 2026-10-13: session 1 started.
+- 2026-10-13: Phase 0 done. Next: Phase 2 provider layer (no DB needed) while Supabase is blocked; Phase 1 resumes when OWNER_TODO #1 is done.

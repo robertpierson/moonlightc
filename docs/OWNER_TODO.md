@@ -18,3 +18,8 @@ Creating MoonlightC's database would require a paid plan. Pick ONE option:
 1. Open https://supabase.com/dashboard/org/umzghxzngixiedodscaa/billing
 2. Click **Change subscription plan** > **Pro**, and confirm.
 3. Tell Claude: "upgraded, continue".
+
+---
+## Try this yourself: Phase 0 (setup)
+1. Open https://moonlightc.vercel.app on your PC and phone. You should see "MoonlightC" and one line about it.
+2. Open https://github.com/robertpierson/moonlightc. That is the code. The green check next to the latest commit means all tests passed.
