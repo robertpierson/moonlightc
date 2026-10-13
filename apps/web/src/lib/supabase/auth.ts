@@ -28,6 +28,8 @@ export async function handleAuthLink(url: string) {
   const u = new URL(url);
   const code = u.searchParams.get("code");
   const error = u.searchParams.get("error_description") ?? u.searchParams.get("error");
+  // Full page loads below on purpose: the new session cookie must reach the server.
+  /* eslint-disable @next/next/no-location-assign-relative-destination */
   if (error || !code) {
     location.assign(`/signin?error=${encodeURIComponent(error ?? "That sign-in link didn't work. Try again.")}`);
     return true;
@@ -35,6 +37,7 @@ export async function handleAuthLink(url: string) {
   const { error: ex } = await supabase().auth.exchangeCodeForSession(code);
   if (ex) location.assign(`/signin?error=${encodeURIComponent("That sign-in link expired or was already used. Sign in again.")}`);
   else location.assign(await destinationAfterSignIn());
+  /* eslint-enable @next/next/no-location-assign-relative-destination */
   return true;
 }
 

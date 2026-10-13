@@ -2,7 +2,7 @@
 
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,19 +20,25 @@ const PROVIDERS: { id: Provider; name: string }[] = [
 ];
 type Step = "signin" | "signup" | "forgot" | "magic";
 
+const noop = () => () => {};
+
 export function SignIn() {
+  // The address bar (return path, errors) only exists in the browser, so render after mount.
+  const mounted = useSyncExternalStore(noop, () => true, () => false);
+  return mounted ? <Form /> : null;
+}
+
+function Form() {
   const [enabled, setEnabled] = useState<Provider[]>([]);
   const [step, setStep] = useState<Step>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(() => new URLSearchParams(location.search).get("error") ?? "");
   const [notice, setNotice] = useState("");
   const [next] = useState(() => new URLSearchParams(location.search).get("next"));
 
   useEffect(() => {
-    const err = new URLSearchParams(location.search).get("error");
-    if (err) setError(err);
     // Only show the sign-in buttons this project actually has turned on.
     fetch(`${SUPABASE_URL}/auth/v1/settings`, { headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? "" } })
       .then((r) => r.json())
