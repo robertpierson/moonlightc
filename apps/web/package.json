@@ -39,6 +39,7 @@
     "zod": "4.6.6"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@modelcontextprotocol/sdk": "^1.32.1",
     "@playwright/test": "1.64.0",
     "@tailwindcss/turbopack": "^4",
