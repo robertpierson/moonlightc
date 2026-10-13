@@ -36,6 +36,7 @@ export function ChatView({
   onOpenKeys,
   onOpenArtifact,
   initialFiles,
+  bigInput,
 }: {
   chat: Chat;
   model?: ModelRef;
@@ -45,6 +46,7 @@ export function ChatView({
   onOpenKeys: () => void;
   onOpenArtifact: (a: Artifact) => void;
   initialFiles?: FileUIPart[];
+  bigInput?: boolean;
 }) {
   const [input, setInput] = useState("");
   const hasSearchKey = useStore((s) => !!s.searchKey);
@@ -264,7 +266,7 @@ export function ChatView({
               if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) submit(e);
             }}
             rows={1}
-            className="max-h-60 min-h-10 resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 dark:bg-transparent"
+            className={`max-h-60 resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 dark:bg-transparent ${bigInput ? "min-h-32 text-lg md:text-lg" : "min-h-10"}`}
           />
           {streaming ? (
             <Button type="button" size="icon-lg" aria-label="Stop generating" onClick={() => stop()}>

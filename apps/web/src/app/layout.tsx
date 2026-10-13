@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import "./themes.css";
 import { RegisterSW } from "@/components/register-sw";
 import { ThemeProvider } from "@/components/theme";
 import { Toaster } from "@/components/ui/sonner";

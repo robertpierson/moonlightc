@@ -2,7 +2,7 @@
 
 import type { UIMessage } from "ai";
 import { Columns2, KeyRound, Menu } from "lucide-react";
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { ThemeToggle } from "@/components/theme";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -11,7 +11,9 @@ import { getState, patchChat, saveChat, update, useStore, type Chat, type ModelR
 import type { Artifact } from "@/lib/artifacts";
 import { ArtifactPanel } from "./artifact-panel";
 import { LocalModels } from "@/components/desktop/local-models";
-import { AppNav, type View } from "@/components/desktop/nav";
+import { AppNav, availableViews, type View } from "@/components/desktop/nav";
+import { applyDistro, Customize, LookApplier, useLook } from "@/components/customize/customize";
+import { decodeDistro, DISTROS, matchShortcut, type Distro } from "@/lib/customize";
 import { Connections } from "@/components/connections/connections";
 import { Studio } from "@/components/studio/studio";
 import type { FileUIPart } from "ai";
@@ -25,7 +27,12 @@ import { ModeSelect, ModesDialog, useModes } from "./modes";
 import { CommandPalette } from "./command-palette";
 import { Sidebar } from "./sidebar";
 
-const VIEW_TITLES: Record<View, string> = { chat: "Chat", studio: "Studio", connections: "Connections", models: "Local models", terminal: "Terminal", projects: "My AI Projects" };
+const VIEW_TITLES: Record<View, string> = { chat: "Chat", studio: "Studio", connections: "Connections", models: "Local models", terminal: "Terminal", projects: "My AI Projects", customize: "Customize" };
+
+function distroDefaultMode() {
+  const s = getState();
+  return [...DISTROS, ...(s.customDistros ?? [])].find((d) => d.id === s.distroId)?.defaultModeId;
+}
 
 const newChat = (): Chat => ({ id: crypto.randomUUID(), title: "", messages: [], updatedAt: Date.now() });
 const noop = () => () => {};
@@ -45,7 +52,18 @@ function Inner() {
   const [navOpen, setNavOpen] = useState(false);
   const [keysOpen, setKeysOpen] = useState(false);
   const [draftModel, setDraftModel] = useState<ModelRef>();
-  const [draftMode, setDraftMode] = useState("general");
+  const [draftMode, setDraftMode] = useState(() => distroDefaultMode() ?? "general");
+  const look = useLook();
+  const [offer, setOffer] = useState<Distro | undefined>(() => {
+    const raw = new URLSearchParams(location.search).get("distro");
+    if (!raw) return undefined;
+    history.replaceState(null, "", location.pathname);
+    try {
+      return decodeDistro(raw);
+    } catch {
+      return undefined;
+    }
+  });
   const [artifact, setArtifact] = useState<Artifact>();
   const [comparing, setComparing] = useState(false);
   const [modesOpen, setModesOpen] = useState(false);
@@ -73,12 +91,23 @@ function Inner() {
     setDraft(c);
     setActiveId(undefined);
     setDraftModel(undefined);
-    setDraftMode("general");
+    setDraftMode(distroDefaultMode() ?? "general");
     setArtifact(undefined);
     setComparing(false);
     setView("chat");
     setNavOpen(false);
   };
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (matchShortcut(e, look.shortcuts.newChat)) {
+        e.preventDefault();
+        start();
+      }
+    };
+    addEventListener("keydown", onKey);
+    return () => removeEventListener("keydown", onKey);
+  });
 
   const branch = (messages: UIMessage[]) => {
     const src = getState().chats.find((c) => c.id === chat.id) ?? chat;
@@ -89,7 +118,7 @@ function Inner() {
 
   const sidebar = (
     <div className="flex h-full min-h-0 flex-col">
-      <AppNav view={view} onChange={go} />
+      <AppNav view={view} onChange={go} hidden={look.hidden} />
     <Sidebar
       activeId={saved ? chat.id : undefined}
       onSelect={(id) => {
@@ -106,8 +135,22 @@ function Inner() {
 
   return (
     <TooltipProvider>
-      <div className="flex h-dvh min-h-0">
-        {!quick && <aside className="hidden w-72 shrink-0 border-r bg-sidebar md:block">{sidebar}</aside>}
+      <LookApplier />
+      {offer && (
+        <div role="dialog" aria-label="Apply shared distro" className="fixed inset-x-0 top-0 z-50 flex flex-wrap items-center gap-3 border-b bg-popover p-3 text-sm shadow">
+          <span className="flex-1">
+            Someone shared a setup with you: <strong>{offer.name}</strong>. It only changes how MoonlightC looks and which sections you see.
+          </span>
+          <Button size="sm" onClick={() => (applyDistro(offer), setOffer(undefined))}>
+            Apply {offer.name}
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setOffer(undefined)}>
+            Not now
+          </Button>
+        </div>
+      )}
+      <div className={`flex h-dvh min-h-0 ${look.sidebarSide === "right" ? "flex-row-reverse" : ""}`}>
+        {!quick && <aside className={`hidden w-72 shrink-0 bg-sidebar md:block ${look.sidebarSide === "right" ? "border-l" : "border-r"}`}>{sidebar}</aside>}
         <Sheet open={navOpen} onOpenChange={setNavOpen}>
           <SheetContent side="left" className="w-72 bg-sidebar p-0">
             <SheetTitle className="sr-only">Chats</SheetTitle>
@@ -126,6 +169,7 @@ function Inner() {
           )}
           {view === "models" && <LocalModels onChat={() => go("chat")} />}
           {view === "connections" && <Connections />}
+          {view === "customize" && <Customize availableViews={availableViews()} />}
           {view === "studio" && (
             <Studio
               onOpenKeys={() => setKeysOpen(true)}
@@ -199,6 +243,7 @@ function Inner() {
             onOpenKeys={() => setKeysOpen(true)}
             onOpenArtifact={setArtifact}
             initialFiles={pendingFiles}
+            bigInput={look.bigInput}
           />
           )}
           </>)}

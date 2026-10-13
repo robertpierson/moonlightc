@@ -3,6 +3,7 @@
 import type { Connection, ModelInfo } from "@moonc/core";
 import type { UIMessage } from "ai";
 import { useSyncExternalStore } from "react";
+import type { Distro, Look } from "./customize";
 
 // Device-local storage. Keys saved here never leave this browser except inside a chat request to our proxy.
 // Cloud sync (Supabase Vault) is added on top once accounts exist.
@@ -109,6 +110,9 @@ interface State {
   searchKey?: { provider: "tavily" | "exa" | "brave"; key: string };
   mcpServers?: McpServer[];
   webTools?: boolean;
+  look?: Look;
+  distroId?: string;
+  customDistros?: Distro[];
 }
 
 const KEY = "moonc:v1";

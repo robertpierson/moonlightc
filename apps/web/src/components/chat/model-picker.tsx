@@ -5,6 +5,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { getProvider } from "@moonc/core";
+import { DISTROS } from "@/lib/customize";
 import { update, useStore, type ModelRef } from "@/lib/store";
 
 const refKey = (r: ModelRef) => `${r.connectionId}:${r.modelId}`;
@@ -16,7 +18,9 @@ function price(p?: { input: number; output: number }) {
 }
 
 export function ModelPicker({ value, onChange }: { value?: ModelRef; onChange: (r: ModelRef) => void }) {
-  const connections = useStore((s) => s.connections);
+  const allConnections = useStore((s) => s.connections);
+  const onlyLocal = useStore((s) => [...DISTROS, ...(s.customDistros ?? [])].find((d) => d.id === s.distroId)?.onlyLocal ?? false);
+  const connections = onlyLocal ? allConnections.filter((c) => getProvider(c.providerId).local) : allConnections;
   const favorites = useStore((s) => s.favorites);
   const [open, setOpen] = useState(false);
   const current = value && connections.find((c) => c.id === value.connectionId)?.models.find((m) => m.id === value.modelId);

@@ -1,11 +1,11 @@
 "use client";
 
-import { Cpu, FolderGit2, MessageSquare, Palette, Plug, SquareTerminal } from "lucide-react";
+import { Cpu, FolderGit2, MessageSquare, Palette, Plug, SlidersHorizontal, SquareTerminal } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Switch } from "@/components/ui/switch";
 import { desktop } from "@/lib/desktop";
 
-export type View = "chat" | "studio" | "connections" | "models" | "terminal" | "projects";
+export type View = "chat" | "studio" | "connections" | "models" | "terminal" | "projects" | "customize";
 
 const ITEMS: { id: View; label: string; icon: React.ReactNode; desktopOnly?: boolean }[] = [
   { id: "chat", label: "Chat", icon: <MessageSquare /> },
@@ -14,10 +14,14 @@ const ITEMS: { id: View; label: string; icon: React.ReactNode; desktopOnly?: boo
   { id: "models", label: "Local models", icon: <Cpu />, desktopOnly: true },
   { id: "terminal", label: "Terminal", icon: <SquareTerminal />, desktopOnly: true },
   { id: "projects", label: "My AI Projects", icon: <FolderGit2 />, desktopOnly: true },
+  { id: "customize", label: "Customize", icon: <SlidersHorizontal /> },
 ];
 
+/** Sections this device can show (desktop-only ones need the desktop app). */
+export const availableViews = (): View[] => ITEMS.filter((i) => !!desktop() || !i.desktopOnly).map((i) => i.id);
+
 /** App sections. Desktop-only ones appear only when the desktop bridge exists. */
-export function AppNav({ view, onChange }: { view: View; onChange: (v: View) => void }) {
+export function AppNav({ view, onChange, hidden = [] }: { view: View; onChange: (v: View) => void; hidden?: string[] }) {
   const isDesktop = !!desktop();
   const [openAtLogin, setOpenAtLogin] = useState<boolean>();
   useEffect(() => {
@@ -26,7 +30,7 @@ export function AppNav({ view, onChange }: { view: View; onChange: (v: View) => 
   return (
     <div className="border-b p-2">
       <nav aria-label="Sections" className="grid gap-0.5">
-        {ITEMS.filter((i) => isDesktop || !i.desktopOnly).map((i) => (
+        {ITEMS.filter((i) => (isDesktop || !i.desktopOnly) && !hidden.includes(i.id)).map((i) => (
           <button
             key={i.id}
             aria-current={view === i.id ? "page" : undefined}

@@ -4,6 +4,8 @@ import { Columns2, KeyRound, MessageSquare, Moon, Plus, Sparkles, SunMoon } from
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { Command, CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandShortcut } from "@/components/ui/command";
+import { currentLook } from "@/components/customize/customize";
+import { matchShortcut } from "@/lib/customize";
 import { useStore, type ModelRef } from "@/lib/store";
 
 export interface PaletteActions {
@@ -23,7 +25,7 @@ export function CommandPalette({ actions }: { actions: PaletteActions }) {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key.toLowerCase() === "k" && (e.metaKey || e.ctrlKey)) {
+      if (matchShortcut(e, currentLook().shortcuts.palette)) {
         e.preventDefault();
         setOpen((o) => !o);
       }
