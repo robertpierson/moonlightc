@@ -1,10 +1,15 @@
-export default function Home() {
+import { Bricolage_Grotesque } from "next/font/google";
+import { Landing } from "@/components/site/landing";
+import { getLatestRelease } from "@/lib/releases";
+import "@/components/site/site.css";
+
+const display = Bricolage_Grotesque({ subsets: ["latin"], axes: ["wdth", "opsz"], variable: "--font-display" });
+
+export default async function Home() {
+  const release = await getLatestRelease();
   return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
-      <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">MoonlightC</h1>
-      <p className="max-w-md text-lg opacity-80">
-        Every AI in one place: cloud models, local models, creative tools and your own computers.
-      </p>
-    </main>
+    <div className={display.variable}>
+      <Landing release={release} />
+    </div>
   );
 }

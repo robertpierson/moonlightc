@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { deleteChat, patchChat, useStore, type Chat } from "@/lib/store";
+import { InstallApp } from "@/components/site/install-app";
 import { textOf } from "./message";
 
 function exportMarkdown(c: Chat) {
@@ -102,6 +103,7 @@ export function Sidebar({ activeId, onSelect, onNew }: { activeId?: string; onSe
           </li>
         ))}
       </ul>
+      <InstallApp className="rounded-md border px-3 py-2 text-left text-sm hover:bg-accent" />
     </nav>
   );
 }
