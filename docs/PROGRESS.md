@@ -6,7 +6,7 @@ STATUS: BUILDING
 - [x] 0 Setup: prerequisites, GitHub repo, Supabase project, Vercel project, monorepo scaffold, CI — gate: `pnpm build` green, empty app live at moonlightc.vercel.app
 - [ ] 1 Accounts and metrics: sign-in methods, identity linking, onboarding, profiles, PostHog, /admin, privacy, terms
 - [ ] 2 Chat core: provider registry, key vault, model picker, streaming/stop, chats, projects, attachments, artifacts, memory, modes, compare, search
-- [ ] 3 Marketing site, download page, PWA
+- [x] 3 Marketing site, download page, PWA (built on branch phase-2-chat; ships to prod with Phase 1+2)
 - [ ] 4 Desktop app: Electron, offline SQLite + sync, Ollama manager, Model Store, terminals, My AI Projects, tray/hotkey, CI release builds
 - [ ] 5 Devices and remote control (§8 safety)
 - [ ] 6 Creative studio: images, video, audio, gallery
@@ -35,19 +35,30 @@ STATUS: BUILDING
 - [x] Command palette (Ctrl/Cmd+K)
 - [x] Tools: web search (Tavily/Exa/Brave BYOK), URL fetch
 - [x] Voice typing (Whisper via OpenAI/Groq key, browser fallback); read aloud
-- [ ] Code interpreter (Pyodide in browser)
-- [ ] Deep Research mode
+- [x] Code interpreter (Pyodide in browser worker)
+- [x] Deep Research mode
 - [ ] Azure OpenAI + AWS Bedrock providers
 - [ ] NEEDS SUPABASE: accounts sync, key vault (cloud), projects, memory (pgvector), cross-device chats
+
+## Phase 3 (on branch phase-2-chat)
+- [x] Home: WebGL moon hero (phase follows scroll), provider marquee, feature story (built features only), privacy/open source, download CTA, FAQ, footer
+- [x] /download: OS+arch detection, builds from GitHub Releases (hourly cache), PWA install steps per browser
+- [x] PWA: manifest, icons, service worker (offline shell), install button
+- [x] /privacy, /terms (honest about current data flow; update when accounts/analytics land)
+- [x] Gate: Lighthouse mobile home 92/100/96/100, download 92; Chrome installability errors = none on preview (desktop + Android emulation)
+- Distros switcher section deferred to Phase 8 (distros don't exist yet; no fake UI)
 
 ## Owner steps completed
 (none yet)
 
 ## Known issues
+- Screenshot/Lighthouse servers: use PORT=3100 so Playwright's reuseExistingServer never picks up a stale build on 3000.
+- Vercel previews are SSO-protected; tests send x-vercel-protection-bypass (secret in .env.local and GitHub secret VERCEL_AUTOMATION_BYPASS_SECRET).
 - Vercel MCP returns 403/404 for this team; use Vercel CLI (logged in as robertpierson196-1427). In Git Bash prefix `vercel api` with MSYS_NO_PATHCONV=1.
 - No Docker, so no local Supabase stack; test against the hosted project.
 
 ## Notes (last 10)
+- 2026-10-13: Phase 3 done on branch. 38 e2e tests. Next: Phase 4 desktop (Electron) since Supabase still blocked.
 - 2026-10-13: Draft PR https://github.com/robertpierson/moonlightc/pull/1 carries Phase 2; CI green; 27 e2e tests.
 - 2026-10-13: Phase 2 chat core working locally on branch phase-2-chat (device-local storage until Supabase).
 - 2026-10-13: Phase 0 done. Next: Phase 2 provider layer (no DB needed) while Supabase is blocked; Phase 1 resumes when OWNER_TODO #1 is done.
