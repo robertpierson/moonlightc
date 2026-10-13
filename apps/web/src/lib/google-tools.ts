@@ -89,6 +89,33 @@ export function googleTools(token: string): { tools: ToolSet; approval: Record<s
         return d.files ?? [];
       },
     }),
+    youtube_search: tool({
+      description: "Search YouTube videos.",
+      inputSchema: jsonSchema<{ query: string }>({ type: "object", properties: { query: { type: "string" } }, required: ["query"] }),
+      execute: async ({ query }) => {
+        const d = await g<{ items?: { id: { videoId?: string }; snippet: { title: string; channelTitle: string; publishedAt: string } }[] }>(
+          token,
+          `/youtube/v3/search?part=snippet&type=video&maxResults=10&q=${encodeURIComponent(query)}`,
+        );
+        return (d.items ?? []).map((v) => ({ title: v.snippet.title, channel: v.snippet.channelTitle, published: v.snippet.publishedAt, url: `https://www.youtube.com/watch?v=${v.id.videoId}` }));
+      },
+    }),
+    youtube_my_subscriptions: tool({
+      description: "List the YouTube channels the user is subscribed to.",
+      inputSchema: jsonSchema<Record<string, never>>({ type: "object", properties: {} }),
+      execute: async () => {
+        const d = await g<{ items?: { snippet: { title: string; resourceId: { channelId: string } } }[] }>(token, "/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=50");
+        return (d.items ?? []).map((s) => ({ channel: s.snippet.title, url: `https://www.youtube.com/channel/${s.snippet.resourceId.channelId}` }));
+      },
+    }),
+    youtube_my_playlists: tool({
+      description: "List the user's YouTube playlists.",
+      inputSchema: jsonSchema<Record<string, never>>({ type: "object", properties: {} }),
+      execute: async () => {
+        const d = await g<{ items?: { id: string; snippet: { title: string }; contentDetails?: { itemCount: number } }[] }>(token, "/youtube/v3/playlists?part=snippet,contentDetails&mine=true&maxResults=50");
+        return (d.items ?? []).map((p) => ({ title: p.snippet.title, videos: p.contentDetails?.itemCount, url: `https://www.youtube.com/playlist?list=${p.id}` }));
+      },
+    }),
   };
   return { tools, approval: { calendar_create: "user-approval" } };
 }

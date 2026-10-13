@@ -80,7 +80,8 @@ STATUS: BUILDING
 - [x] GitHub connector via token: live stats dashboard + GitHub MCP (46 tools) — verified with real GitHub
 - [x] OAuth framework (PKCE, signed state, refresh) + Google connector: Gmail search/read, Calendar list/create (asks first), Drive search; desktop sign-in via website + moonlightc:// link; e2e with fake Google. Needs owner's Google OAuth client (OWNER_TODO #2)
 - [x] MCP OAuth sign-in (discovery + dynamic client registration + PKCE, browser-held state): one-click Notion, Linear, Jira & Confluence, Asana, Sentry, Canva, Vercel, Supabase (start step verified against the real servers)
-- [ ] Discord, Spotify, Slack, YouTube connectors: need owner OAuth apps
+- [x] YouTube (via the Google connector): search, my subscriptions, my playlists
+- [ ] Discord, Spotify, Slack connectors: need owner OAuth apps
 - [x] Desktop automations: scheduled prompts on this computer (tray), run history, notifications, continue in chat
 - [x] Subscriptions hub: consented Gmail receipt scan (sender/subject/date/snippet only) -> user's model extracts recurring charges; monthly totals per currency; renewal reminders (in-app + desktop notifications); manage links; manual add. Never pays or cancels.
 - [ ] Cloud scheduled agents (pg_cron): need Supabase

@@ -26,6 +26,10 @@ test("connect Google with a real OAuth round trip, then the AI searches Gmail", 
   await page.getByRole("button", { name: "Send message" }).click();
   await expect(page.getByText("Used gmail search (google)")).toBeVisible();
   await expect(page.locator('[data-role="assistant"]').last()).toContainText("Lunch at noon?");
+
+  await page.getByLabel("Message", { exact: true }).fill("what channels are on my youtube?");
+  await page.getByRole("button", { name: "Send message" }).click();
+  await expect(page.locator('[data-role="assistant"]').last()).toContainText("Moon Science");
 });
 
 test("a forged sign-in result is refused", async ({ request }) => {

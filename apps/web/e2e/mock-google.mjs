@@ -25,5 +25,6 @@ createServer(async (req, res) => {
   if (url.pathname === "/gmail/v1/users/me/messages") return res.end(JSON.stringify({ messages: [{ id: "m1" }] }));
   if (url.pathname === "/gmail/v1/users/me/messages/m1")
     return res.end(JSON.stringify({ id: "m1", snippet: "Lunch at noon?", payload: { headers: [{ name: "From", value: "Ann" }, { name: "Subject", value: "Lunch" }, { name: "Date", value: "Mon" }] } }));
+  if (url.pathname === "/youtube/v3/subscriptions") return res.end(JSON.stringify({ items: [{ snippet: { title: "Moon Science", resourceId: { channelId: "UC1" } } }] }));
   res.writeHead(404).end("{}");
 }).listen(4030, "127.0.0.1");

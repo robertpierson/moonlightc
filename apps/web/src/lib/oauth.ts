@@ -31,6 +31,7 @@ export function oauthProviders(): OAuthProvider[] {
         "https://www.googleapis.com/auth/gmail.readonly",
         "https://www.googleapis.com/auth/calendar.events",
         "https://www.googleapis.com/auth/drive.readonly",
+        "https://www.googleapis.com/auth/youtube.readonly",
       ],
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,

@@ -30,7 +30,7 @@ export function GoogleCard() {
     <section aria-label="Google" className="grid gap-3 rounded-xl border p-4">
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-medium">Google</span>
-        <span className="text-sm text-muted-foreground">Gmail (read), Calendar, Drive (read)</span>
+        <span className="text-sm text-muted-foreground">Gmail (read), Calendar, Drive (read), YouTube (read)</span>
         <span className="flex-1" />
         {g ? (
           <>
@@ -47,7 +47,7 @@ export function GoogleCard() {
         )}
       </div>
       <p className="text-sm text-muted-foreground">
-        The AI can search and read your email, see and add calendar events (it asks before adding), and find files in Drive. Your Google sign-in stays on this device.
+        The AI can search and read your email, see and add calendar events (it asks before adding), and find files in Drive, and search YouTube or list your channels and playlists. Your Google sign-in stays on this device.
         {g && (
           <>
             {" "}

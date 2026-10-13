@@ -20,11 +20,11 @@ Creating MoonlightC's database would require a paid plan. Pick ONE option:
 3. Tell Claude: "upgraded, continue".
 
 
-## 2. Let MoonlightC connect to Google (Gmail, Calendar, Drive) — about 10 minutes
+## 2. Let MoonlightC connect to Google (Gmail, Calendar, Drive, YouTube) — about 10 minutes
 This makes the **Connect Google** button appear. Google is free for this.
 1. Open https://console.cloud.google.com/projectcreate , Project name: **MoonlightC**, click **Create**. Wait, then make sure **MoonlightC** is selected at the top.
 2. Open https://console.cloud.google.com/apis/library/gmail.googleapis.com and click **Enable**. Do the same for
-   https://console.cloud.google.com/apis/library/calendar-json.googleapis.com and https://console.cloud.google.com/apis/library/drive.googleapis.com
+   https://console.cloud.google.com/apis/library/calendar-json.googleapis.com , https://console.cloud.google.com/apis/library/drive.googleapis.com and https://console.cloud.google.com/apis/library/youtube.googleapis.com
 3. Open https://console.cloud.google.com/auth/branding , click **Get started**. App name: **MoonlightC**, support email: your email, click **Next**.
    Audience: **External**, **Next**. Contact email: your email, **Next**, tick the agreement, **Create**.
 4. Open https://console.cloud.google.com/auth/audience , under **Test users** click **Add users**, type your Gmail address, **Save**.

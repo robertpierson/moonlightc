@@ -41,6 +41,19 @@ createServer(async (req, res) => {
 
 `);
     }
+    if (prompt.includes("my youtube") && body.tools?.some((t) => t.function.name === "youtube_my_subscriptions") && !toolMsg) {
+      res.writeHead(200, { "content-type": "text/event-stream" });
+      const call = { index: 0, id: "call_yt", type: "function", function: { name: "youtube_my_subscriptions", arguments: "{}" } };
+      res.write(`data: ${JSON.stringify({ id: "x", object: "chat.completion.chunk", created: 0, model: body.model, choices: [{ index: 0, delta: { role: "assistant", tool_calls: [call] }, finish_reason: null }] })}
+
+`);
+      res.write(`data: ${JSON.stringify({ id: "x", object: "chat.completion.chunk", created: 0, model: body.model, choices: [{ index: 0, delta: {}, finish_reason: "tool_calls" }] })}
+
+`);
+      return res.end(`data: [DONE]
+
+`);
+    }
     if (prompt.includes("check my email") && body.tools?.some((t) => t.function.name === "gmail_search") && !toolMsg) {
       res.writeHead(200, { "content-type": "text/event-stream" });
       const call = { index: 0, id: "call_mail", type: "function", function: { name: "gmail_search", arguments: JSON.stringify({ query: "newer_than:1d" }) } };
