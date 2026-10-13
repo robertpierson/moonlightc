@@ -60,6 +60,14 @@ For each one, after step 3 add the two values in Vercel exactly like step 6 of s
 3. On the same page copy **Client ID** into `DISCORD_CLIENT_ID`; click **Reset Secret**, copy it into `DISCORD_CLIENT_SECRET`.
 
 ---
+## Try this yourself: your requests from this morning (live now)
+1. Open https://moonlightc.vercel.app : the site is now light with gradients and a pearl moon.
+2. Click **Open web app**. At the top left, switch between **Chat** and **Code**.
+3. Click **Settings** (bottom left). Look through Models & API keys, Connectors, Plugins & mods, Appearance.
+4. Settings > **Auto model**: pick a model for Everyday and one for Coding. Back in Chat, choose **Auto** at the top of the model menu.
+5. Click the mode button under the message box (it says **General**): 3 main modes, the rest under **More options**.
+6. Settings > **Plugins & mods** > **Browse Anthropic's plugin directory**, click **View** on "commit-commands", then **Install plugin**.
+
 ## Try this yourself: Phase 0 (setup)
 1. Open https://moonlightc.vercel.app on your PC and phone. You should see "MoonlightC" and one line about it.
 2. Open https://github.com/robertpierson/moonlightc. That is the code. The green check next to the latest commit means all tests passed.
