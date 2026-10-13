@@ -4,7 +4,7 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import type { LanguageModel } from "ai";
 
-type Kind = "anthropic" | "google" | "openai" | "compat";
+type Kind = "anthropic" | "google" | "openai" | "compat" | "media";
 
 export interface ProviderDef {
   id: string;
@@ -18,6 +18,8 @@ export interface ProviderDef {
   modelsURL?: string;
   /** Runs on the user's computer; only offered in the desktop app. */
   local?: boolean;
+  /** Images/video/audio only (Creative Studio), no chat models. */
+  media?: boolean;
 }
 
 export const PROVIDERS: ProviderDef[] = [
@@ -34,6 +36,9 @@ export const PROVIDERS: ProviderDef[] = [
   { id: "cohere", name: "Cohere", kind: "compat", baseURL: "https://api.cohere.ai/compatibility/v1", keyUrl: "https://dashboard.cohere.com/api-keys" },
   { id: "ollama", name: "Ollama (on this computer)", kind: "compat", baseURL: "http://127.0.0.1:11434/v1", keyUrl: "", local: true },
   { id: "custom", name: "Custom (OpenAI-compatible URL)", kind: "compat", keyUrl: "" },
+  { id: "fal", name: "fal (images, video, audio)", kind: "media", media: true, keyUrl: "https://fal.ai/dashboard/keys" },
+  { id: "replicate", name: "Replicate (images, video)", kind: "media", media: true, keyUrl: "https://replicate.com/account/api-tokens" },
+  { id: "elevenlabs", name: "ElevenLabs (voices)", kind: "media", media: true, keyUrl: "https://elevenlabs.io/app/settings/api-keys" },
 ];
 
 export function getProvider(id: string): ProviderDef {
@@ -71,6 +76,7 @@ const NON_CHAT = /embed|tts|whisper|dall-e|moderation|transcribe|rerank|image|au
 /** Fetch the live model list. Doubles as key validation: it throws a human-readable error on a bad key. */
 export async function listModels(c: Connection, fetchFn: typeof fetch = fetch): Promise<ModelInfo[]> {
   const p = getProvider(c.providerId);
+  if (p.media) throw new ProviderError(`${p.name} is for the Creative Studio, not chat.`);
   let url: string;
   const headers: Record<string, string> = {};
   if (p.kind === "anthropic") {
@@ -142,6 +148,8 @@ export function languageModel(c: Connection, modelId: string): LanguageModel {
       return createGoogleGenerativeAI({ apiKey: c.apiKey })(modelId);
     case "openai":
       return createOpenAI({ apiKey: c.apiKey })(modelId);
+    case "media":
+      throw new ProviderError(`${p.name} is for the Creative Studio, not chat.`);
     case "compat":
       return createOpenAICompatible({
         name: p.id,

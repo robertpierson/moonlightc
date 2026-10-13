@@ -2,7 +2,7 @@
 
 import { useChat } from "@ai-sdk/react";
 import { estimateCost } from "@moonc/core";
-import { DefaultChatTransport, lastAssistantMessageIsCompleteWithToolCalls, type UIMessage } from "ai";
+import { DefaultChatTransport, lastAssistantMessageIsCompleteWithToolCalls, type FileUIPart, type UIMessage } from "ai";
 import { ArrowUp, FileText, Wrench, KeyRound, Paperclip, Square, X } from "lucide-react";
 import { toast } from "sonner";
 import type { Artifact } from "@/lib/artifacts";
@@ -35,6 +35,7 @@ export function ChatView({
   onBranch,
   onOpenKeys,
   onOpenArtifact,
+  initialFiles,
 }: {
   chat: Chat;
   model?: ModelRef;
@@ -43,6 +44,7 @@ export function ChatView({
   onBranch: (messages: UIMessage[]) => void;
   onOpenKeys: () => void;
   onOpenArtifact: (a: Artifact) => void;
+  initialFiles?: FileUIPart[];
 }) {
   const [input, setInput] = useState("");
   const hasSearchKey = useStore((s) => !!s.searchKey);
@@ -111,7 +113,9 @@ export function ChatView({
   const needsSearch = !!mode.research && !hasSearchKey;
   const canSend = !!findModel(model) && !needsSearch;
 
-  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [attachments, setAttachments] = useState<Attachment[]>(() =>
+    chat.messages.length ? [] : (initialFiles ?? []).map((part) => ({ kind: "file" as const, part, size: part.url.length })),
+  );
   const [dragging, setDragging] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
 

@@ -18,3 +18,7 @@ minimumReleaseAgeExclude:
   - ai@7.0.138
   - '@ai-sdk/mcp@2.0.74'
   - '@ai-sdk/react@4.0.141'
+  - '@ai-sdk/elevenlabs@3.0.60'
+  - '@ai-sdk/fal@3.0.60'
+  - '@ai-sdk/replicate@3.0.60'
+  - '@ai-sdk/xai@5.0.21'

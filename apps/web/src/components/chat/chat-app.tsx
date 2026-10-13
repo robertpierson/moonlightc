@@ -11,10 +11,11 @@ import { getState, patchChat, saveChat, update, useStore, type Chat, type ModelR
 import type { Artifact } from "@/lib/artifacts";
 import { ArtifactPanel } from "./artifact-panel";
 import { LocalModels } from "@/components/desktop/local-models";
-import { DesktopNav, type View } from "@/components/desktop/nav";
+import { AppNav, type View } from "@/components/desktop/nav";
+import { Studio } from "@/components/studio/studio";
+import type { FileUIPart } from "ai";
 import { Projects } from "@/components/desktop/projects";
 import { Terminals, type LaunchRequest } from "@/components/desktop/terminals";
-import { desktop } from "@/lib/desktop";
 import { ChatView } from "./chat-view";
 import { CompareView } from "./compare-view";
 import { KeysDialog } from "./keys-dialog";
@@ -48,7 +49,7 @@ function Inner() {
   const [view, setView] = useState<View>("chat");
   const [termOpened, setTermOpened] = useState(false);
   const [launch, setLaunch] = useState<LaunchRequest>();
-  const isDesktop = !!desktop();
+  const [pendingFiles, setPendingFiles] = useState<FileUIPart[]>();
   const [quick] = useState(() => new URLSearchParams(location.search).has("quick"));
   const go = (v: View) => {
     setView(v);
@@ -60,7 +61,8 @@ function Inner() {
   const chat = chats.find((c) => c.id === activeId) ?? draft;
   const saved = chats.some((c) => c.id === chat.id);
   const valid = (r?: ModelRef) => !!r && connections.some((c) => c.id === r.connectionId && c.models.some((m) => m.id === r.modelId));
-  const fallback = connections[0] && { connectionId: connections[0].id, modelId: connections[0].models[0]?.id };
+  const chatConns = connections.filter((c) => c.models.length > 0);
+  const fallback = chatConns[0] && { connectionId: chatConns[0].id, modelId: chatConns[0].models[0].id };
   const mode = modes.find((m) => m.id === (saved ? chat.modeId : draftMode)) ?? modes[0];
   const model = [chat.model, saved ? undefined : draftModel, mode.model, lastModel, fallback].find(valid);
 
@@ -84,7 +86,7 @@ function Inner() {
 
   const sidebar = (
     <div className="flex h-full min-h-0 flex-col">
-      {isDesktop && <DesktopNav view={view} onChange={go} />}
+      <AppNav view={view} onChange={go} />
     <Sidebar
       activeId={saved ? chat.id : undefined}
       onSelect={(id) => {
@@ -112,6 +114,20 @@ function Inner() {
 
         <main className="flex min-w-0 flex-1 flex-col">
           {view === "models" && <LocalModels onChat={() => go("chat")} />}
+          {view === "studio" && (
+            <Studio
+              onOpenKeys={() => setKeysOpen(true)}
+              onSendToChat={async (item) => {
+                const url = await new Promise<string>((r) => {
+                  const fr = new FileReader();
+                  fr.onload = () => r(fr.result as string);
+                  fr.readAsDataURL(item.blob);
+                });
+                start();
+                setPendingFiles([{ type: "file", mediaType: item.mediaType, filename: `studio-${item.id.slice(0, 8)}.png`, url }]);
+              }}
+            />
+          )}
           {view === "projects" && (
             <Projects
               onResume={(command, cwd, title) => {
@@ -132,7 +148,7 @@ function Inner() {
             </Button>
             {comparing ? (
               <span className="px-2 font-semibold">Compare models</span>
-            ) : connections.length > 0 ? (
+            ) : chatConns.length > 0 ? (
               <ModelPicker
                 value={model}
                 onChange={(r) => (saved ? patchChat(chat.id, { model: r }) : setDraftModel(r))}
@@ -141,7 +157,7 @@ function Inner() {
               <span className="px-2 font-semibold">MoonlightC</span>
             )}
             <div className="ml-auto flex items-center">
-              {connections.length > 0 && (
+              {chatConns.length > 0 && (
                 <Button variant={comparing ? "secondary" : "ghost"} size="sm" aria-pressed={comparing} aria-label="Compare" onClick={() => setComparing((c) => !c)}>
                   <Columns2 /> <span className="hidden sm:inline">Compare</span>
                 </Button>
@@ -170,6 +186,7 @@ function Inner() {
             onBranch={branch}
             onOpenKeys={() => setKeysOpen(true)}
             onOpenArtifact={setArtifact}
+            initialFiles={pendingFiles}
           />
           )}
           </>)}

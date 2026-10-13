@@ -1,6 +1,6 @@
 "use client";
 
-import { PROVIDERS, type ModelInfo } from "@moonc/core";
+import { getProvider, PROVIDERS, type ModelInfo } from "@moonc/core";
 import { ExternalLink, Loader2, RefreshCw, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -16,7 +16,7 @@ async function fetchModels(c: { providerId: string; apiKey: string; baseURL?: st
   const res = await fetch("/api/models", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(c) });
   const data = (await res.json().catch(() => ({}))) as { models?: ModelInfo[]; error?: string };
   if (!res.ok || !data.models) throw new Error(data.error ?? "Couldn't check that key. Try again.");
-  if (data.models.length === 0) throw new Error("That key works, but it doesn't unlock any chat models.");
+  if (data.models.length === 0 && !getProvider(c.providerId).media) throw new Error("That key works, but it doesn't unlock any chat models.");
   return data.models;
 }
 
@@ -120,11 +120,11 @@ export function KeysDialog({ open, onOpenChange }: { open: boolean; onOpenChange
       update((s) => ({
         ...s,
         connections: [...s.connections, conn],
-        lastModel: s.lastModel ?? { connectionId: conn.id, modelId: models[0].id },
+        lastModel: s.lastModel ?? (models[0] && { connectionId: conn.id, modelId: models[0].id }),
       }));
       setApiKey("");
       setBaseURL("");
-      toast.success(`${label} connected: ${models.length} models unlocked.`);
+      toast.success(provider.media ? `${label} connected. Use it in the Studio.` : `${label} connected: ${models.length} models unlocked.`);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -172,7 +172,7 @@ export function KeysDialog({ open, onOpenChange }: { open: boolean; onOpenChange
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-medium">{c.label}</div>
                   <div className="text-muted-foreground">
-                    {c.models.length} models · key ending {c.apiKey.slice(-4) || "(none)"}
+                    {getProvider(c.providerId).media ? "Studio" : `${c.models.length} models`} · key ending {c.apiKey.slice(-4) || "(none)"}
                   </div>
                 </div>
                 <Button variant="ghost" size="icon" aria-label={`Refresh ${c.label} models`} onClick={() => refresh(c)} disabled={refreshing === c.id}>

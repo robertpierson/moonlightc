@@ -82,7 +82,7 @@ export function ModelPicker({ value, onChange }: { value?: ModelRef; onChange: (
           <CommandList className="max-h-[60dvh]">
             <CommandEmpty>No model matches.</CommandEmpty>
             {favRows.length > 0 && <CommandGroup heading="Favorites">{favRows}</CommandGroup>}
-            {connections.map((c) => (
+            {connections.filter((c) => c.models.length).map((c) => (
               <CommandGroup key={c.id} heading={c.label}>
                 {c.models.map((m) => row(c.id, c.label, m, false))}
               </CommandGroup>

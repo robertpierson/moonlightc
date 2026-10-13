@@ -71,7 +71,7 @@ export function CommandPalette({ actions }: { actions: PaletteActions }) {
             ))}
           </CommandGroup>
         )}
-        {connections.map((conn) => (
+        {connections.filter((c) => c.models.length).map((conn) => (
           <CommandGroup key={conn.id} heading={`Models · ${conn.label}`}>
             {conn.models.map((m) => (
               <CommandItem key={m.id} value={`model ${conn.label} ${m.name} ${m.id}`} onSelect={run(() => actions.pickModel({ connectionId: conn.id, modelId: m.id }))}>
