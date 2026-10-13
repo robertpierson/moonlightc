@@ -2,7 +2,7 @@
 
 import { useChat } from "@ai-sdk/react";
 import { estimateCost } from "@moonc/core";
-import { DefaultChatTransport, lastAssistantMessageIsCompleteWithToolCalls, type FileUIPart, type UIMessage } from "ai";
+import { DefaultChatTransport, lastAssistantMessageIsCompleteWithApprovalResponses, lastAssistantMessageIsCompleteWithToolCalls, type FileUIPart, type UIMessage } from "ai";
 import { ArrowUp, FileText, Wrench, KeyRound, Paperclip, Square, X } from "lucide-react";
 import { toast } from "sonner";
 import type { Artifact } from "@/lib/artifacts";
@@ -62,6 +62,7 @@ export function ChatView({
         temperature: mode.temperature,
         tools: getState().webTools || mode.research ? { search: getState().searchKey } : undefined,
         research: mode.research || undefined,
+        mcp: (getState().mcpServers ?? []).filter((m) => m.enabled).map(({ id, name, kind, url, token, command, args, policy }) => ({ id, name, kind, url, token, command, args, policy })),
       },
     };
   };
@@ -76,11 +77,11 @@ export function ChatView({
     () => new DefaultChatTransport({ api: "/api/chat", body: () => latest.current().body ?? {} }),
   );
 
-  const { messages, sendMessage, status, stop, regenerate, error, clearError, addToolOutput } = useChat({
+  const { messages, sendMessage, status, stop, regenerate, error, clearError, addToolOutput, addToolApprovalResponse } = useChat({
     id: chat.id,
     messages: chat.messages,
     transport,
-    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
+    sendAutomaticallyWhen: (o) => lastAssistantMessageIsCompleteWithToolCalls(o) || lastAssistantMessageIsCompleteWithApprovalResponses(o),
     onToolCall: async ({ toolCall }) => {
       if (toolCall.dynamic || toolCall.toolName !== "run_python") return;
       const { output, error } = await runPython((toolCall.input as { code: string }).code);
@@ -210,6 +211,7 @@ export function ChatView({
                 regenerate(request());
               }}
               onOpenArtifact={onOpenArtifact}
+              onApproval={(id, approved) => addToolApprovalResponse({ id, approved })}
               onBranch={mode.private ? undefined : () => onBranch(messages.slice(0, i + 1))}
             />
           ))}

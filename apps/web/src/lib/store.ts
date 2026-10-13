@@ -76,6 +76,20 @@ export const BUILT_IN_MODES: Mode[] = [
   { id: "private", name: "Private", instructions: "", private: true, builtIn: true },
 ];
 
+export interface McpServer {
+  id: string;
+  name: string;
+  kind: "http" | "stdio";
+  url?: string;
+  token?: string;
+  command?: string;
+  args?: string[];
+  enabled: boolean;
+  preset?: "github";
+  tools: { name: string; description: string }[];
+  policy: Record<string, "ask" | "always" | "never">;
+}
+
 export interface Chat {
   id: string;
   title: string;
@@ -93,6 +107,7 @@ interface State {
   lastModel?: ModelRef;
   modes: Mode[]; // user-made; built-ins live in code
   searchKey?: { provider: "tavily" | "exa" | "brave"; key: string };
+  mcpServers?: McpServer[];
   webTools?: boolean;
 }
 
@@ -121,7 +136,9 @@ function load() {
       ...state.connections.map(async (c) => ({ ...c, apiKey: c.apiKey || ((await b.secrets.get(secretOf(c.id))) ?? "") })),
     ]).then(async (connections) => {
       const searchKey = state.searchKey && { ...state.searchKey, key: state.searchKey.key || ((await b.secrets.get("search")) ?? "") };
-      update((s) => ({ ...s, connections, searchKey }));
+      const mcpServers =
+        state.mcpServers && (await Promise.all(state.mcpServers.map(async (m) => (m.token === "" ? { ...m, token: (await b.secrets.get(`mcp:${m.id}`)) ?? "" } : m))));
+      update((s) => ({ ...s, connections, searchKey, mcpServers }));
     });
   }
 }
@@ -133,11 +150,14 @@ function persist(prev: State) {
     for (const c of state.connections) if (c.apiKey && prev.connections.find((p) => p.id === c.id)?.apiKey !== c.apiKey) b.secrets.set(secretOf(c.id), c.apiKey);
     for (const c of prev.connections) if (!state.connections.some((x) => x.id === c.id)) b.secrets.set(secretOf(c.id), null);
     if (state.searchKey?.key && state.searchKey.key !== prev.searchKey?.key) b.secrets.set("search", state.searchKey.key);
+    for (const m of state.mcpServers ?? []) if (m.token && prev.mcpServers?.find((p) => p.id === m.id)?.token !== m.token) b.secrets.set(`mcp:${m.id}`, m.token);
+    for (const m of prev.mcpServers ?? []) if (!state.mcpServers?.some((x) => x.id === m.id)) b.secrets.set(`mcp:${m.id}`, null);
     else if (prev.searchKey) b.secrets.set("search", null);
     saved = {
       ...state,
       connections: state.connections.map((c) => ({ ...c, apiKey: "" })),
       searchKey: state.searchKey && { ...state.searchKey, key: "" },
+      mcpServers: state.mcpServers?.map((m) => ({ ...m, token: m.token ? "" : undefined })),
     };
   }
   localStorage.setItem(KEY, JSON.stringify(saved));

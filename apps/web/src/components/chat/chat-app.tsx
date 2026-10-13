@@ -12,6 +12,7 @@ import type { Artifact } from "@/lib/artifacts";
 import { ArtifactPanel } from "./artifact-panel";
 import { LocalModels } from "@/components/desktop/local-models";
 import { AppNav, type View } from "@/components/desktop/nav";
+import { Connections } from "@/components/connections/connections";
 import { Studio } from "@/components/studio/studio";
 import type { FileUIPart } from "ai";
 import { Projects } from "@/components/desktop/projects";
@@ -23,6 +24,8 @@ import { ModelPicker } from "./model-picker";
 import { ModeSelect, ModesDialog, useModes } from "./modes";
 import { CommandPalette } from "./command-palette";
 import { Sidebar } from "./sidebar";
+
+const VIEW_TITLES: Record<View, string> = { chat: "Chat", studio: "Studio", connections: "Connections", models: "Local models", terminal: "Terminal", projects: "My AI Projects" };
 
 const newChat = (): Chat => ({ id: crypto.randomUUID(), title: "", messages: [], updatedAt: Date.now() });
 const noop = () => () => {};
@@ -113,7 +116,16 @@ function Inner() {
         </Sheet>
 
         <main className="flex min-w-0 flex-1 flex-col">
+          {view !== "chat" && !quick && (
+            <header className="flex h-12 shrink-0 items-center gap-1 border-b px-2 md:hidden">
+              <Button variant="ghost" size="icon" aria-label="Open chats" onClick={() => setNavOpen(true)}>
+                <Menu />
+              </Button>
+              <span className="font-semibold">{VIEW_TITLES[view]}</span>
+            </header>
+          )}
           {view === "models" && <LocalModels onChat={() => go("chat")} />}
+          {view === "connections" && <Connections />}
           {view === "studio" && (
             <Studio
               onOpenKeys={() => setKeysOpen(true)}

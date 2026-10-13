@@ -1,7 +1,7 @@
 "use client";
 
 import type { UIMessage } from "ai";
-import { AppWindow, Check, Copy, FileText, GitBranch, Link2, Loader2, Search, Terminal, Pencil, RotateCcw, Volume2, VolumeX } from "lucide-react";
+import { AppWindow, Check, Copy, FileText, GitBranch, Link2, Loader2, Plug, Search, Terminal, Pencil, RotateCcw, Volume2, VolumeX } from "lucide-react";
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
@@ -79,6 +79,49 @@ function ToolCall({ part }: { part: ToolPart }) {
   );
 }
 
+interface ConnectorPart {
+  toolName: string;
+  state: string;
+  input?: unknown;
+  output?: unknown;
+  errorText?: string;
+  approval?: { id: string; approved?: boolean; isAutomatic?: boolean };
+}
+
+function ConnectorCall({ part, onApproval }: { part: ConnectorPart; onApproval?: (id: string, approved: boolean) => void }) {
+  const [server, tool] = part.toolName.includes("__") ? part.toolName.split("__") : ["", part.toolName];
+  const label = `${tool.replace(/_/g, " ")}${server ? ` (${server.replace(/_/g, " ")})` : ""}`;
+  if (part.state === "approval-requested" && !part.approval?.isAutomatic) {
+    return (
+      <div role="group" aria-label={`Approve ${label}`} className="mb-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
+        <p className="font-medium">Allow the AI to use {label}?</p>
+        <pre className="mt-1 max-h-40 overflow-auto font-mono text-xs whitespace-pre-wrap text-muted-foreground">{JSON.stringify(part.input, null, 2)}</pre>
+        <div className="mt-2 flex gap-2">
+          <Button size="sm" onClick={() => onApproval?.(part.approval!.id, true)}>
+            Allow once
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => onApproval?.(part.approval!.id, false)}>
+            Deny
+          </Button>
+        </div>
+      </div>
+    );
+  }
+  const denied = part.state === "output-denied" || part.approval?.approved === false;
+  const done = part.state === "output-available" || part.state === "output-error" || denied;
+  return (
+    <details className="mb-2 text-sm text-muted-foreground">
+      <summary className="cursor-pointer select-none">
+        {done ? <Plug className="mr-1 inline size-3.5" /> : <Loader2 className="mr-1 inline size-3.5 animate-spin" />}
+        {denied ? `Denied: ${label}` : part.state === "output-error" ? `${label} failed` : `Used ${label}`}
+      </summary>
+      <pre className="mt-1 max-h-60 overflow-auto rounded-md bg-muted p-2 font-mono text-xs whitespace-pre-wrap">
+        {part.errorText ?? JSON.stringify(part.output ?? part.input, null, 2)?.slice(0, 4000)}
+      </pre>
+    </details>
+  );
+}
+
 interface PyPart {
   state: string;
   input?: { code?: string };
@@ -115,6 +158,7 @@ export function Message({
   onRegenerate,
   onBranch,
   onOpenArtifact,
+  onApproval,
 }: {
   message: UIMessage;
   streaming: boolean;
@@ -124,6 +168,7 @@ export function Message({
   onRegenerate?: () => void;
   onBranch?: () => void;
   onOpenArtifact?: (a: Artifact) => void;
+  onApproval?: (id: string, approved: boolean) => void;
 }) {
   const [copied, setCopied] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -213,6 +258,8 @@ export function Message({
                 <PythonCall key={i} part={p as unknown as PyPart} />
               ) : p.type === "tool-web_search" || p.type === "tool-fetch_url" ? (
                 <ToolCall key={i} part={p as unknown as ToolPart} />
+              ) : p.type === "dynamic-tool" ? (
+                <ConnectorCall key={i} part={p as unknown as ConnectorPart} onApproval={onApproval} />
               ) : p.type === "text" ? (
                 <Markdown key={i} text={p.text} streaming={streaming} />
               ) : null,
@@ -220,6 +267,12 @@ export function Message({
           </>
         )}
       </div>
+      {!isUser &&
+        (message.metadata as { connectorErrors?: string[] } | undefined)?.connectorErrors?.map((e) => (
+          <p key={e} className="text-xs text-amber-700 dark:text-amber-300">
+            Connector unavailable: {e}
+          </p>
+        ))}
       {!streaming && !isUser && onOpenArtifact && (
         <div className="flex flex-wrap gap-2">
           {extractArtifacts(text).map((a, i) => (

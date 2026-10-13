@@ -39,7 +39,7 @@ async function startServer() {
   const port = await freePort();
   server = spawn(process.execPath, [entry], {
     cwd: path.dirname(entry),
-    env: { ...process.env, NODE_PATH: path.join(root, "deps", ".pnpm", "node_modules"), ELECTRON_RUN_AS_NODE: "1", PORT: String(port), HOSTNAME: "127.0.0.1", MOONC_DESKTOP: "1", NODE_ENV: "production" },
+    env: { ...process.env, MOONC_MCP_ALLOWLIST: mcpAllowlist(), NODE_PATH: path.join(root, "deps", ".pnpm", "node_modules"), ELECTRON_RUN_AS_NODE: "1", PORT: String(port), HOSTNAME: "127.0.0.1", MOONC_DESKTOP: "1", NODE_ENV: "production" },
     stdio: ["ignore", "pipe", "pipe"],
     windowsHide: true,
   });
@@ -118,6 +118,16 @@ function createTray() {
   tray.on("click", () => (win.isVisible() ? win.focus() : win.show()));
 }
 
+// Local MCP commands run only after the user approves the exact command line in a native dialog.
+const mcpAllowlist = () => path.join(app.getPath("userData"), "mcp-commands.json");
+const readAllowlist = () => {
+  try {
+    return JSON.parse(fs.readFileSync(mcpAllowlist(), "utf8"));
+  } catch {
+    return [];
+  }
+};
+
 // ---------- Bridge handlers (see preload.cjs). Every handler checks the sender is one of our windows. ----------
 const handle = (channel, fn) =>
   ipcMain.handle(channel, (e, ...args) => {
@@ -127,6 +137,26 @@ const handle = (channel, fn) =>
 
 ipcMain.on("version", (e) => (e.returnValue = app.getVersion()));
 handle("hardware", () => hardware());
+handle("mcp:approve", async (_e, command, args) => {
+  command = String(command);
+  args = Array.isArray(args) ? args.map(String) : [];
+  const list = readAllowlist();
+  if (list.some((x) => x.command === command && JSON.stringify(x.args) === JSON.stringify(args))) return true;
+  const { response } = await dialog.showMessageBox(win, {
+    type: "warning",
+    buttons: ["Allow", "Cancel"],
+    defaultId: 1,
+    cancelId: 1,
+    title: "Allow a local connector?",
+    message: "Let MoonlightC run this program on your computer?",
+    detail: `${[command, ...args].join(" ")}
+
+Only allow programs you trust. The AI will be able to use the tools this program offers, and you choose per tool whether it must ask first.`,
+  });
+  if (response !== 0) return false;
+  fs.writeFileSync(mcpAllowlist(), JSON.stringify([...list, { command, args }]));
+  return true;
+});
 handle("ollama:status", () => ollama.status());
 handle("ollama:install", (e) => ollama.install((pct, stage) => e.sender.send("ollama:install-progress", pct, stage)));
 handle("ollama:start", () => ollama.start());

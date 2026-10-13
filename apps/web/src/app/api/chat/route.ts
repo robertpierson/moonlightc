@@ -1,6 +1,7 @@
 import { getProvider, languageModel, ProviderError } from "@moonc/core";
 import { APICallError, convertToModelMessages, isStepCount, createUIMessageStreamResponse, streamText, toUIMessageStream, type UIMessage } from "ai";
 import { readConnection } from "@/lib/server-guard";
+import { mcpTools, readServers } from "@/lib/mcp-server";
 import { buildTools, readSearchKey, type SearchKey } from "@/lib/tools";
 
 export const maxDuration = 300;
@@ -13,6 +14,7 @@ interface Body {
   temperature?: number;
   tools?: { search?: SearchKey };
   research?: boolean;
+  mcp?: unknown;
 }
 
 // Thin streaming proxy: the key arrives with the request, is used for this one call, and is never stored or logged.
@@ -25,13 +27,26 @@ export async function POST(req: Request) {
     providerName = getProvider(c.providerId).name;
     if (typeof body.modelId !== "string" || !Array.isArray(body.messages)) throw new ProviderError("Pick a model first.");
 
+    // Connectors (MCP): their tools join the built-in ones; "ask" tools pause for the user's approval in the chat.
+    const servers = readServers(body.mcp);
+    const mcp = servers.length ? await mcpTools(servers) : undefined;
+    const builtIn = body.tools ? buildTools(readSearchKey(body.tools.search)) : {};
+    const tools = { ...builtIn, ...mcp?.tools };
+    const hasTools = Object.keys(tools).length > 0;
+
     const result = streamText({
       model: languageModel(c, body.modelId),
       instructions: typeof body.instructions === "string" && body.instructions ? body.instructions.slice(0, 20000) : undefined,
       temperature: typeof body.temperature === "number" ? Math.min(2, Math.max(0, body.temperature)) : undefined,
       messages: await convertToModelMessages(body.messages),
       abortSignal: req.signal,
-      ...(body.tools ? { tools: buildTools(readSearchKey(body.tools.search)), stopWhen: isStepCount(body.research ? 40 : 6) } : {}),
+      ...(hasTools ? { tools, toolApproval: mcp?.approval, stopWhen: isStepCount(body.research ? 40 : 8) } : {}),
+      onEnd: async () => {
+        await mcp?.close();
+      },
+      onError: async () => {
+        await mcp?.close();
+      },
     });
 
     return createUIMessageStreamResponse({
@@ -39,7 +54,11 @@ export async function POST(req: Request) {
         stream: result.stream,
         sendReasoning: true,
         messageMetadata: ({ part }) =>
-          part.type === "finish" ? { usage: part.totalUsage, modelId: body.modelId, createdAt: Date.now() } : undefined,
+          part.type === "finish"
+            ? { usage: part.totalUsage, modelId: body.modelId, createdAt: Date.now() }
+            : part.type === "start" && mcp?.errors.length
+              ? { connectorErrors: mcp.errors }
+              : undefined,
         onError: (e) => friendlyError(e, providerName),
       }),
     });

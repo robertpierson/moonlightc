@@ -19,6 +19,21 @@ createServer(async (req, res) => {
     const toolMsg = body.messages.find((m) => m.role === "tool");
     const url = prompt.match(/read (https:\/\/\S+)/)?.[1];
     const py = prompt.match(/python: (.+)/)?.[1];
+    const add = prompt.match(/add (\d+) (\d+)/);
+    const addTool = body.tools?.find((t) => t.function.name.endsWith("__add"))?.function.name;
+    if (addTool && add && !toolMsg) {
+      res.writeHead(200, { "content-type": "text/event-stream" });
+      const call = { index: 0, id: "call_add", type: "function", function: { name: addTool, arguments: JSON.stringify({ a: Number(add[1]), b: Number(add[2]) }) } };
+      res.write(`data: ${JSON.stringify({ id: "x", object: "chat.completion.chunk", created: 0, model: body.model, choices: [{ index: 0, delta: { role: "assistant", tool_calls: [call] }, finish_reason: null }] })}
+
+`);
+      res.write(`data: ${JSON.stringify({ id: "x", object: "chat.completion.chunk", created: 0, model: body.model, choices: [{ index: 0, delta: {}, finish_reason: "tool_calls" }] })}
+
+`);
+      return res.end(`data: [DONE]
+
+`);
+    }
     if (body.tools && (url || py) && !toolMsg) {
       res.writeHead(200, { "content-type": "text/event-stream" });
       const fn = url ? { name: "fetch_url", arguments: JSON.stringify({ url }) } : { name: "run_python", arguments: JSON.stringify({ code: py }) };

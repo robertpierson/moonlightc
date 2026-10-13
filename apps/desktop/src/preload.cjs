@@ -51,6 +51,7 @@ contextBridge.exposeInMainWorld("moonc", {
     get: () => invoke("settings:get"),
     setOpenAtLogin: (on) => invoke("settings:openAtLogin", on),
   },
+  mcp: { approve: (command, args) => invoke("mcp:approve", command, args) },
   notify: (title, body) => invoke("notify", title, body),
   openExternal: (url) => invoke("open-external", url),
   openPath: (p, editor) => invoke("open-path", p, editor),

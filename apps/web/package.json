@@ -12,6 +12,7 @@
     "e2e": "playwright test"
   },
   "dependencies": {
+    "@ai-sdk/mcp": "2.0.74",
     "@ai-sdk/react": "4.0.141",
     "@moonc/core": "workspace:*",
     "@streamdown/code": "2.0.0",
@@ -37,6 +38,7 @@
     "zod": "4.6.6"
   },
   "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.1",
     "@playwright/test": "1.64.0",
     "@tailwindcss/turbopack": "^4",
     "@types/node": "^20",

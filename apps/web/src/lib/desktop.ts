@@ -74,6 +74,10 @@ export interface MooncBridge {
     get(): Promise<{ openAtLogin: boolean }>;
     setOpenAtLogin(on: boolean): Promise<void>;
   };
+  mcp: {
+    /** Native "Allow this program?" dialog. Returns true if the user allowed it. */
+    approve(command: string, args: string[]): Promise<boolean>;
+  };
   notify(title: string, body: string): Promise<void>;
   openExternal(url: string): Promise<void>;
   openPath(path: string, app?: "vscode" | "cursor"): Promise<void>;
