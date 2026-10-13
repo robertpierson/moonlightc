@@ -1,7 +1,7 @@
 "use client";
 
 import type { UIMessage } from "ai";
-import { AppWindow, Brain, Check, MousePointerClick, Copy, FileText, GitBranch, Link2, Loader2, Plug, Puzzle, Search, Terminal, Pencil, RotateCcw, Volume2, VolumeX } from "lucide-react";
+import { AppWindow, Brain, Check, MousePointerClick, Copy, FileText, GitBranch, Link2, Loader2, Globe, Plug, Puzzle, Search, Terminal, Pencil, RotateCcw, Volume2, VolumeX } from "lucide-react";
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
@@ -158,6 +158,16 @@ function PythonCall({ part }: { part: PyPart }) {
   );
 }
 
+function describeBrowser(action: string, input: Record<string, unknown> = {}) {
+  const what = String(input.text ?? input.ref ?? "");
+  if (action === "tabs") return "Checked your shared tabs";
+  if (action === "read") return "Read a shared tab";
+  if (action === "click") return `Clicked ${what ? `"${what}"` : "in a shared tab"}`;
+  if (action === "type") return `Typed into ${what ? `"${what}"` : "a field"}`;
+  if (action === "open") return `Opened ${String(input.url ?? "a page")}`;
+  return "Used a shared tab";
+}
+
 export function Message({
   message,
   streaming,
@@ -270,6 +280,10 @@ export function Message({
               ) : p.type === "tool-computer" ? (
                 <p key={i} className="mb-1 flex items-center gap-1 text-xs text-muted-foreground">
                   <MousePointerClick className="size-3.5" /> {describeComputer((p as unknown as { input?: Record<string, unknown> }).input)}
+                </p>
+              ) : p.type.startsWith("tool-browser_") ? (
+                <p key={i} className="mb-2 flex items-center gap-1 text-sm text-muted-foreground">
+                  <Globe className="size-3.5" /> {describeBrowser(p.type.slice(13), (p as unknown as { input?: Record<string, unknown> }).input)}
                 </p>
               ) : p.type === "tool-load_skill" ? (
                 <p key={i} className="mb-2 flex items-center gap-1 text-sm text-muted-foreground">

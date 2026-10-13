@@ -87,7 +87,8 @@ createServer(async (req, res) => {
 
 `);
     }
-    const fileCall = prompt.includes("list my files") ? { name: "files_list", args: {} } : prompt.includes("save a note") ? { name: "files_write", args: { path: "note.txt", content: "hello from the moon" } } : undefined;
+    const browserCall = prompt.includes("read my tab") ? { name: "browser_read", args: {} } : prompt.includes("click say hi") ? { name: "browser_click", args: { text: "Say hi" } } : prompt.includes("buy it") ? { name: "browser_click", args: { text: "Buy now" } } : undefined;
+    const fileCall = browserCall ?? (prompt.includes("list my files") ? { name: "files_list", args: {} } : prompt.includes("save a note") ? { name: "files_write", args: { path: "note.txt", content: "hello from the moon" } } : undefined);
     if (fileCall && body.tools?.some((t) => t.function.name === fileCall.name) && !toolMsg) {
       res.writeHead(200, { "content-type": "text/event-stream" });
       const call = { index: 0, id: "call_files", type: "function", function: { name: fileCall.name, arguments: JSON.stringify(fileCall.args) } };

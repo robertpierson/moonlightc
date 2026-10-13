@@ -22,6 +22,7 @@ interface Body {
   memory?: boolean;
   skills?: boolean;
   files?: boolean;
+  browser?: boolean;
   computer?: boolean;
   google?: { accessToken?: string };
   accounts?: { spotify?: string; slack?: string; discord?: string; x?: string };
@@ -111,6 +112,18 @@ export async function POST(req: Request) {
     const skillTool: ToolSet = body.skills
       ? { load_skill: tool({ description: "Load the full instructions of one of your skills (name as plugin:skill).", inputSchema: jsonSchema({ type: "object", properties: { name: { type: "string" } }, required: ["name"] }) }) }
       : {};
+    // Chrome extension: tabs the person shared. These run in the browser; risky clicks ask on the page itself.
+    const tabId = { tabId: { type: "number" as const, description: "From browser_tabs; leave out for the most recently used shared tab." } };
+    const target = { ref: { type: "string" as const, description: "Control ref from browser_read" }, text: { type: "string" as const, description: "Or the control's visible text" } };
+    const browserTools: ToolSet = body.browser
+      ? {
+          browser_tabs: tool({ description: "List the browser tabs the person shared with you.", inputSchema: jsonSchema({ type: "object", properties: {} }) }),
+          browser_read: tool({ description: "Read a shared tab: its text and the buttons, links and fields you can use (with refs).", inputSchema: jsonSchema({ type: "object", properties: tabId }) }),
+          browser_click: tool({ description: "Click a button or link in a shared tab. Buying, sending, deleting or submitting asks the person first.", inputSchema: jsonSchema({ type: "object", properties: { ...tabId, ...target } }) }),
+          browser_type: tool({ description: "Type into a field in a shared tab; submit=true also submits (asks the person first).", inputSchema: jsonSchema({ type: "object", properties: { ...tabId, ...target, value: { type: "string" }, submit: { type: "boolean" } }, required: ["value"] }) }),
+          browser_open: tool({ description: "Open a web address in a shared tab.", inputSchema: jsonSchema({ type: "object", properties: { ...tabId, url: { type: "string" } }, required: ["url"] }) }),
+        }
+      : {};
     const desktopComputer = body.computer && process.env.MOONC_DESKTOP === "1";
     // Screenshots must reach the model as images; OpenAI-compatible APIs only accept text in tool results.
     const visionTools = ["anthropic", "openai", "google", "azure", "bedrock"].includes(getProvider(c.providerId).kind) || process.env.MOONC_E2E_AUTO_APPROVE === "1";
@@ -124,7 +137,7 @@ export async function POST(req: Request) {
     // Desktop app: files in the folders the user shared (writing asks first).
     const grants = body.files && process.env.MOONC_DESKTOP === "1" ? await readGrants() : [];
     const files = grants.length ? fileTools(grants) : undefined;
-    const tools = { ...files?.tools, ...builtIn, ...mcp?.tools, ...google?.tools, ...accountTools, ...readModTools(body.modTools), ...memoryTool, ...skillTool, ...(desktopComputer ? { computer: computerTool } : {}), ...(body.code ? codeTools : {}) };
+    const tools = { ...files?.tools, ...builtIn, ...mcp?.tools, ...google?.tools, ...accountTools, ...readModTools(body.modTools), ...memoryTool, ...skillTool, ...browserTools, ...(desktopComputer ? { computer: computerTool } : {}), ...(body.code ? codeTools : {}) };
     const hasTools = Object.keys(tools).length > 0;
 
     const result = streamText({

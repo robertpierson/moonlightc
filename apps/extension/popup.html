@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>MoonlightC</title>
+    <style>
+      body { margin: 0; width: 300px; font: 14px system-ui, sans-serif; color: #1a1d3d; background: linear-gradient(160deg, #f3f0ff, #fff 45%, #fff3ec); }
+      main { display: grid; gap: 10px; padding: 14px; }
+      h1 { margin: 0; font-size: 15px; }
+      p { margin: 0; color: #545a7c; }
+      button { font: inherit; font-weight: 600; padding: 8px 12px; border-radius: 999px; border: 0; cursor: pointer; }
+      .go { color: #fff; background: linear-gradient(115deg, #4338ca, #7c3aed 52%, #a21caf); }
+      .stop { background: #fff; color: #3b2a9e; border: 1px solid #d9d4fb; }
+      button:focus-visible { outline: 2px solid #5140d9; outline-offset: 2px; }
+      ul { margin: 0; padding-left: 16px; max-height: 140px; overflow: auto; font-size: 12px; color: #545a7c; }
+      h2 { margin: 4px 0 0; font-size: 12px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>MoonlightC</h1>
+      <p id="status">Checking this tab…</p>
+      <button id="toggle" class="go" hidden></button>
+      <button id="stopAll" class="stop" hidden>Stop sharing every tab</button>
+      <p>Shortcut to stop everything: Alt+Shift+M</p>
+      <h2>Recent activity</h2>
+      <ul id="log"><li>Nothing yet.</li></ul>
+    </main>
+    <script src="popup.js" type="module"></script>
+  </body>
+</html>

@@ -1,6 +1,6 @@
 "use client";
 
-import { Cpu, Download, FolderOpen, KeyRound, Laptop, Moon, Palette, Plug, Puzzle, Shield, SlidersHorizontal, Sparkles, Sun, Trash2, Wand2, X } from "lucide-react";
+import { Cpu, Download, FolderOpen, Globe, KeyRound, Laptop, Moon, Palette, Plug, Puzzle, Shield, SlidersHorizontal, Sparkles, Sun, Trash2, Wand2, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
@@ -22,9 +22,9 @@ const Customize = dynamic(() => import("@/components/customize/customize").then(
 const ModsView = dynamic(() => import("@/components/mods/mods-view").then((m) => m.ModsView), { loading: () => <div className="flex-1" /> });
 const LocalModels = dynamic(() => import("@/components/desktop/local-models").then((m) => m.LocalModels), { loading: () => <div className="flex-1" /> });
 
-export type SettingsSection = "general" | "models" | "auto" | "modes" | "connectors" | "plugins" | "files" | "local" | "appearance" | "privacy";
+export type SettingsSection = "general" | "models" | "auto" | "modes" | "connectors" | "plugins" | "files" | "browser" | "local" | "appearance" | "privacy";
 
-const SECTIONS: { id: SettingsSection; label: string; icon: React.ReactNode; desktopOnly?: boolean }[] = [
+const SECTIONS: { id: SettingsSection; label: string; icon: React.ReactNode; desktopOnly?: boolean; webOnly?: boolean }[] = [
   { id: "general", label: "General", icon: <SlidersHorizontal /> },
   { id: "models", label: "Models & API keys", icon: <KeyRound /> },
   { id: "auto", label: "Auto model", icon: <Sparkles /> },
@@ -32,6 +32,7 @@ const SECTIONS: { id: SettingsSection; label: string; icon: React.ReactNode; des
   { id: "connectors", label: "Connectors", icon: <Plug /> },
   { id: "plugins", label: "Plugins & mods", icon: <Puzzle /> },
   { id: "files", label: "Files", icon: <FolderOpen />, desktopOnly: true },
+  { id: "browser", label: "Chrome extension", icon: <Globe />, webOnly: true },
   { id: "local", label: "Local models", icon: <Cpu />, desktopOnly: true },
   { id: "appearance", label: "Appearance", icon: <Palette /> },
   { id: "privacy", label: "Privacy & data", icon: <Shield /> },
@@ -39,7 +40,7 @@ const SECTIONS: { id: SettingsSection; label: string; icon: React.ReactNode; des
 
 export function Settings({ section, onSection, availableViews, onClose, onChat }: { section: SettingsSection; onSection: (s: SettingsSection) => void; availableViews: ViewId[]; onClose: () => void; onChat: () => void }) {
   const isDesktop = !!desktop();
-  const sections = SECTIONS.filter((s) => isDesktop || !s.desktopOnly);
+  const sections = SECTIONS.filter((s) => (isDesktop ? !s.webOnly : !s.desktopOnly));
   return (
     <div className="flex min-h-0 flex-1 flex-col md:flex-row">
       <nav aria-label="Settings" className="flex shrink-0 gap-1 overflow-x-auto border-b p-2 md:w-56 md:flex-col md:overflow-visible md:border-r md:border-b-0">
@@ -81,6 +82,7 @@ export function Settings({ section, onSection, availableViews, onClose, onChat }
           </div>
         )}
         {section === "files" && <Files />}
+        {section === "browser" && <BrowserExtension />}
         {section === "local" && <LocalModels onChat={onChat} />}
         {section === "appearance" && <Customize availableViews={availableViews} />}
         {section === "privacy" && <Privacy />}
@@ -209,6 +211,47 @@ function AutoModel({ onAddKey }: { onAddKey: () => void }) {
           <p className="text-sm text-muted-foreground">{picks.everyday ? "Auto is ready: choose “Auto” at the top of the model menu." : "Set an Everyday model to turn on Auto."}</p>
         </div>
       )}
+    </Page>
+  );
+}
+
+function BrowserExtension() {
+  const [version] = useState(() => document.documentElement.dataset.mooncExtension);
+  return (
+    <Page title="Chrome extension" description="Let the AI read and use browser tabs you choose: it can read a page, click, type and open links for you. Nothing is shared until you click the extension's icon on a tab and choose Share this tab.">
+      {version ? (
+        <p role="status" className="rounded-lg bg-primary/10 p-3 text-sm">
+          The extension is installed (version {version}). On any tab, click the MoonlightC icon in the toolbar and choose <strong>Share this tab</strong>, then ask the AI about it here.
+        </p>
+      ) : (
+        <ol className="grid list-decimal gap-2 pl-5 text-sm">
+          <li>
+            <a className="text-primary underline underline-offset-4" href="/downloads/moonlightc-chrome-extension.zip" download>
+              Download the extension
+            </a>{" "}
+            and unzip it (right-click the file, then <strong>Extract all</strong>).
+          </li>
+          <li>
+            In Chrome or Edge, type <code className="rounded bg-muted px-1">chrome://extensions</code> in the address bar and press Enter.
+          </li>
+          <li>
+            Turn on <strong>Developer mode</strong> (top right).
+          </li>
+          <li>
+            Click <strong>Load unpacked</strong> and pick the <strong>moonlightc-extension</strong> folder you unzipped.
+          </li>
+          <li>Come back here and reload this page.</li>
+        </ol>
+      )}
+      <div className="grid gap-1 text-sm text-muted-foreground">
+        <p>How it keeps you safe:</p>
+        <ul className="list-disc pl-5">
+          <li>Only tabs you share are visible to the AI, and a banner on each shared tab has a Stop button.</li>
+          <li>Buying, sending, deleting or submitting waits for your own click on the page.</li>
+          <li>Sharing ends after 15 idle minutes. Alt+Shift+M stops every tab at once.</li>
+          <li>Every action is listed in the extension&apos;s popup.</li>
+        </ul>
+      </div>
     </Page>
   );
 }

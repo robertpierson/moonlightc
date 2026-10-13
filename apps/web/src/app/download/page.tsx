@@ -106,6 +106,24 @@ export default async function DownloadPage() {
             ))}
           </dl>
         </section>
+
+        <section aria-labelledby="ext" className="mt-16">
+          <h2 id="ext" className="display text-3xl font-semibold sm:text-4xl">
+            Chrome extension
+          </h2>
+          <p className="mt-2 max-w-[60ch] text-[var(--mist)]">
+            Let the AI read and use browser tabs you share with it: it can read a page, click, type and open links. Buying, sending or deleting always waits for your OK.
+          </p>
+          <a href="/downloads/moonlightc-chrome-extension.zip" download className="btn-moon mt-4 inline-block rounded-full px-6 py-3 font-semibold">
+            Download the extension
+          </a>
+          <ol className="mt-4 grid max-w-[60ch] list-decimal gap-1 pl-5 text-[var(--mist)]">
+            <li>Unzip the file (right-click it, then Extract all).</li>
+            <li>In Chrome or Edge, go to chrome://extensions and turn on Developer mode (top right).</li>
+            <li>Click Load unpacked and pick the moonlightc-extension folder.</li>
+            <li>On any tab, click the MoonlightC icon and choose Share this tab.</li>
+          </ol>
+        </section>
       </main>
     </div>
   );

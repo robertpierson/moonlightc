@@ -60,3 +60,9 @@ Rollback: Vercel "Instant Rollback" to the previous production deployment.
 - What: the marketing pages ignore the device's dark mode: pale lilac/blue/peach sky gradients, indigo-to-fuchsia gradient buttons and headline, and a pearl moon whose shadow side lets the sky show through. The app itself still follows light/dark.
 - Why: owner disliked the dark site and the moon against the blue background; asked for clean with lots of gradients.
 - Alternatives: a light and a dark variant (owner didn't want dark); a static moon image (the shader is small and now starts after load).
+
+## 2026-10-13 Chrome extension: per-tab sharing, approvals in the extension's own window
+- What: MV3 extension in apps/extension. The web app talks to it only through a bridge script that runs on moonlightc.vercel.app (localhost only in the test copy; the zip strips it). Only tabs the person shares are usable; a banner shows on them; risky clicks/submits are confirmed in an extension popup window (Deny is the default), sharing ends after 15 idle minutes, Alt+Shift+M stops all, actions are logged.
+- Why: owner asked for browser/screen access through an extension. Confirming inside the page could be clickjacked by the page; an extension window can't be.
+- Alternatives: externally_connectable with a fixed extension ID (needs a signing key and breaks when published under a new ID); approving in the chat (the AI SDK's client-tool approval path is less certain). Remote use from another device waits for Supabase (Phase 5).
+- Updating: after changing apps/extension, run `pnpm --filter @moonc/extension zip` and commit the zip.

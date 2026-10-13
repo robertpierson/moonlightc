@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>MoonlightC: allow this step?</title>
+    <style>
+      body { margin: 0; font: 14px system-ui, sans-serif; color: #1a1d3d; background: linear-gradient(160deg, #f3f0ff, #fff 50%, #fff3ec); }
+      main { display: grid; gap: 10px; padding: 18px; }
+      h1 { margin: 0; font-size: 15px; }
+      p { margin: 0; color: #545a7c; }
+      div { display: flex; gap: 8px; justify-content: flex-end; margin-top: 6px; }
+      button { font: inherit; font-weight: 600; padding: 8px 14px; border-radius: 999px; cursor: pointer; }
+      #deny { background: #fff; color: #3b2a9e; border: 1px solid #d9d4fb; }
+      #allow { color: #fff; border: 0; background: linear-gradient(115deg, #4338ca, #7c3aed 52%, #a21caf); }
+      button:focus-visible { outline: 2px solid #5140d9; outline-offset: 2px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1 id="what"></h1>
+      <p id="site"></p>
+      <p>Allow only if you asked for this.</p>
+      <div><button id="deny" autofocus>Deny</button><button id="allow">Allow</button></div>
+    </main>
+    <script src="confirm.js" type="module"></script>
+  </body>
+</html>

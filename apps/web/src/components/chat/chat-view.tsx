@@ -1,6 +1,7 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
+import { BROWSER_TOOLS, callExtension, hasExtension } from "@/lib/browser-ext";
 import {
   expandPluginCommand,
   findSkill,
@@ -169,6 +170,7 @@ export function ChatView({
         memory: (!!getState().memory?.enabled && !mode.private) || undefined,
         computer: computerOn || undefined,
         files: !!desktop() || undefined,
+        browser: hasExtension() || undefined,
         google: googleTokenRef.current
           ? { accessToken: googleTokenRef.current }
           : undefined,
@@ -278,6 +280,15 @@ export function ChatView({
             toolCallId: toolCall.toolCallId,
             output: { error: e instanceof Error ? e.message : String(e) },
           } as never);
+        }
+        return;
+      }
+      if (BROWSER_TOOLS[toolCall.toolName]) {
+        try {
+          const output = await callExtension(BROWSER_TOOLS[toolCall.toolName], toolCall.input as object);
+          addToolOutput({ tool: toolCall.toolName, toolCallId: toolCall.toolCallId, output } as never);
+        } catch (e) {
+          addToolOutput({ tool: toolCall.toolName, toolCallId: toolCall.toolCallId, output: { error: e instanceof Error ? e.message : String(e) } } as never);
         }
         return;
       }

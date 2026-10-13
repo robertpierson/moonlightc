@@ -23,7 +23,7 @@ STATUS: BUILDING
 - [x] R6 Claude plugins: install from GitHub (plugin.json / marketplace.json): skills, slash commands, MCP servers
 - [x] R7 Marketing site: light, clean, lots of gradients; moon must not clash with the background
 - [x] R8a File access in the desktop app: shared folders (native picker), list/search/read, write asks first, activity log
-- [ ] R8b Chrome extension: the AI can see and act in browser tabs you allow (local, no Supabase needed)
+- [x] R8b Chrome extension: the AI can see and act in browser tabs you allow (local, no Supabase needed)
 - [ ] R8c (needs Supabase, Phase 5) remote control from another device
 
 ## Phase 0 tasks
@@ -122,6 +122,7 @@ STATUS: BUILDING
 - No Docker, so no local Supabase stack; test against the hosted project.
 
 ## Notes (last 10)
+- 2026-10-13: R8b Chrome extension (apps/extension; zip at /downloads): share a tab, AI reads/clicks/types/opens; risky steps confirmed in an extension window (clickjack-proof), 15-min idle stop, Alt+Shift+M, audit. 97 web e2e incl. real-extension test.
 - 2026-10-13: R8a desktop file access (folder grants live in the desktop app; server re-checks every path incl. links); 13 desktop e2e, 64 unit.
 - 2026-10-13: R7 website redesign: always-light daytime-moon look with gradients; moon setup deferred until idle (Lighthouse mobile 92, a11y 100). 96 web e2e.
 - 2026-10-13: R6 Claude plugins from GitHub (skills via load_skill, slash commands, agents as modes, MCP connectors; browse Anthropic's directory, verified against the real 315-plugin list). Fixed: mode/model changes didn't stick in a just-started chat. 96 web e2e.
@@ -131,4 +132,3 @@ STATUS: BUILDING
 - 2026-10-13: Subscriptions hub; 87 web e2e.
 - 2026-10-13: Code workspace; fixed effect-return bug (Chrome scrollIntoView now returns a Promise); 86 web e2e stable.
 - 2026-10-13: One-click MCP sign-in connectors; 84 web e2e.
-- 2026-10-13: PR #1 merged; production https://moonlightc.vercel.app serves phases 2-8 (39 deployed-site tests pass). Work continues on main.

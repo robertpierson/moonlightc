@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "MoonlightC",
+  "description": "Let the AI in MoonlightC read and use browser tabs you share with it. Nothing is shared until you choose a tab.",
+  "version": "0.1.0",
+  "minimum_chrome_version": "120",
+  "icons": { "128": "icon.png" },
+  "action": { "default_title": "Share this tab with MoonlightC", "default_popup": "popup.html", "default_icon": { "128": "icon.png" } },
+  "background": { "service_worker": "background.js", "type": "module" },
+  "permissions": ["tabs", "scripting", "storage"],
+  "host_permissions": ["<all_urls>"],
+  "content_scripts": [
+    {
+      "matches": ["https://moonlightc.vercel.app/*", "http://localhost/*", "http://127.0.0.1/*"],
+      "js": ["bridge.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "commands": {
+    "stop-all": { "suggested_key": { "default": "Alt+Shift+M" }, "description": "Stop sharing every tab with MoonlightC" }
+  }
+}

@@ -89,6 +89,10 @@ For each one, after step 3 add the two values in Vercel exactly like step 6 of s
 5. In a chat, turn on nothing extra and ask: "What are my open pull requests?" Click **Allow once** when it asks.
 
 ---
+## Optional: put the Chrome extension in the Chrome Web Store (costs a one-time $5 Google fee; your call)
+Right now people install it from the download page with "Load unpacked". Publishing makes it a one-click install.
+Only do this if you want to pay the fee; tell Claude "publish the extension" and it will prepare the store listing and tell you what to click.
+
 ## Optional: publish a test version of the desktop app
 Installers for Windows, Mac and Linux are built and waiting in a **draft** (private) release. Nothing is public until you choose.
 1. Open https://github.com/robertpierson/moonlightc/releases
