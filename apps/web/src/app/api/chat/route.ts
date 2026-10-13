@@ -12,6 +12,7 @@ interface Body {
   instructions?: string;
   temperature?: number;
   tools?: { search?: SearchKey };
+  research?: boolean;
 }
 
 // Thin streaming proxy: the key arrives with the request, is used for this one call, and is never stored or logged.
@@ -30,7 +31,7 @@ export async function POST(req: Request) {
       temperature: typeof body.temperature === "number" ? Math.min(2, Math.max(0, body.temperature)) : undefined,
       messages: await convertToModelMessages(body.messages),
       abortSignal: req.signal,
-      ...(body.tools ? { tools: buildTools(readSearchKey(body.tools.search)), stopWhen: isStepCount(6) } : {}),
+      ...(body.tools ? { tools: buildTools(readSearchKey(body.tools.search)), stopWhen: isStepCount(body.research ? 40 : 6) } : {}),
     });
 
     return createUIMessageStreamResponse({

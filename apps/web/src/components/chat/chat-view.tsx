@@ -45,6 +45,7 @@ export function ChatView({
   onOpenArtifact: (a: Artifact) => void;
 }) {
   const [input, setInput] = useState("");
+  const hasSearchKey = useStore((s) => !!s.searchKey);
   const bottom = useRef<HTMLDivElement>(null);
   // The key and model travel with each request, so switching models mid-chat just works.
   const request = () => {
@@ -57,7 +58,8 @@ export function ChatView({
         modelId: found.model.id,
         instructions: mode.instructions,
         temperature: mode.temperature,
-        tools: getState().webTools ? { search: getState().searchKey } : undefined,
+        tools: getState().webTools || mode.research ? { search: getState().searchKey } : undefined,
+        research: mode.research || undefined,
       },
     };
   };
@@ -106,7 +108,8 @@ export function ChatView({
     bottom.current?.scrollIntoView({ block: "end" });
   }, [messages]);
 
-  const canSend = !!findModel(model);
+  const needsSearch = !!mode.research && !hasSearchKey;
+  const canSend = !!findModel(model) && !needsSearch;
 
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [dragging, setDragging] = useState(false);
@@ -169,10 +172,21 @@ export function ChatView({
             <div className="flex flex-col items-center gap-3 pt-[18vh] text-center">
               <h2 className="text-2xl font-semibold tracking-tight">{mode.private ? "Private chat" : "What can I help with?"}</h2>
               {mode.private && <p className="max-w-sm text-sm text-muted-foreground">Nothing in this chat is saved. Close it or start a new chat and it&apos;s gone.</p>}
-              {!canSend && (
+              {mode.research && (
+                <p className="max-w-md text-sm text-muted-foreground">
+                  Deep Research plans sub-questions, searches and reads many sources, then writes a cited report. It can take a few minutes and uses more tokens.
+                </p>
+              )}
+              {!findModel(model) ? (
                 <Button onClick={onOpenKeys}>
                   <KeyRound /> Connect a model
                 </Button>
+              ) : (
+                needsSearch && (
+                  <Button onClick={onOpenKeys}>
+                    <KeyRound /> Add a web search key
+                  </Button>
+                )
               )}
             </div>
           )}
@@ -231,7 +245,7 @@ export function ChatView({
         <div className="flex items-end gap-2">
           <Textarea
             aria-label="Message"
-            placeholder={canSend ? "Message MoonlightC…" : "Connect a model to start chatting"}
+            placeholder={canSend ? "Message MoonlightC…" : needsSearch ? "Add a web search key to use Deep Research" : "Connect a model to start chatting"}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onPaste={(e) => {

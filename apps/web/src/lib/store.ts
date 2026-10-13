@@ -27,6 +27,8 @@ export interface Mode {
   model?: ModelRef;
   /** Incognito: chats in this mode are never saved. */
   private?: boolean;
+  /** Deep Research: tools forced on, long multi-step run, report with sources. */
+  research?: boolean;
   builtIn?: boolean;
 }
 
@@ -61,6 +63,15 @@ export const BUILT_IN_MODES: Mode[] = [
     builtIn: true,
     instructions:
       "You are a patient tutor. Teach step by step, ask one question at a time to check understanding, and quiz the user before moving on. Never just hand over answers to exercises.",
+  },
+  {
+    id: "research",
+    name: "Deep Research",
+    builtIn: true,
+    research: true,
+    temperature: 0.3,
+    instructions:
+      "You are a deep-research agent. First write a short plan of 3-6 sub-questions. Then use web_search many times with varied queries and fetch_url to read the most relevant sources in full. Keep going until each sub-question is answered or clearly unanswerable. Finish with a structured report: a summary, findings by sub-question, disagreements between sources, and a numbered Sources list. Cite sources inline as [1], [2] matching that list. Never invent sources.",
   },
   { id: "private", name: "Private", instructions: "", private: true, builtIn: true },
 ];

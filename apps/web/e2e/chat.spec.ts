@@ -238,3 +238,12 @@ test("code interpreter runs Python in the browser and the model sees the output"
   await expect(page.locator('[data-role="assistant"]').last()).toContainText("Tool says:", { timeout: 20000 });
   await expect(page.locator('[data-role="assistant"]').last()).toContainText("42");
 });
+
+test("deep research asks for a search key first", async ({ page }) => {
+  await connectMock(page);
+  await page.getByRole("combobox", { name: "Mode", exact: true }).click();
+  await page.getByRole("option", { name: "Deep Research" }).click();
+  await expect(page.getByLabel("Message", { exact: true })).toHaveAttribute("placeholder", "Add a web search key to use Deep Research");
+  await page.getByRole("button", { name: "Add a web search key" }).click();
+  await expect(page.getByRole("region", { name: "Web search" })).toBeVisible();
+});
