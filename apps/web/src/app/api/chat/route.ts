@@ -1,6 +1,7 @@
 import { getProvider, languageModel, ProviderError } from "@moonc/core";
 import { APICallError, convertToModelMessages, isStepCount, jsonSchema, tool, type ToolSet, createUIMessageStreamResponse, streamText, toUIMessageStream, type UIMessage } from "ai";
 import { readConnection } from "@/lib/server-guard";
+import { discordTools, slackTools, spotifyTools } from "@/lib/account-tools";
 import { googleTools } from "@/lib/google-tools";
 import { mcpTools, readServers } from "@/lib/mcp-server";
 import { buildTools, readSearchKey, type SearchKey } from "@/lib/tools";
@@ -20,6 +21,7 @@ interface Body {
   memory?: boolean;
   computer?: boolean;
   google?: { accessToken?: string };
+  accounts?: { spotify?: string; slack?: string; discord?: string };
   code?: boolean;
 }
 
@@ -109,7 +111,10 @@ export async function POST(req: Request) {
       throw new ProviderError("Computer use needs a Claude, GPT or Gemini model connected with its own key (Anthropic, OpenAI, Google, Azure or Bedrock). Pick one in the model menu.");
     }
     const google = typeof body.google?.accessToken === "string" ? googleTools(body.google.accessToken) : undefined;
-    const tools = { ...builtIn, ...mcp?.tools, ...google?.tools, ...readModTools(body.modTools), ...memoryTool, ...(desktopComputer ? { computer: computerTool } : {}), ...(body.code ? codeTools : {}) };
+    const acc = body.accounts ?? {};
+    const slack = typeof acc.slack === "string" ? slackTools(acc.slack) : undefined;
+    const accountTools = { ...(typeof acc.spotify === "string" ? spotifyTools(acc.spotify) : {}), ...slack?.tools, ...(typeof acc.discord === "string" ? discordTools(acc.discord) : {}) };
+    const tools = { ...builtIn, ...mcp?.tools, ...google?.tools, ...accountTools, ...readModTools(body.modTools), ...memoryTool, ...(desktopComputer ? { computer: computerTool } : {}), ...(body.code ? codeTools : {}) };
     const hasTools = Object.keys(tools).length > 0;
 
     const result = streamText({
@@ -119,7 +124,7 @@ export async function POST(req: Request) {
       temperature: typeof body.temperature === "number" ? Math.min(2, Math.max(0, body.temperature)) : undefined,
       messages: await convertToModelMessages(body.messages),
       abortSignal: req.signal,
-      ...(hasTools ? { tools, toolApproval: { ...mcp?.approval, ...google?.approval }, stopWhen: isStepCount(body.research || desktopComputer || body.code ? 40 : 8) } : {}),
+      ...(hasTools ? { tools, toolApproval: { ...mcp?.approval, ...google?.approval, ...slack?.approval }, stopWhen: isStepCount(body.research || desktopComputer || body.code ? 40 : 8) } : {}),
       onEnd: async () => {
         await mcp?.close();
       },

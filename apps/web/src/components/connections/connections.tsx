@@ -13,7 +13,7 @@ import { desktop } from "@/lib/desktop";
 import { update, useStore, type McpServer } from "@/lib/store";
 import { beginMcpSignIn } from "@/lib/mcp-auth-client";
 import { GitHubDashboard } from "./github";
-import { GoogleCard } from "./google";
+import { AccountCards } from "./google";
 
 const GITHUB_MCP = "https://api.githubcopilot.com/mcp/";
 
@@ -277,7 +277,7 @@ export function Connections() {
         </section>
         {adding && <AddConnector key={adding} preset={adding === "github" ? "github" : undefined} onDone={() => setAdding(undefined)} />}
         <SignInGallery have={servers} />
-        <GoogleCard />
+        <AccountCards />
         {github?.token && <GitHubDashboard token={github.token} />}
         {servers.length > 0 && (
           <ul className="grid gap-3" aria-label="Your connectors">

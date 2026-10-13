@@ -4,6 +4,16 @@ import { createServer } from "node:http";
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString("base64url");
 createServer(async (req, res) => {
   const url = new URL(req.url, "http://127.0.0.1:4030");
+  if (url.pathname === "/spotify/authorize") {
+    const back = new URL(url.searchParams.get("redirect_uri"));
+    back.searchParams.set("code", "spotify-code");
+    back.searchParams.set("state", url.searchParams.get("state"));
+    return res.writeHead(302, { location: back.toString() }).end();
+  }
+  if (url.pathname === "/spotify/token") return res.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify({ access_token: "sp-access", refresh_token: "sp-refresh", expires_in: 3600, scope: "user-read-playback-state" }));
+  if (url.pathname === "/v1/me" && req.headers.authorization === "Bearer sp-access") return res.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify({ display_name: "Shawn", email: "shawn@music.example" }));
+  if (url.pathname === "/v1/me/player/currently-playing" && req.headers.authorization === "Bearer sp-access")
+    return res.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify({ is_playing: true, item: { name: "Clair de Lune", uri: "spotify:track:1", artists: [{ name: "Debussy" }], album: { name: "Suite" } } }));
   if (url.pathname === "/auth") {
     const back = new URL(url.searchParams.get("redirect_uri"));
     back.searchParams.set("code", "test-code");

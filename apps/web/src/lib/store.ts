@@ -8,6 +8,9 @@ import type { Automation } from "@/components/desktop/automation-runner";
 import type { InstalledMod } from "./mods";
 import type { Subscription } from "./subscriptions";
 
+export type OAuthProviderId = "google" | "spotify" | "slack" | "discord";
+const OAUTH_IDS: OAuthProviderId[] = ["google", "spotify", "slack", "discord"];
+
 // Device-local storage. Keys saved here never leave this browser except inside a chat request to our proxy.
 // Cloud sync (Supabase Vault) is added on top once accounts exist.
 
@@ -146,7 +149,7 @@ interface State {
   mods?: InstalledMod[];
   projects?: Project[];
   automations?: Automation[];
-  oauth?: { google?: OAuthAccount };
+  oauth?: Partial<Record<OAuthProviderId, OAuthAccount>>;
   subscriptions?: { items: Subscription[]; remindDays: number; reminded?: Record<string, number>; scannedAt?: number };
   memory?: { enabled: boolean; items: MemoryItem[] };
 }
@@ -191,13 +194,14 @@ function load() {
             return { ...m, token: v.t ?? m.token, oauth: m.oauth && { ...m.oauth, tokens: v.o } };
           }),
         ));
-      let oauth = state.oauth;
-      if (oauth?.google && !oauth.google.accessToken) {
-        const raw = await b.secrets.get("oauth:google");
-        if (raw) {
-          const t = JSON.parse(raw) as { a: string; r?: string };
-          oauth = { google: { ...oauth.google, accessToken: t.a, refreshToken: t.r } };
-        }
+      const oauth = { ...state.oauth };
+      for (const id of OAUTH_IDS) {
+        const acc = oauth[id];
+        if (!acc || acc.accessToken) continue;
+        const raw = await b.secrets.get(`oauth:${id}`);
+        if (!raw) continue;
+        const t = JSON.parse(raw) as { a: string; r?: string };
+        oauth[id] = { ...acc, accessToken: t.a, refreshToken: t.r };
       }
       update((s) => ({ ...s, connections, searchKey, mcpServers, oauth }));
     });
@@ -211,22 +215,24 @@ function persist(prev: State) {
     for (const c of state.connections) if (c.apiKey && prev.connections.find((p) => p.id === c.id)?.apiKey !== c.apiKey) b.secrets.set(secretOf(c.id), c.apiKey);
     for (const c of prev.connections) if (!state.connections.some((x) => x.id === c.id)) b.secrets.set(secretOf(c.id), null);
     if (state.searchKey?.key && state.searchKey.key !== prev.searchKey?.key) b.secrets.set("search", state.searchKey.key);
+    else if (!state.searchKey && prev.searchKey) b.secrets.set("search", null);
     for (const m of state.mcpServers ?? []) {
       const before = prev.mcpServers?.find((p) => p.id === m.id);
       if ((m.token && before?.token !== m.token) || (m.oauth?.tokens && before?.oauth?.tokens !== m.oauth.tokens))
         b.secrets.set(`mcp:${m.id}`, JSON.stringify({ t: m.token, o: m.oauth?.tokens }));
     }
     for (const m of prev.mcpServers ?? []) if (!state.mcpServers?.some((x) => x.id === m.id)) b.secrets.set(`mcp:${m.id}`, null);
-    const g = state.oauth?.google;
-    if (g?.accessToken && g.accessToken !== prev.oauth?.google?.accessToken) b.secrets.set("oauth:google", JSON.stringify({ a: g.accessToken, r: g.refreshToken }));
-    if (!g && prev.oauth?.google) b.secrets.set("oauth:google", null);
-    else if (prev.searchKey) b.secrets.set("search", null);
+    for (const id of OAUTH_IDS) {
+      const acc = state.oauth?.[id];
+      if (acc?.accessToken && acc.accessToken !== prev.oauth?.[id]?.accessToken) b.secrets.set(`oauth:${id}`, JSON.stringify({ a: acc.accessToken, r: acc.refreshToken }));
+      if (!acc && prev.oauth?.[id]) b.secrets.set(`oauth:${id}`, null);
+    }
     saved = {
       ...state,
       connections: state.connections.map((c) => ({ ...c, apiKey: "" })),
       searchKey: state.searchKey && { ...state.searchKey, key: "" },
       mcpServers: state.mcpServers?.map((m) => ({ ...m, token: m.token ? "" : undefined, oauth: m.oauth && { ...m.oauth, tokens: undefined } })),
-      oauth: state.oauth?.google ? { google: { ...state.oauth.google, accessToken: "", refreshToken: state.oauth.google.refreshToken ? "" : undefined } } : state.oauth,
+      oauth: state.oauth && Object.fromEntries(Object.entries(state.oauth).map(([k, a]) => [k, a && { ...a, accessToken: "", refreshToken: a.refreshToken ? "" : undefined }])),
     };
   }
   localStorage.setItem(KEY, JSON.stringify(saved));

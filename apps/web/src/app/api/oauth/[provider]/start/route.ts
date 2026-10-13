@@ -16,7 +16,7 @@ export async function GET(req: Request, ctx: RouteContext<"/api/oauth/[provider]
     client_id: p.clientId!,
     redirect_uri: `${url.origin}/api/oauth/${provider}/callback`,
     response_type: "code",
-    scope: p.scopes.join(" "),
+    [p.scopeParam ?? "scope"]: p.scopes.join(p.scopeSeparator ?? " "),
     state,
     code_challenge: challenge,
     code_challenge_method: "S256",

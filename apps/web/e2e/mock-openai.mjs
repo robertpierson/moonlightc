@@ -41,6 +41,13 @@ createServer(async (req, res) => {
 
 `);
     }
+    if (prompt.includes("what's playing") && body.tools?.some((t) => t.function.name === "spotify_now_playing") && !toolMsg) {
+      res.writeHead(200, { "content-type": "text/event-stream" });
+      const call = { index: 0, id: "call_sp", type: "function", function: { name: "spotify_now_playing", arguments: "{}" } };
+      res.write(`data: ${JSON.stringify({ id: "x", object: "chat.completion.chunk", created: 0, model: body.model, choices: [{ index: 0, delta: { role: "assistant", tool_calls: [call] }, finish_reason: null }] })}` + "\n\n");
+      res.write(`data: ${JSON.stringify({ id: "x", object: "chat.completion.chunk", created: 0, model: body.model, choices: [{ index: 0, delta: {}, finish_reason: "tool_calls" }] })}` + "\n\n");
+      return res.end("data: [DONE]\n\n");
+    }
     if (prompt.includes("my youtube") && body.tools?.some((t) => t.function.name === "youtube_my_subscriptions") && !toolMsg) {
       res.writeHead(200, { "content-type": "text/event-stream" });
       const call = { index: 0, id: "call_yt", type: "function", function: { name: "youtube_my_subscriptions", arguments: "{}" } };

@@ -37,3 +37,18 @@ test("a forged sign-in result is refused", async ({ request }) => {
   expect(res.status()).toBe(302);
   expect(res.headers().location).toContain("oauth_error=");
 });
+
+test("Spotify: sign in, then the AI says what's playing", async ({ page }) => {
+  await page.addInitScript(() => {
+    if (localStorage.getItem("moonc:v1")) return;
+    localStorage.setItem("moonc:v1", JSON.stringify({ connections: [{ id: "m", providerId: "custom", apiKey: "", baseURL: "http://127.0.0.1:4010/v1", label: "Mock", models: [{ id: "mock-fast", name: "mock-fast" }], addedAt: 0 }], lastModel: { connectionId: "m", modelId: "mock-fast" }, chats: [], favorites: [], modes: [] }));
+  });
+  await page.goto("/app");
+  await nav(page, "Connections");
+  await page.getByRole("button", { name: "Connect Spotify" }).click();
+  await expect(page.getByText("Spotify connected as shawn@music.example.")).toBeVisible();
+  await nav(page, "Chat");
+  await page.getByLabel("Message", { exact: true }).fill("what's playing?");
+  await page.getByRole("button", { name: "Send message" }).click();
+  await expect(page.locator('[data-role="assistant"]').last()).toContainText("Clair de Lune");
+});

@@ -38,6 +38,27 @@ This makes the **Connect Google** button appear. Google is free for this.
    Click **Save**.
 7. Tell Claude: "Google done". Claude redeploys and tests it.
 
+
+## 3. Optional: Spotify, Slack and Discord (each about 5 minutes; do only the ones you want)
+For each one, after step 3 add the two values in Vercel exactly like step 6 of section 2
+(https://vercel.com/app-project21/moonlightc/settings/environment-variables), then tell Claude which you did.
+
+**Spotify**
+1. Open https://developer.spotify.com/dashboard , log in, click **Create app**.
+2. App name **MoonlightC**, description **AI assistant**, Redirect URI: `https://moonlightc.vercel.app/api/oauth/spotify/callback` (click **Add**), tick **Web API**, agree, **Save**.
+3. Click **Settings**: copy **Client ID** into `SPOTIFY_CLIENT_ID`; click **View client secret** and copy it into `SPOTIFY_CLIENT_SECRET`.
+
+**Slack**
+1. Open https://api.slack.com/apps , click **Create New App** > **From scratch**, name **MoonlightC**, pick your workspace, **Create App**.
+2. Left menu **OAuth & Permissions** > **Redirect URLs** > **Add New Redirect URL**: `https://moonlightc.vercel.app/api/oauth/slack/callback`, **Add**, **Save URLs**.
+   Under **User Token Scopes** add: channels:read, groups:read, channels:history, groups:history, search:read, chat:write, users:read.
+3. Left menu **Basic Information**: copy **Client ID** into `SLACK_CLIENT_ID` and **Client Secret** (click Show) into `SLACK_CLIENT_SECRET`.
+
+**Discord**
+1. Open https://discord.com/developers/applications , click **New Application**, name **MoonlightC**, **Create**.
+2. Left menu **OAuth2** > **Redirects** > **Add Redirect**: `https://moonlightc.vercel.app/api/oauth/discord/callback`, **Save Changes**.
+3. On the same page copy **Client ID** into `DISCORD_CLIENT_ID`; click **Reset Secret**, copy it into `DISCORD_CLIENT_SECRET`.
+
 ---
 ## Try this yourself: Phase 0 (setup)
 1. Open https://moonlightc.vercel.app on your PC and phone. You should see "MoonlightC" and one line about it.

@@ -11,7 +11,7 @@ import { callModTool, modToolName } from "@/lib/mods";
 import { fillCommand } from "@moonc/mods-sdk";
 import { desktop, type ComputerAction } from "@/lib/desktop";
 import { refreshMcpTokens } from "@/lib/mcp-auth-client";
-import { googleToken } from "@/lib/oauth-client";
+import { googleToken, oauthToken } from "@/lib/oauth-client";
 import { runPython } from "@/lib/python";
 
 /** "/tldr some text" -> the installed mod command's prompt with the text filled in. */
@@ -67,6 +67,7 @@ export function ChatView({
   const [input, setInput] = useState("");
   const [computerOn, setComputerOn] = useState(false);
   const googleTokenRef = useRef<string | undefined>(undefined);
+  const accountsRef = useRef<{ spotify?: string; slack?: string; discord?: string }>({});
   const hasSearchKey = useStore((s) => !!s.searchKey);
   const bottom = useRef<HTMLDivElement>(null);
   // The key and model travel with each request, so switching models mid-chat just works.
@@ -93,6 +94,7 @@ export function ChatView({
         memory: (!!getState().memory?.enabled && !mode.private) || undefined,
         computer: computerOn || undefined,
         google: googleTokenRef.current ? { accessToken: googleTokenRef.current } : undefined,
+        accounts: accountsRef.current,
         temperature: mode.temperature,
         tools: getState().webTools || mode.research ? { search: getState().searchKey } : undefined,
         research: mode.research || undefined,
@@ -214,6 +216,7 @@ export function ChatView({
     const text = input.trim();
     if ((!text && attachments.length === 0) || streaming || !canSend) return;
     googleTokenRef.current = await googleToken();
+    accountsRef.current = { spotify: await oauthToken("spotify"), slack: await oauthToken("slack"), discord: await oauthToken("discord") };
     await refreshMcpTokens();
     // Computer use: the person at the PC must approve each session in a native dialog first.
     if (computerOn && !(await desktop()!.computer.status()).active && !(await desktop()!.computer.start(text))) {
