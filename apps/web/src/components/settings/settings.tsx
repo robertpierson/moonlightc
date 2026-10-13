@@ -1,6 +1,6 @@
 "use client";
 
-import { Cpu, Download, KeyRound, Laptop, Moon, Palette, Plug, Puzzle, Shield, SlidersHorizontal, Sparkles, Sun, Trash2, Wand2, X } from "lucide-react";
+import { Cpu, Download, FolderOpen, KeyRound, Laptop, Moon, Palette, Plug, Puzzle, Shield, SlidersHorizontal, Sparkles, Sun, Trash2, Wand2, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
@@ -22,7 +22,7 @@ const Customize = dynamic(() => import("@/components/customize/customize").then(
 const ModsView = dynamic(() => import("@/components/mods/mods-view").then((m) => m.ModsView), { loading: () => <div className="flex-1" /> });
 const LocalModels = dynamic(() => import("@/components/desktop/local-models").then((m) => m.LocalModels), { loading: () => <div className="flex-1" /> });
 
-export type SettingsSection = "general" | "models" | "auto" | "modes" | "connectors" | "plugins" | "local" | "appearance" | "privacy";
+export type SettingsSection = "general" | "models" | "auto" | "modes" | "connectors" | "plugins" | "files" | "local" | "appearance" | "privacy";
 
 const SECTIONS: { id: SettingsSection; label: string; icon: React.ReactNode; desktopOnly?: boolean }[] = [
   { id: "general", label: "General", icon: <SlidersHorizontal /> },
@@ -31,6 +31,7 @@ const SECTIONS: { id: SettingsSection; label: string; icon: React.ReactNode; des
   { id: "modes", label: "Modes", icon: <Wand2 /> },
   { id: "connectors", label: "Connectors", icon: <Plug /> },
   { id: "plugins", label: "Plugins & mods", icon: <Puzzle /> },
+  { id: "files", label: "Files", icon: <FolderOpen />, desktopOnly: true },
   { id: "local", label: "Local models", icon: <Cpu />, desktopOnly: true },
   { id: "appearance", label: "Appearance", icon: <Palette /> },
   { id: "privacy", label: "Privacy & data", icon: <Shield /> },
@@ -79,6 +80,7 @@ export function Settings({ section, onSection, availableViews, onClose, onChat }
             <ModsView />
           </div>
         )}
+        {section === "files" && <Files />}
         {section === "local" && <LocalModels onChat={onChat} />}
         {section === "appearance" && <Customize availableViews={availableViews} />}
         {section === "privacy" && <Privacy />}
@@ -206,6 +208,52 @@ function AutoModel({ onAddKey }: { onAddKey: () => void }) {
           })}
           <p className="text-sm text-muted-foreground">{picks.everyday ? "Auto is ready: choose “Auto” at the top of the model menu." : "Set an Everyday model to turn on Auto."}</p>
         </div>
+      )}
+    </Page>
+  );
+}
+
+function Files() {
+  const [grants, setGrants] = useState<string[]>([]);
+  const [log, setLog] = useState<{ at: string; action: string; path: string }[]>([]);
+  useEffect(() => {
+    const b = desktop()!;
+    b.files.grants().then(setGrants);
+    b.files.audit().then(setLog);
+  }, []);
+  return (
+    <Page title="Files" description="Folders the AI can use in chats on this computer. It can list, search and read files in them, and it always asks before creating or changing a file.">
+      <div className="grid gap-3">
+        {grants.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No folders shared yet.</p>
+        ) : (
+          <ul className="divide-y rounded-lg border" aria-label="Shared folders">
+            {grants.map((g) => (
+              <li key={g} className="flex items-center gap-2 p-2 pl-3 text-sm">
+                <FolderOpen className="size-4 shrink-0" />
+                <span className="min-w-0 flex-1 truncate">{g}</span>
+                <Button variant="ghost" size="sm" onClick={() => desktop()!.files.revoke(g).then(setGrants)}>
+                  Stop sharing
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <Button className="justify-self-start" onClick={() => desktop()!.files.grant().then(setGrants)}>
+          <FolderOpen /> Share a folder
+        </Button>
+      </div>
+      {log.length > 0 && (
+        <section aria-label="Recent file activity" className="grid gap-2">
+          <h3 className="text-sm font-medium">Recent activity</h3>
+          <ul className="grid gap-1 text-xs text-muted-foreground">
+            {log.slice(0, 30).map((e, i) => (
+              <li key={i} className="truncate">
+                {new Date(e.at).toLocaleString()}: {e.action} {e.path}
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
     </Page>
   );

@@ -104,6 +104,10 @@ export interface MooncBridge {
   files: {
     /** Pick a folder and write the project there (in a new subfolder). Returns the folder, or null if cancelled. */
     saveProject(name: string, files: Record<string, string>): Promise<string | null>;
+    grants(): Promise<string[]>;
+    grant(): Promise<string[]>;
+    revoke(folder: string): Promise<string[]>;
+    audit(): Promise<{ at: string; action: string; path: string }[]>;
   };
   notify(title: string, body: string): Promise<void>;
   /** moonlightc:// links opened on this computer (for example, returning from a sign-in in the browser). */

@@ -1,4 +1,5 @@
 import { getProvider, languageModel, ProviderError } from "@moonc/core";
+import { fileTools, readGrants } from "@/lib/local-files";
 import { APICallError, convertToModelMessages, isStepCount, jsonSchema, tool, type ToolSet, createUIMessageStreamResponse, streamText, toUIMessageStream, type UIMessage } from "ai";
 import { readConnection } from "@/lib/server-guard";
 import { discordTools, slackTools, spotifyTools, xTools } from "@/lib/account-tools";
@@ -20,6 +21,7 @@ interface Body {
   modTools?: unknown;
   memory?: boolean;
   skills?: boolean;
+  files?: boolean;
   computer?: boolean;
   google?: { accessToken?: string };
   accounts?: { spotify?: string; slack?: string; discord?: string; x?: string };
@@ -119,7 +121,10 @@ export async function POST(req: Request) {
     const acc = body.accounts ?? {};
     const slack = typeof acc.slack === "string" ? slackTools(acc.slack) : undefined;
     const accountTools = { ...(typeof acc.spotify === "string" ? spotifyTools(acc.spotify) : {}), ...slack?.tools, ...(typeof acc.discord === "string" ? discordTools(acc.discord) : {}), ...(typeof acc.x === "string" ? xTools(acc.x) : {}) };
-    const tools = { ...builtIn, ...mcp?.tools, ...google?.tools, ...accountTools, ...readModTools(body.modTools), ...memoryTool, ...skillTool, ...(desktopComputer ? { computer: computerTool } : {}), ...(body.code ? codeTools : {}) };
+    // Desktop app: files in the folders the user shared (writing asks first).
+    const grants = body.files && process.env.MOONC_DESKTOP === "1" ? await readGrants() : [];
+    const files = grants.length ? fileTools(grants) : undefined;
+    const tools = { ...files?.tools, ...builtIn, ...mcp?.tools, ...google?.tools, ...accountTools, ...readModTools(body.modTools), ...memoryTool, ...skillTool, ...(desktopComputer ? { computer: computerTool } : {}), ...(body.code ? codeTools : {}) };
     const hasTools = Object.keys(tools).length > 0;
 
     const result = streamText({
@@ -129,7 +134,7 @@ export async function POST(req: Request) {
       temperature: typeof body.temperature === "number" ? Math.min(2, Math.max(0, body.temperature)) : undefined,
       messages: await convertToModelMessages(body.messages),
       abortSignal: req.signal,
-      ...(hasTools ? { tools, toolApproval: { ...mcp?.approval, ...google?.approval, ...slack?.approval }, stopWhen: isStepCount(body.research || desktopComputer || body.code ? 40 : 8) } : {}),
+      ...(hasTools ? { tools, toolApproval: { ...mcp?.approval, ...google?.approval, ...slack?.approval, ...files?.approval }, stopWhen: isStepCount(body.research || desktopComputer || body.code ? 40 : 8) } : {}),
       onEnd: async () => {
         await mcp?.close();
       },

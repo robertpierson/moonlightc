@@ -69,7 +69,13 @@ contextBridge.exposeInMainWorld("moonc", {
     ipcRenderer.on("deep-link", fn);
     return () => ipcRenderer.removeListener("deep-link", fn);
   },
-  files: { saveProject: (name, files) => invoke("files:saveProject", name, files) },
+  files: {
+    saveProject: (name, files) => invoke("files:saveProject", name, files),
+    grants: () => invoke("files:grants"),
+    grant: () => invoke("files:grant"),
+    revoke: (folder) => invoke("files:revoke", folder),
+    audit: () => invoke("files:audit"),
+  },
   notify: (title, body) => invoke("notify", title, body),
   openExternal: (url) => invoke("open-external", url),
   openPath: (p, editor) => invoke("open-path", p, editor),

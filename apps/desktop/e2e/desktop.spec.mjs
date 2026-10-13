@@ -5,8 +5,10 @@ import { _electron as electron, expect, test } from "@playwright/test";
 
 let app;
 let page;
+const grantDir = fs.mkdtempSync(path.join(os.tmpdir(), "moonc-share-"));
+fs.writeFileSync(path.join(grantDir, "hello.txt"), "hi");
 test.beforeAll(async () => {
-  app = await electron.launch({ args: ["."], env: { ...process.env, MOONC_E2E_AUTO_APPROVE: "1", MOONC_E2E_USER_DATA: fs.mkdtempSync(path.join(os.tmpdir(), "moonc-e2e-")) }, cwd: new URL("..", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1") });
+  app = await electron.launch({ args: ["."], env: { ...process.env, MOONC_E2E_AUTO_APPROVE: "1", MOONC_E2E_USER_DATA: fs.mkdtempSync(path.join(os.tmpdir(), "moonc-e2e-")), MOONC_E2E_GRANT_DIR: grantDir }, cwd: new URL("..", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1") });
   page = await app.firstWindow();
   await page.waitForURL(/127\.0\.0\.1:\d+\/app/);
 });
@@ -214,5 +216,38 @@ test("computer use through chat: the model takes a screenshot after the PC appro
   } finally {
     mock.kill();
     await page.evaluate(() => window.moonc.computer.stop());
+  }
+});
+
+test("files: the AI reads shared folders and asks before writing", async () => {
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await page.getByRole("navigation", { name: "Settings" }).getByRole("button", { name: "Files" }).click();
+  await page.getByRole("button", { name: "Share a folder" }).click();
+  await expect(page.getByRole("list", { name: "Shared folders" })).toContainText("moonc-share-");
+  const { spawn } = await import("node:child_process");
+  const mock = spawn(process.execPath, ["../web/e2e/mock-openai.mjs"], { env: { ...process.env, MOCK_PORT: "4013" }, stdio: "ignore" });
+  try {
+    await new Promise((r) => setTimeout(r, 800));
+    await page.evaluate(async () => {
+      const res = await fetch("/api/models", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ providerId: "custom", apiKey: "", baseURL: "http://127.0.0.1:4013/v1" }) });
+      const { models } = await res.json();
+      const s = JSON.parse(localStorage.getItem("moonc:v1") || "{}");
+      s.connections = [...(s.connections || []).filter((c) => c.id !== "mock4013"), { id: "mock4013", providerId: "custom", apiKey: "", baseURL: "http://127.0.0.1:4013/v1", label: "Mock files", models, addedAt: 0 }];
+      s.lastModel = { connectionId: "mock4013", modelId: "mock-fast" };
+      localStorage.setItem("moonc:v1", JSON.stringify(s));
+    });
+    await page.reload();
+    await page.getByRole("button", { name: "New chat" }).click();
+    await page.getByLabel("Message", { exact: true }).fill("list my files");
+    await page.getByRole("button", { name: "Send message" }).click();
+    await expect(page.locator('[data-role="assistant"]').last()).toContainText("moonc-share-", { timeout: 20000 });
+
+    await page.getByLabel("Message", { exact: true }).fill("save a note");
+    await page.getByRole("button", { name: "Send message" }).click();
+    await page.getByRole("group", { name: /Approve write/ }).getByRole("button", { name: "Allow once" }).click();
+    await expect.poll(() => fs.existsSync(path.join(grantDir, "note.txt")), { timeout: 20000 }).toBe(true);
+    expect(fs.readFileSync(path.join(grantDir, "note.txt"), "utf8")).toBe("hello from the moon");
+  } finally {
+    mock.kill();
   }
 });

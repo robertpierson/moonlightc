@@ -168,6 +168,7 @@ export function ChatView({
         skills: !!skillsText || undefined,
         memory: (!!getState().memory?.enabled && !mode.private) || undefined,
         computer: computerOn || undefined,
+        files: !!desktop() || undefined,
         google: googleTokenRef.current
           ? { accessToken: googleTokenRef.current }
           : undefined,

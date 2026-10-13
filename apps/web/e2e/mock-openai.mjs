@@ -87,6 +87,14 @@ createServer(async (req, res) => {
 
 `);
     }
+    const fileCall = prompt.includes("list my files") ? { name: "files_list", args: {} } : prompt.includes("save a note") ? { name: "files_write", args: { path: "note.txt", content: "hello from the moon" } } : undefined;
+    if (fileCall && body.tools?.some((t) => t.function.name === fileCall.name) && !toolMsg) {
+      res.writeHead(200, { "content-type": "text/event-stream" });
+      const call = { index: 0, id: "call_files", type: "function", function: { name: fileCall.name, arguments: JSON.stringify(fileCall.args) } };
+      res.write(`data: ${JSON.stringify({ id: "x", object: "chat.completion.chunk", created: 0, model: body.model, choices: [{ index: 0, delta: { role: "assistant", tool_calls: [call] }, finish_reason: null }] })}\n\n`);
+      res.write(`data: ${JSON.stringify({ id: "x", object: "chat.completion.chunk", created: 0, model: body.model, choices: [{ index: 0, delta: {}, finish_reason: "tool_calls" }] })}\n\n`);
+      return res.end("data: [DONE]\n\n");
+    }
     const skillName = prompt.match(/use skill (\S+)/)?.[1];
     if (skillName && body.tools?.some((t) => t.function.name === "load_skill") && !toolMsg) {
       res.writeHead(200, { "content-type": "text/event-stream" });

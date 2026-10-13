@@ -42,7 +42,7 @@ async function startServer() {
   const port = await freePort();
   server = spawn(process.execPath, [entry], {
     cwd: path.dirname(entry),
-    env: { ...process.env, MOONC_E2E_AUTO_APPROVE: app.isPackaged ? "" : (process.env.MOONC_E2E_AUTO_APPROVE ?? ""), MOONC_MCP_ALLOWLIST: mcpAllowlist(), NODE_PATH: path.join(root, "deps", ".pnpm", "node_modules"), ELECTRON_RUN_AS_NODE: "1", PORT: String(port), HOSTNAME: "127.0.0.1", MOONC_DESKTOP: "1", NODE_ENV: "production" },
+    env: { ...process.env, MOONC_E2E_AUTO_APPROVE: app.isPackaged ? "" : (process.env.MOONC_E2E_AUTO_APPROVE ?? ""), MOONC_MCP_ALLOWLIST: mcpAllowlist(), MOONC_FILE_GRANTS: fileGrants(), MOONC_FILE_AUDIT: fileAudit(), NODE_PATH: path.join(root, "deps", ".pnpm", "node_modules"), ELECTRON_RUN_AS_NODE: "1", PORT: String(port), HOSTNAME: "127.0.0.1", MOONC_DESKTOP: "1", NODE_ENV: "production" },
     stdio: ["ignore", "pipe", "pipe"],
     windowsHide: true,
   });
@@ -131,6 +131,17 @@ const readAllowlist = () => {
   }
 };
 
+// Folders the AI may use. Only the native folder picker adds one; the local server reads this file on every call.
+const fileGrants = () => path.join(app.getPath("userData"), "file-grants.json");
+const fileAudit = () => path.join(app.getPath("userData"), "file-audit.jsonl");
+const readGrants = () => {
+  try {
+    return JSON.parse(fs.readFileSync(fileGrants(), "utf8"));
+  } catch {
+    return [];
+  }
+};
+
 // ---------- Bridge handlers (see preload.cjs). Every handler checks the sender is one of our windows. ----------
 const handle = (channel, fn) =>
   ipcMain.handle(channel, (e, ...args) => {
@@ -159,6 +170,33 @@ Only allow programs you trust. The AI will be able to use the tools this program
   if (response !== 0) return false;
   fs.writeFileSync(mcpAllowlist(), JSON.stringify([...list, { command, args }]));
   return true;
+});
+handle("files:grants", () => readGrants());
+handle("files:grant", async () => {
+  // Tests can't click the native picker; unpackaged test runs may name the folder instead.
+  const testDir = !app.isPackaged && process.env.MOONC_E2E_GRANT_DIR;
+  const r = testDir ? { canceled: false, filePaths: [testDir] } : await dialog.showOpenDialog(win, { title: "Choose a folder the AI can use", properties: ["openDirectory"] });
+  if (r.canceled || !r.filePaths[0]) return readGrants();
+  const folder = fs.realpathSync(r.filePaths[0]);
+  if (folder === path.parse(folder).root) {
+    await dialog.showMessageBox(win, { type: "warning", message: "Pick a specific folder, not a whole drive." });
+    return readGrants();
+  }
+  const list = readGrants().filter((g) => g !== folder);
+  fs.writeFileSync(fileGrants(), JSON.stringify([...list, folder]));
+  return [...list, folder];
+});
+handle("files:revoke", (_e, folder) => {
+  const list = readGrants().filter((g) => g !== String(folder));
+  fs.writeFileSync(fileGrants(), JSON.stringify(list));
+  return list;
+});
+handle("files:audit", () => {
+  try {
+    return fs.readFileSync(fileAudit(), "utf8").trim().split("\n").slice(-100).reverse().map((l) => JSON.parse(l));
+  } catch {
+    return [];
+  }
 });
 handle("ollama:status", () => ollama.status());
 handle("ollama:install", (e) => ollama.install((pct, stage) => e.sender.send("ollama:install-progress", pct, stage)));

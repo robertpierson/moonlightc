@@ -10,3 +10,4 @@
 - 2026-10-13: Phase 3 done on branch. 38 e2e tests. Next: Phase 4 desktop (Electron) since Supabase still blocked.
 - 2026-10-13: Automations (desktop) + Azure/Bedrock + LM Studio detection; 76 web + 10 desktop e2e.
 - 2026-10-13: Local computer use with full §8 safety set (approval, overlay, panic key verified by real keypress in e2e).
+- 2026-10-13: Google connector + OAuth framework; 80 web e2e, 12 desktop e2e, 63 unit tests.

@@ -281,6 +281,8 @@ export function Message({
                 </p>
               ) : /^tool-(gmail|calendar|drive|youtube|spotify|slack|discord|x)_/.test(p.type) ? (
                 <ConnectorCall key={i} part={{ ...(p as unknown as ConnectorPart), toolName: `${/^tool-(spotify|slack|discord|x)_/.exec(p.type)?.[1] ?? "google"}__${p.type.slice(5)}` }} onApproval={onApproval} />
+              ) : p.type.startsWith("tool-files_") ? (
+                <ConnectorCall key={i} part={{ ...(p as unknown as ConnectorPart), toolName: `your_files__${p.type.slice(11)}` }} onApproval={onApproval} />
               ) : p.type.startsWith("tool-mod_") ? (
                 <ConnectorCall key={i} part={{ ...(p as unknown as ConnectorPart), toolName: p.type.slice(5) }} onApproval={onApproval} />
               ) : p.type === "dynamic-tool" ? (
