@@ -12,6 +12,7 @@ const Connections = dynamic(() => import("@/components/connections/connections")
 const ModsView = dynamic(() => import("@/components/mods/mods-view").then((m) => m.ModsView), { loading: () => <div className="flex-1" /> });
 const Automations = dynamic(() => import("@/components/desktop/automations").then((m) => m.Automations), { loading: () => <div className="flex-1" /> });
 const CodeWorkspace = dynamic(() => import("@/components/code/code-workspace").then((m) => m.CodeWorkspace), { ssr: false, loading: () => <div className="flex-1" /> });
+const Subscriptions = dynamic(() => import("@/components/subscriptions/subscriptions").then((m) => m.Subscriptions), { loading: () => <div className="flex-1" /> });
 const Library = dynamic(() => import("@/components/library/library").then((m) => m.Library), { loading: () => <div className="flex-1" /> });
 const Studio = dynamic(() => import("@/components/studio/studio").then((m) => m.Studio), { loading: () => <div className="flex-1" /> });
 const Projects = dynamic(() => import("@/components/desktop/projects").then((m) => m.Projects), { loading: () => <div className="flex-1" /> });
@@ -33,6 +34,7 @@ import { consumeMcpAuth } from "@/lib/mcp-auth-client";
 import { consumeOAuthResult } from "@/lib/oauth-client";
 import { ModHost } from "@/components/mods/mod-host";
 import { AutomationRunner } from "@/components/desktop/automation-runner";
+import { RenewalReminders } from "@/components/subscriptions/reminders";
 import { ComputerBanner } from "@/components/desktop/computer-banner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { FileUIPart } from "ai";
@@ -44,7 +46,7 @@ import { ModeSelect, ModesDialog, useModes } from "./modes";
 import { CommandPalette } from "./command-palette";
 import { Sidebar } from "./sidebar";
 
-const VIEW_TITLES: Record<View, string> = { chat: "Chat", code: "Code", library: "Projects & memory", studio: "Studio", connections: "Connections", models: "Local models", terminal: "Terminal", projects: "My AI Projects", automations: "Automations", mods: "Mods", customize: "Customize" };
+const VIEW_TITLES: Record<View, string> = { chat: "Chat", code: "Code", subscriptions: "Subscriptions", library: "Projects & memory", studio: "Studio", connections: "Connections", models: "Local models", terminal: "Terminal", projects: "My AI Projects", automations: "Automations", mods: "Mods", customize: "Customize" };
 
 function distroDefaultMode() {
   const s = getState();
@@ -201,6 +203,7 @@ function Inner() {
       <LookApplier />
       <ModHost />
       <AutomationRunner />
+      <RenewalReminders />
       {offer && (
         <div role="dialog" aria-label="Apply shared distro" className="fixed inset-x-0 top-0 z-50 flex flex-wrap items-center gap-3 border-b bg-popover p-3 text-sm shadow">
           <span className="flex-1">
@@ -238,6 +241,7 @@ function Inner() {
           {view === "customize" && <Customize availableViews={availableViews()} />}
           {view === "mods" && <ModsView />}
           {view === "code" && <CodeWorkspace onConnectGitHub={() => go("connections")} />}
+          {view === "subscriptions" && <Subscriptions onConnectGoogle={() => go("connections")} />}
           {view === "automations" && (
             <Automations
               onOpenChat={(id) => {

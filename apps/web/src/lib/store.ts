@@ -6,6 +6,7 @@ import { useSyncExternalStore } from "react";
 import type { Distro, Look } from "./customize";
 import type { Automation } from "@/components/desktop/automation-runner";
 import type { InstalledMod } from "./mods";
+import type { Subscription } from "./subscriptions";
 
 // Device-local storage. Keys saved here never leave this browser except inside a chat request to our proxy.
 // Cloud sync (Supabase Vault) is added on top once accounts exist.
@@ -146,6 +147,7 @@ interface State {
   projects?: Project[];
   automations?: Automation[];
   oauth?: { google?: OAuthAccount };
+  subscriptions?: { items: Subscription[]; remindDays: number; reminded?: Record<string, number>; scannedAt?: number };
   memory?: { enabled: boolean; items: MemoryItem[] };
 }
 

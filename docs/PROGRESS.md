@@ -82,7 +82,8 @@ STATUS: BUILDING
 - [x] MCP OAuth sign-in (discovery + dynamic client registration + PKCE, browser-held state): one-click Notion, Linear, Jira & Confluence, Asana, Sentry, Canva, Vercel, Supabase (start step verified against the real servers)
 - [ ] Discord, Spotify, Slack, YouTube connectors: need owner OAuth apps
 - [x] Desktop automations: scheduled prompts on this computer (tray), run history, notifications, continue in chat
-- [ ] Cloud scheduled agents (pg_cron) + subscriptions hub: need Supabase + Gmail
+- [x] Subscriptions hub: consented Gmail receipt scan (sender/subject/date/snippet only) -> user's model extracts recurring charges; monthly totals per currency; renewal reminders (in-app + desktop notifications); manage links; manual add. Never pays or cancels.
+- [ ] Cloud scheduled agents (pg_cron): need Supabase
 
 ## Phase 8 (customization, on branch)
 - [x] Distros: Moon, Studio, Forge, Command, Offline + save/export/import/share link (validated, asks before applying)
@@ -106,6 +107,7 @@ STATUS: BUILDING
 - No Docker, so no local Supabase stack; test against the hosted project.
 
 ## Notes (last 10)
+- 2026-10-13: Subscriptions hub; 87 web e2e.
 - 2026-10-13: Code workspace; fixed effect-return bug (Chrome scrollIntoView now returns a Promise); 86 web e2e stable.
 - 2026-10-13: One-click MCP sign-in connectors; 84 web e2e.
 - 2026-10-13: PR #1 merged; production https://moonlightc.vercel.app serves phases 2-8 (39 deployed-site tests pass). Work continues on main.
