@@ -10,6 +10,7 @@ import { buildInstructions, relevantMemories } from "@/lib/context";
 import { callModTool, modToolName } from "@/lib/mods";
 import { fillCommand } from "@moonc/mods-sdk";
 import { desktop, type ComputerAction } from "@/lib/desktop";
+import { refreshMcpTokens } from "@/lib/mcp-auth-client";
 import { googleToken } from "@/lib/oauth-client";
 import { runPython } from "@/lib/python";
 
@@ -98,7 +99,9 @@ export function ChatView({
         modTools: (getState().mods ?? [])
           .filter((m) => m.enabled && m.code)
           .flatMap((m) => m.manifest.tools.map((t) => ({ name: modToolName(m.manifest.id, t.name), description: `${t.description} (from the ${m.manifest.name} mod)`, inputSchema: t.inputSchema }))),
-        mcp: (getState().mcpServers ?? []).filter((m) => m.enabled).map(({ id, name, kind, url, token, command, args, policy }) => ({ id, name, kind, url, token, command, args, policy })),
+        mcp: (getState().mcpServers ?? [])
+          .filter((m) => m.enabled)
+          .map(({ id, name, kind, url, token, command, args, policy, oauth }) => ({ id, name, kind, url, token, accessToken: oauth?.tokens?.access_token, command, args, policy })),
       },
     };
   };
@@ -211,6 +214,7 @@ export function ChatView({
     const text = input.trim();
     if ((!text && attachments.length === 0) || streaming || !canSend) return;
     googleTokenRef.current = await googleToken();
+    await refreshMcpTokens();
     // Computer use: the person at the PC must approve each session in a native dialog first.
     if (computerOn && !(await desktop()!.computer.status()).active && !(await desktop()!.computer.start(text))) {
       toast("Computer use wasn't allowed, so the AI won't control this PC.");

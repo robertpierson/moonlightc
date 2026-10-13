@@ -28,6 +28,7 @@ import { AppNav, availableViews, type View } from "@/components/desktop/nav";
 import { applyDistro, LookApplier, useLook } from "@/components/customize/look";
 import { decodeDistro, DISTROS, matchShortcut, type Distro } from "@/lib/customize";
 import { desktop } from "@/lib/desktop";
+import { consumeMcpAuth } from "@/lib/mcp-auth-client";
 import { consumeOAuthResult } from "@/lib/oauth-client";
 import { ModHost } from "@/components/mods/mod-host";
 import { AutomationRunner } from "@/components/desktop/automation-runner";
@@ -136,8 +137,17 @@ function Inner() {
 
   // Sign-in results for connectors arrive in the address fragment (web) or a moonlightc:// link (desktop).
   useEffect(() => {
-    if (consumeOAuthResult(location.hash)) history.replaceState(null, "", location.pathname + location.search);
+    const hash = location.hash;
+    if (consumeOAuthResult(hash)) history.replaceState(null, "", location.pathname + location.search);
+    if (hash.includes("mcpauth=") || hash.includes("mcperror=")) {
+      history.replaceState(null, "", location.pathname + location.search);
+      consumeMcpAuth(hash).then(() => go("connections"));
+    }
     return desktop()?.onDeepLink((url) => {
+      if (url.startsWith("moonlightc://mcpauth")) {
+        consumeMcpAuth(new URL(url).hash).then(() => go("connections"));
+        return;
+      }
       if (url.startsWith("moonlightc://oauth")) {
         consumeOAuthResult(new URL(url).hash);
         go("connections");

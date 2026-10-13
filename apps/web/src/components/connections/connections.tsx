@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { desktop } from "@/lib/desktop";
 import { update, useStore, type McpServer } from "@/lib/store";
+import { beginMcpSignIn } from "@/lib/mcp-auth-client";
 import { GitHubDashboard } from "./github";
 import { GoogleCard } from "./google";
 
@@ -18,10 +19,13 @@ const GITHUB_MCP = "https://api.githubcopilot.com/mcp/";
 
 async function fetchTools(s: Partial<McpServer>) {
   const res = await fetch("/api/mcp", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(s) });
-  const data = (await res.json().catch(() => ({}))) as { tools?: McpServer["tools"]; error?: string };
+  const data = (await res.json().catch(() => ({}))) as { tools?: McpServer["tools"]; error?: string; needsAuth?: boolean };
+  if (data.needsAuth) throw new NeedsSignIn();
   if (!res.ok || !data.tools) throw new Error(data.error ?? "Couldn't connect. Try again.");
   return data.tools;
 }
+
+class NeedsSignIn extends Error {}
 
 const save = (s: McpServer) => update((st) => ({ ...st, mcpServers: [...(st.mcpServers ?? []).filter((x) => x.id !== s.id), s] }));
 const patch = (id: string, p: Partial<McpServer>) => update((st) => ({ ...st, mcpServers: (st.mcpServers ?? []).map((x) => (x.id === id ? { ...x, ...p } : x)) }));
@@ -48,7 +52,15 @@ function AddConnector({ preset, onDone }: { preset?: "github"; onDone: () => voi
         setBusy(false);
         return setError("Not allowed. The connector wasn't added.");
       }
-      const tools = await fetchTools(base);
+      let tools: McpServer["tools"];
+      try {
+        tools = await fetchTools(base);
+      } catch (err) {
+        if (!(err instanceof NeedsSignIn)) throw err;
+        await beginMcpSignIn({ id: base.id!, name: base.name!, url: base.url! }); // leaves the page or opens the browser
+        setBusy(false);
+        return onDone();
+      }
       save({ ...(base as McpServer), enabled: true, preset, tools, policy: {} });
       toast.success(`${base.name} connected with ${tools.length} tools. The AI will ask before using each one.`);
       onDone();
@@ -129,7 +141,7 @@ function ConnectorCard({ s }: { s: McpServer }) {
   const refresh = async () => {
     setBusy(true);
     try {
-      patch(s.id, { tools: await fetchTools(s) });
+      patch(s.id, { tools: await fetchTools({ ...s, accessToken: s.oauth?.tokens?.access_token } as McpServer) });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e));
     } finally {
@@ -142,6 +154,11 @@ function ConnectorCard({ s }: { s: McpServer }) {
         <Plug className="size-4" />
         <span className="font-medium">{s.name}</span>
         <Badge variant="secondary">{s.tools.length} tools</Badge>
+        {s.oauth && (
+          <Button size="xs" variant="outline" onClick={() => beginMcpSignIn({ id: s.id, name: s.name, url: s.url! }, s.oauth).catch((e: Error) => toast.error(e.message))}>
+            Sign in again
+          </Button>
+        )}
         <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">{s.kind === "http" ? s.url : [s.command, ...(s.args ?? [])].join(" ")}</span>
         <label className="flex items-center gap-2 text-sm">
           On <Switch checked={s.enabled} onCheckedChange={(v) => patch(s.id, { enabled: v })} aria-label={`Use ${s.name} in chats`} />
@@ -179,6 +196,55 @@ function ConnectorCard({ s }: { s: McpServer }) {
   );
 }
 
+// Official MCP servers that let any app sign in (dynamic client registration), so they work with one click.
+const SIGN_IN_PRESETS = [
+  { name: "Notion", url: "https://mcp.notion.com/mcp", what: "Pages and databases" },
+  { name: "Linear", url: "https://mcp.linear.app/mcp", what: "Issues and projects" },
+  { name: "Jira & Confluence", url: "https://mcp.atlassian.com/v1/mcp", what: "Atlassian work items and docs" },
+  { name: "Asana", url: "https://mcp.asana.com/sse", what: "Tasks and projects" },
+  { name: "Sentry", url: "https://mcp.sentry.dev/mcp", what: "Errors and issues" },
+  { name: "Canva", url: "https://mcp.canva.com/mcp", what: "Designs" },
+  { name: "Vercel", url: "https://mcp.vercel.com", what: "Projects and deployments" },
+  { name: "Supabase", url: "https://mcp.supabase.com/mcp", what: "Databases and projects" },
+];
+
+function SignInGallery({ have }: { have: McpServer[] }) {
+  const [busy, setBusy] = useState<string>();
+  const missing = SIGN_IN_PRESETS.filter((p) => !have.some((h) => h.url === p.url));
+  if (!missing.length) return null;
+  return (
+    <section aria-label="One-click connections" className="grid gap-2">
+      <h3 className="text-sm font-medium">Connect with one click</h3>
+      <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {missing.map((p) => (
+          <li key={p.url}>
+            <button
+              disabled={!!busy}
+              onClick={async () => {
+                setBusy(p.url);
+                try {
+                  await beginMcpSignIn({ id: crypto.randomUUID(), name: p.name, url: p.url });
+                } catch (e) {
+                  toast.error(e instanceof Error ? e.message : String(e));
+                } finally {
+                  setBusy(undefined);
+                }
+              }}
+              className="flex h-full w-full flex-col items-start gap-0.5 rounded-xl border p-3 text-left text-sm hover:border-primary disabled:opacity-60"
+            >
+              <span className="flex items-center gap-1 font-medium">
+                {busy === p.url && <Loader2 className="size-3.5 animate-spin" />} {p.name}
+              </span>
+              <span className="text-xs text-muted-foreground">{p.what}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      <p className="text-xs text-muted-foreground">You sign in on the service&apos;s own page. MoonlightC never sees your password.</p>
+    </section>
+  );
+}
+
 export function Connections() {
   const servers = useStore((s) => s.mcpServers) ?? [];
   const [adding, setAdding] = useState<"custom" | "github">();
@@ -210,6 +276,7 @@ export function Connections() {
           </div>
         </section>
         {adding && <AddConnector key={adding} preset={adding === "github" ? "github" : undefined} onDone={() => setAdding(undefined)} />}
+        <SignInGallery have={servers} />
         <GoogleCard />
         {github?.token && <GitHubDashboard token={github.token} />}
         {servers.length > 0 && (

@@ -22,6 +22,7 @@ export function GoogleCard() {
   const connect = () => {
     const b = desktop();
     if (b) b.openExternal(`${avail!.startBase}/api/oauth/google/start?return=desktop`);
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- an API route that redirects to Google needs a full page load
     else location.href = `${location.origin}/api/oauth/google/start`;
   };
 

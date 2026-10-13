@@ -24,6 +24,8 @@ export interface McpServerConfig {
   kind: "http" | "stdio";
   url?: string;
   token?: string;
+  /** Access token from an OAuth sign-in (takes priority over token). */
+  accessToken?: string;
   command?: string;
   args?: string[];
   /** Per-tool permission. Missing tools default to "ask". */
@@ -34,7 +36,7 @@ export function readServers(v: unknown): McpServerConfig[] {
   if (!Array.isArray(v)) return [];
   return v.slice(0, 20).flatMap((s): McpServerConfig[] => {
     if (!s || typeof s.id !== "string" || (s.kind !== "http" && s.kind !== "stdio")) return [];
-    return [{ id: s.id.slice(0, 64), name: String(s.name ?? "Connector").slice(0, 80), kind: s.kind, url: s.url, token: s.token, command: s.command, args: Array.isArray(s.args) ? s.args.map(String) : undefined, policy: s.policy }];
+    return [{ id: s.id.slice(0, 64), name: String(s.name ?? "Connector").slice(0, 80), kind: s.kind, url: s.url, token: s.token, accessToken: typeof s.accessToken === "string" ? s.accessToken : undefined, command: s.command, args: Array.isArray(s.args) ? s.args.map(String) : undefined, policy: s.policy }];
   });
 }
 
@@ -51,7 +53,8 @@ export async function connect(s: McpServerConfig): Promise<MCPClient> {
     throw new ProviderError("Connectors on the web must use a public https:// URL. Local servers work in the desktop app.");
   }
   return createMCPClient({
-    transport: { type: "http", url, headers: s.token ? { authorization: `Bearer ${s.token}` } : undefined },
+    // A few servers (for example Asana) still use the older SSE transport, marked by a /sse path.
+    transport: { type: /\/sse\/?$/.test(new URL(url).pathname) ? "sse" : "http", url, headers: s.accessToken || s.token ? { authorization: `Bearer ${s.accessToken || s.token}` } : undefined },
   });
 }
 

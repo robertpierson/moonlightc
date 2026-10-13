@@ -89,6 +89,8 @@ export interface McpServer {
   args?: string[];
   enabled: boolean;
   preset?: "github";
+  /** OAuth sign-in for servers that require it (refreshed by mcp-auth-client). */
+  oauth?: { clientInformation?: unknown; tokens?: { access_token: string; refresh_token?: string; expires_in?: number; token_type?: string }; obtainedAt: number };
   tools: { name: string; description: string }[];
   policy: Record<string, "ask" | "always" | "never">;
 }
@@ -173,7 +175,20 @@ function load() {
     ]).then(async (connections) => {
       const searchKey = state.searchKey && { ...state.searchKey, key: state.searchKey.key || ((await b.secrets.get("search")) ?? "") };
       const mcpServers =
-        state.mcpServers && (await Promise.all(state.mcpServers.map(async (m) => (m.token === "" ? { ...m, token: (await b.secrets.get(`mcp:${m.id}`)) ?? "" } : m))));
+        state.mcpServers &&
+        (await Promise.all(
+          state.mcpServers.map(async (m) => {
+            if (m.token !== "" && !(m.oauth && !m.oauth.tokens)) return m;
+            const raw = (await b.secrets.get(`mcp:${m.id}`)) ?? "";
+            let v: { t?: string; o?: NonNullable<McpServer["oauth"]>["tokens"] } = {};
+            try {
+              v = JSON.parse(raw);
+            } catch {
+              v = { t: raw }; // older format: just the token
+            }
+            return { ...m, token: v.t ?? m.token, oauth: m.oauth && { ...m.oauth, tokens: v.o } };
+          }),
+        ));
       let oauth = state.oauth;
       if (oauth?.google && !oauth.google.accessToken) {
         const raw = await b.secrets.get("oauth:google");
@@ -194,7 +209,11 @@ function persist(prev: State) {
     for (const c of state.connections) if (c.apiKey && prev.connections.find((p) => p.id === c.id)?.apiKey !== c.apiKey) b.secrets.set(secretOf(c.id), c.apiKey);
     for (const c of prev.connections) if (!state.connections.some((x) => x.id === c.id)) b.secrets.set(secretOf(c.id), null);
     if (state.searchKey?.key && state.searchKey.key !== prev.searchKey?.key) b.secrets.set("search", state.searchKey.key);
-    for (const m of state.mcpServers ?? []) if (m.token && prev.mcpServers?.find((p) => p.id === m.id)?.token !== m.token) b.secrets.set(`mcp:${m.id}`, m.token);
+    for (const m of state.mcpServers ?? []) {
+      const before = prev.mcpServers?.find((p) => p.id === m.id);
+      if ((m.token && before?.token !== m.token) || (m.oauth?.tokens && before?.oauth?.tokens !== m.oauth.tokens))
+        b.secrets.set(`mcp:${m.id}`, JSON.stringify({ t: m.token, o: m.oauth?.tokens }));
+    }
     for (const m of prev.mcpServers ?? []) if (!state.mcpServers?.some((x) => x.id === m.id)) b.secrets.set(`mcp:${m.id}`, null);
     const g = state.oauth?.google;
     if (g?.accessToken && g.accessToken !== prev.oauth?.google?.accessToken) b.secrets.set("oauth:google", JSON.stringify({ a: g.accessToken, r: g.refreshToken }));
@@ -204,7 +223,7 @@ function persist(prev: State) {
       ...state,
       connections: state.connections.map((c) => ({ ...c, apiKey: "" })),
       searchKey: state.searchKey && { ...state.searchKey, key: "" },
-      mcpServers: state.mcpServers?.map((m) => ({ ...m, token: m.token ? "" : undefined })),
+      mcpServers: state.mcpServers?.map((m) => ({ ...m, token: m.token ? "" : undefined, oauth: m.oauth && { ...m.oauth, tokens: undefined } })),
       oauth: state.oauth?.google ? { google: { ...state.oauth.google, accessToken: "", refreshToken: state.oauth.google.refreshToken ? "" : undefined } } : state.oauth,
     };
   }

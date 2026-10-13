@@ -79,7 +79,8 @@ STATUS: BUILDING
 - [x] MCP client: custom URL connectors, desktop local commands (native approval dialog + allowlist), per-tool ask/always/never, in-chat approval
 - [x] GitHub connector via token: live stats dashboard + GitHub MCP (46 tools) — verified with real GitHub
 - [x] OAuth framework (PKCE, signed state, refresh) + Google connector: Gmail search/read, Calendar list/create (asks first), Drive search; desktop sign-in via website + moonlightc:// link; e2e with fake Google. Needs owner's Google OAuth client (OWNER_TODO #2)
-- [ ] Discord, Spotify, Notion, Slack, YouTube connectors: need owner OAuth apps
+- [x] MCP OAuth sign-in (discovery + dynamic client registration + PKCE, browser-held state): one-click Notion, Linear, Jira & Confluence, Asana, Sentry, Canva, Vercel, Supabase (start step verified against the real servers)
+- [ ] Discord, Spotify, Slack, YouTube connectors: need owner OAuth apps
 - [x] Desktop automations: scheduled prompts on this computer (tray), run history, notifications, continue in chat
 - [ ] Cloud scheduled agents (pg_cron) + subscriptions hub: need Supabase + Gmail
 
@@ -102,6 +103,7 @@ STATUS: BUILDING
 - No Docker, so no local Supabase stack; test against the hosted project.
 
 ## Notes (last 10)
+- 2026-10-13: One-click MCP sign-in connectors; 84 web e2e.
 - 2026-10-13: PR #1 merged; production https://moonlightc.vercel.app serves phases 2-8 (39 deployed-site tests pass). Work continues on main.
 - 2026-10-13: Google connector + OAuth framework; 80 web e2e, 12 desktop e2e, 63 unit tests.
 - 2026-10-13: Local computer use with full §8 safety set (approval, overlay, panic key verified by real keypress in e2e).

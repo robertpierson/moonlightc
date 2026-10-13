@@ -42,3 +42,31 @@ test("add an MCP connector, then the AI uses its tool after the user approves", 
   await page.getByRole("button", { name: "Allow once" }).click();
   await expect(page.locator('[data-role="assistant"]').last()).toContainText("sum=5");
 });
+
+test("connectors that need a sign-in: discovery, registration, PKCE, then tools", async ({ page }) => {
+  await page.goto("/app");
+  await openConnections(page);
+  await page.getByRole("button", { name: "Add a connector" }).click();
+  await page.getByLabel("Name").fill("Notes");
+  await page.getByLabel("Server URL").fill("http://127.0.0.1:4040/mcp");
+  await page.getByRole("button", { name: "Connect", exact: true }).click();
+  // The fake server's sign-in page approves at once and sends us back to the app.
+  await expect(page.getByText("Notes connected with 1 tools")).toBeVisible({ timeout: 20000 });
+  await expect(page.getByRole("list", { name: "Your connectors" })).toContainText("Notes");
+  await expect(page.getByRole("button", { name: "Sign in again" })).toBeVisible();
+  expect(page.url()).not.toContain("mcpauth");
+});
+
+test("one-click gallery starts the service's own sign-in", async ({ page }) => {
+  let asked = "";
+  await page.route("**/api/mcp/auth", async (r) => {
+    asked = r.request().postDataJSON().url;
+    await r.fulfill({ json: { result: "REDIRECT", authorizationUrl: "http://127.0.0.1:4040/authorize-fake", state: "s1", clientInformation: {}, codeVerifier: "v" } });
+  });
+  await page.route("http://127.0.0.1:4040/authorize-fake", (r) => r.fulfill({ body: "Notion sign-in page", contentType: "text/plain" }));
+  await page.goto("/app");
+  await openConnections(page);
+  await page.getByRole("region", { name: "One-click connections" }).getByRole("button", { name: /Notion/ }).click();
+  await expect(page.getByText("Notion sign-in page")).toBeVisible();
+  expect(asked).toBe("https://mcp.notion.com/mcp");
+});
