@@ -60,6 +60,12 @@ For each one, after step 3 add the two values in Vercel exactly like step 6 of s
 3. On the same page copy **Client ID** into `DISCORD_CLIENT_ID`; click **Reset Secret**, copy it into `DISCORD_CLIENT_SECRET`.
 
 ---
+## Try this yourself: theme, profile and the updated desktop app
+1. Open MoonlightC on your PC (it was updated to 0.2.0 and is already running).
+2. Bottom left, click **Add your name**: type your name and pick a picture.
+3. Settings > **General** > Color mode: try **Light** and **Dark** (dark is now dark blue with black buttons).
+4. Settings > **Appearance** > Theme editor: change a color, type a name, click **Save as my theme**.
+
 ## Try this yourself: your requests from this morning (live now)
 1. Open https://moonlightc.vercel.app : the site is now light with gradients and a pearl moon.
 2. Click **Open web app**. At the top left, switch between **Chat** and **Code**.
@@ -89,6 +95,10 @@ For each one, after step 3 add the two values in Vercel exactly like step 6 of s
 5. In a chat, turn on nothing extra and ask: "What are my open pull requests?" Click **Allow once** when it asks.
 
 ---
+## Optional: let the desktop app update itself
+Today Claude installs new desktop versions on your PC by hand. For automatic updates (on any PC), the app needs public releases on GitHub.
+That's publishing something publicly, so it needs your OK: tell Claude "publish desktop releases".
+
 ## Optional: put the Chrome extension in the Chrome Web Store (costs a one-time $5 Google fee; your call)
 Right now people install it from the download page with "Load unpacked". Publishing makes it a one-click install.
 Only do this if you want to pay the fee; tell Claude "publish the extension" and it will prepare the store listing and tell you what to click.

@@ -13,3 +13,4 @@
 - 2026-10-13: Google connector + OAuth framework; 80 web e2e, 12 desktop e2e, 63 unit tests.
 - 2026-10-13: PR #1 merged; production https://moonlightc.vercel.app serves phases 2-8 (39 deployed-site tests pass). Work continues on main.
 - 2026-10-13: One-click MCP sign-in connectors; 84 web e2e.
+- 2026-10-13: Code workspace; fixed effect-return bug (Chrome scrollIntoView now returns a Promise); 86 web e2e stable.

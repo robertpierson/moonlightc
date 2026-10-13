@@ -26,7 +26,7 @@ STATUS: BUILDING
 - [x] R8b Chrome extension: the AI can see and act in browser tabs you allow (local, no Supabase needed)
 - [x] R9 Dark theme: dark blue with black accents (no light blue); light mode polished
 - [x] R10 Profile (name, picture) + save your own themes
-- [ ] R11 Update the installed desktop app to match the web app; test copies run hidden
+- [x] R11 Update the installed desktop app to match the web app; test copies run hidden
 - [ ] R8c (needs Supabase, Phase 5) remote control from another device
 
 ## Phase 0 tasks
@@ -125,6 +125,7 @@ STATUS: BUILDING
 - No Docker, so no local Supabase stack; test against the hosted project.
 
 ## Notes (last 10)
+- 2026-10-13: Desktop 0.2.0 built and installed on the owner's PC (silent NSIS). Fixed data loss: desktop now keeps port 47821 (saved in userData/port.json) so localStorage survives restarts. 14 desktop e2e.
 - 2026-10-13: R9/R10: black accents on dark blue, link color token, profile name+picture (greets you, AI knows your name), My themes. Desktop tests now run hidden (no extra window/tray). 99 web e2e, 13 desktop e2e.
 - 2026-10-13: R8b Chrome extension (apps/extension; zip at /downloads): share a tab, AI reads/clicks/types/opens; risky steps confirmed in an extension window (clickjack-proof), 15-min idle stop, Alt+Shift+M, audit. 97 web e2e incl. real-extension test.
 - 2026-10-13: R8a desktop file access (folder grants live in the desktop app; server re-checks every path incl. links); 13 desktop e2e, 64 unit.
@@ -134,4 +135,3 @@ STATUS: BUILDING
 - 2026-10-13: X BYOK + 10 more one-click MCP services; in-text links underlined (a11y); 92 web e2e.
 - 2026-10-13: Multi-provider OAuth (Google, Spotify, Slack, Discord); fixed desktop search-key deletion bug; 90 web e2e.
 - 2026-10-13: Subscriptions hub; 87 web e2e.
-- 2026-10-13: Code workspace; fixed effect-return bug (Chrome scrollIntoView now returns a Promise); 86 web e2e stable.
