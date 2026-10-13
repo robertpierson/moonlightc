@@ -16,3 +16,4 @@
 - 2026-10-13: Code workspace; fixed effect-return bug (Chrome scrollIntoView now returns a Promise); 86 web e2e stable.
 - 2026-10-13: Subscriptions hub; 87 web e2e.
 - 2026-10-13: Multi-provider OAuth (Google, Spotify, Slack, Discord); fixed desktop search-key deletion bug; 90 web e2e.
+- 2026-10-13: X BYOK + 10 more one-click MCP services; in-text links underlined (a11y); 92 web e2e.

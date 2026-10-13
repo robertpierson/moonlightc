@@ -1,7 +1,8 @@
 "use client";
 
 import type { Factor, UserIdentity } from "@supabase/supabase-js";
-import { Download, Loader2, LogOut, ShieldCheck, Trash2 } from "lucide-react";
+import { Download, Loader2, LogOut, RefreshCw, ShieldCheck, Trash2 } from "lucide-react";
+import { syncNow, useSyncStatus } from "@/lib/sync-supabase";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -32,9 +33,25 @@ export function AccountPanel() {
       <p className="text-sm">
         Signed in as <strong>{user.email ?? user.phone ?? "you"}</strong>
       </p>
+      <SyncStatus />
       <Identities />
       <TwoStep />
       <Data />
+    </div>
+  );
+}
+
+function SyncStatus() {
+  const s = useSyncStatus();
+  return (
+    <div className="flex flex-wrap items-center gap-2 rounded-lg border p-3 text-sm">
+      <RefreshCw className={`size-4 ${s.running ? "animate-spin" : ""}`} />
+      <span className="flex-1">
+        {s.error ? `Sync problem: ${s.error}` : s.at ? `Chats, settings and keys synced ${new Date(s.at).toLocaleTimeString()}` : "Syncing your chats, settings and keys…"}
+      </span>
+      <Button size="sm" variant="outline" disabled={s.running} onClick={() => syncNow()}>
+        Sync now
+      </Button>
     </div>
   );
 }

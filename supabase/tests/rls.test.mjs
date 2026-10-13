@@ -9,7 +9,7 @@ import { before, test } from "node:test";
 const STUBS = `
 create role anon nologin; create role authenticated nologin; create role service_role nologin bypassrls;
 create schema auth;
-create table auth.users (id uuid primary key, raw_user_meta_data jsonb default '{}', raw_app_meta_data jsonb default '{}');
+create table auth.users (id uuid primary key, email text, raw_user_meta_data jsonb default '{}', raw_app_meta_data jsonb default '{}');
 create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
 grant usage on schema auth to anon, authenticated, service_role;
 grant execute on function auth.uid() to anon, authenticated, service_role;
@@ -122,4 +122,35 @@ test("deleting a user removes everything they own", async () => {
     assert.equal((await db.query(`select count(*)::int n from public.${t} where user_id = $1`, [A])).rows[0].n, 0, t);
   }
   assert.equal((await db.query("select count(*)::int n from public.profiles where id = $1", [B])).rows[0].n, 1);
+});
+
+test("people can delete their own account (and nothing else); anyone can count a download", async () => {
+  const C = "00000000-0000-0000-0000-00000000000c";
+  await db.query("insert into auth.users (id) values ($1)", [C]);
+  await as(C, "insert into public.chats (id, user_id, title) values (gen_random_uuid(), $1, 'bye')", [C]);
+  await assert.rejects(as(null, "select public.delete_my_account()"), /not signed in|permission denied/);
+  await as(C, "select public.delete_my_account()");
+  assert.equal((await db.query("select count(*)::int n from auth.users where id = $1", [C])).rows[0].n, 0);
+  assert.equal((await as(null, "select count(*)::int n from public.chats where user_id = $1", [C])).rows[0].n, 0);
+  assert.equal((await db.query("select count(*)::int n from auth.users where id = $1", [B])).rows[0].n, 1); // others untouched
+  await db.exec("set role anon;");
+  await db.query("select public.log_download('mac')");
+  await db.query("select public.log_download('<script>')");
+  await db.exec("reset role;");
+  assert.equal((await as(null, "select count(*)::int n from public.events where name = 'download' and os = 'mac'")).rows[0].n, 1);
+  assert.equal((await as(null, "select count(*)::int n from public.events where os = '<script>'")).rows[0].n, 0);
+});
+
+test("owner emails on the private list become admins at sign-up; keys come back only to their owner", async () => {
+  const O = "00000000-0000-0000-0000-0000000000a1";
+  await db.query("insert into private.admin_emails values ('Owner@Example.com')");
+  await db.query("insert into auth.users (id, email) values ($1, 'owner@example.com')", [O]);
+  assert.equal((await as(null, "select is_admin from public.profiles where id = $1", [O])).rows[0].is_admin, true);
+  await assert.rejects(as(O, "select * from private.admin_emails"), /permission denied/);
+
+  const conn = "00000000-0000-0000-0000-0000000000c1";
+  await as(O, "insert into public.connections (id, user_id, provider_id, label) values ($1, $2, 'openai', 'OpenAI')", [conn, O]);
+  await as(O, "select public.set_connection_key($1, 'sk-owner')", [conn]);
+  assert.equal((await as(O, "select public.get_my_connection_key($1) k", [conn])).rows[0].k, "sk-owner");
+  assert.equal((await as(B, "select public.get_my_connection_key($1) k", [conn])).rows[0].k, null);
 });

@@ -1,4 +1,4 @@
-STATUS: WAITING_ON_OWNER
+STATUS: BUILDING
 
 # MoonlightC progress
 
@@ -42,7 +42,7 @@ STATUS: WAITING_ON_OWNER
 - [x] Monorepo scaffold (pnpm + turbo, apps/web Next.js 16.4)
 - [x] GitHub repo https://github.com/robertpierson/moonlightc (public, MIT)
 - [x] Vercel project `moonlightc` (team app-project21, root apps/web, git-connected; main = production)
-- [ ] Supabase project (BLOCKED: free-plan limit 2 active, see OWNER_TODO #1) — create in org umzghxzngixiedodscaa, us-east-2
+- [x] Supabase project MoonlightC (ref znkusjdspjssmwohrbzl, us-east-2): migrations applied, advisors clean, auth URLs + manual linking set, owner email auto-admin (private list)
 - [x] CI (GitHub Actions: typecheck, lint, test, build, Playwright) green
 - [x] Gate verified: build green, https://moonlightc.vercel.app 200, Playwright desktop+mobile pass on prod
 
@@ -133,6 +133,7 @@ STATUS: WAITING_ON_OWNER
 - No Docker, so no local Supabase stack; test against the hosted project.
 
 ## Notes (last 10)
+- 2026-10-13: Supabase live. Accounts on (email + magic link; Google/GitHub need owner OAuth apps). Sync engine (chats, settings, keys via Vault) with two-device test; delete account + download counts via DB functions (no secret key). Vercel env set; desktop build bakes the public URL/key. 10 PGlite, 69 unit, 109 web e2e.
 - 2026-10-13: Chat | Cowork | Code modes with their own sidebars (editor-style Code sidebar), recents capped at 15 + All chats, Claude-style chat Projects (move chats in, connectors + skills per project), code folders, code permission modes (ask/auto/plan/bypass), Cowork (files, screen, browser with permissions), Settings > Usage (tokens, est. cost, OpenRouter credits) and Memory. 109 web e2e, 14 desktop e2e, 67 unit.
 - 2026-10-13: Sign in with OpenRouter (PKCE, web + desktop deep link). Phase 1 prep, hidden until Supabase: onboarding (7 steps, 13+), Settings > Account (link/unlink, TOTP two-step, export, delete), /admin (retention, onboarding answers, downloads, local vs cloud), /api/track with EU consent, privacy text. 8 PGlite tests, 66 unit, 102 web e2e.
 - 2026-10-13: Desktop 0.2.0 built and installed on the owner's PC (silent NSIS). Fixed data loss: desktop now keeps port 47821 (saved in userData/port.json) so localStorage survives restarts. 14 desktop e2e.
@@ -142,4 +143,3 @@ STATUS: WAITING_ON_OWNER
 - 2026-10-13: R7 website redesign: always-light daytime-moon look with gradients; moon setup deferred until idle (Lighthouse mobile 92, a11y 100). 96 web e2e.
 - 2026-10-13: R6 Claude plugins from GitHub (skills via load_skill, slash commands, agents as modes, MCP connectors; browse Anthropic's directory, verified against the real 315-plugin list). Fixed: mode/model changes didn't stick in a just-started chat. 96 web e2e.
 - 2026-10-13: Owner requests R1-R5: Compare removed, mode menu (3 pinned + More options), Chat/Code switch, Claude-style Settings, Auto model; sign-in code ready (hidden until Supabase). 92 web e2e.
-- 2026-10-13: X BYOK + 10 more one-click MCP services; in-text links underlined (a11y); 92 web e2e.

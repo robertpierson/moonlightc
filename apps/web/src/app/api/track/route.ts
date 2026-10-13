@@ -1,4 +1,4 @@
-import { accountsEnabled, adminSupabase, serverSupabase } from "@/lib/supabase/server";
+import { accountsEnabled, serverSupabase } from "@/lib/supabase/server";
 import { cleanProps, CONSENT_COUNTRIES, deviceOf } from "@/lib/track-server";
 
 // Usage stats: event names and a few plain values (never messages, files or keys). Signed-in people only, plus
@@ -25,8 +25,8 @@ export async function POST(req: Request) {
   if (data.user) {
     await sb.from("events").insert({ ...row, user_id: data.user.id });
     if (name === "session.start" && where) await sb.from("profiles").update({ country: where }).eq("id", data.user.id).is("country", null);
-  } else if (name === "download" && process.env.SUPABASE_SECRET_KEY) {
-    await adminSupabase().from("events").insert(row);
+  } else if (name === "download") {
+    await sb.rpc("log_download", { os: String(row.props.os ?? "") });
   }
   return new Response(null, { status: 204 });
 }

@@ -1,6 +1,8 @@
 "use client";
 
 import type { UIMessage } from "ai";
+import { SyncRunner } from "@/components/account/sync-runner";
+import { accountsEnabled } from "@/lib/supabase/client";
 import { track, trackSessionStart } from "@/lib/analytics";
 import { ConsentPrompt } from "@/components/account/consent";
 import dynamic from "next/dynamic";
@@ -263,6 +265,7 @@ function Inner() {
       <AutomationRunner />
       <RenewalReminders />
       <ConsentPrompt />
+      {accountsEnabled && <SyncRunner />}
       {offer && (
         <div role="dialog" aria-label="Apply shared distro" className="fixed inset-x-0 top-0 z-50 flex flex-wrap items-center gap-3 border-b bg-popover p-3 text-sm shadow">
           <span className="flex-1">

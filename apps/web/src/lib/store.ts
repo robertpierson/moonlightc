@@ -143,7 +143,7 @@ export interface Chat {
   workspace?: "cowork";
 }
 
-interface State {
+export interface State {
   connections: SavedConnection[];
   chats: Chat[];
   favorites: string[]; // `${connectionId}:${modelId}`
@@ -278,7 +278,7 @@ export function update(fn: (s: State) => State) {
   listeners.forEach((l) => l());
 }
 
-function subscribe(l: () => void) {
+export function subscribe(l: () => void) {
   listeners.add(l);
   const onStorage = (e: StorageEvent) => {
     if (e.key !== KEY) return;

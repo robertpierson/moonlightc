@@ -1,9 +1,11 @@
 "use client";
 
-import { Clock, Code2, FolderGit2, FolderOpen, Hand, MessageSquare, Palette, Receipt, Settings as SettingsIcon, SquareTerminal } from "lucide-react";
+import { Clock, Code2, Files, FolderGit2, FolderOpen, MessageSquare, Palette, Receipt, Settings as SettingsIcon, SquareTerminal } from "lucide-react";
 import type { ViewId } from "@/lib/customize";
 import { desktop } from "@/lib/desktop";
+import Link from "next/link";
 import { useStore } from "@/lib/store";
+import { accountsEnabled, useUser } from "@/lib/supabase/client";
 import { Avatar } from "@/components/settings/avatar";
 
 export type View = "chat" | "chats" | "library" | "studio" | "subscriptions" | "automations" | "cowork" | "code" | "terminal" | "projects" | "settings";
@@ -36,7 +38,7 @@ export const availableViews = (): ViewId[] => ["chat", "code", ...[...CHAT_ITEMS
 export function WorkspaceSwitch({ workspace, onChange, hidden = [] }: { workspace: Workspace; onChange: (w: Workspace) => void; hidden?: string[] }) {
   const tabs = [
     { id: "chat" as const, label: "Chat", icon: <MessageSquare /> },
-    { id: "cowork" as const, label: "Cowork", icon: <Hand /> },
+    { id: "cowork" as const, label: "Cowork", icon: <Files /> },
     { id: "code" as const, label: "Code", icon: <Code2 /> },
   ].filter((t) => t.id === "chat" || !hidden.includes(t.id));
   return (
@@ -79,12 +81,20 @@ export function SectionNav({ workspace, view, onChange, hidden = [] }: { workspa
 /** Bottom of the sidebar: your profile (opens Profile) and Settings. */
 export function SettingsButton({ active, onClick, onProfile }: { active: boolean; onClick: () => void; onProfile: () => void }) {
   const name = useStore((s) => s.profile?.name?.trim());
+  const user = useUser();
   return (
     <div className="flex items-center gap-1 border-t p-2">
-      <button onClick={onProfile} className="flex min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 py-1.5 text-sm hover:bg-accent">
-        <Avatar />
-        <span className="truncate">{name || "Add your name"}</span>
-      </button>
+      {accountsEnabled && user === null ? (
+        <Link href="/signin?next=/app" title="Sign in to sync your chats" className="flex min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 py-1.5 text-sm hover:bg-accent">
+          <Avatar />
+          <span className="truncate">{name || "Sign in to sync"}</span>
+        </Link>
+      ) : (
+        <button onClick={onProfile} className="flex min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 py-1.5 text-sm hover:bg-accent">
+          <Avatar />
+          <span className="truncate">{name || user?.email || "Add your name"}</span>
+        </button>
+      )}
       <button
         aria-current={active ? "page" : undefined}
         onClick={onClick}

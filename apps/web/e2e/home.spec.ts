@@ -42,7 +42,7 @@ test("privacy and terms pages load", async ({ page }) => {
 });
 
 test("account pages stay hidden until accounts are set up", async ({ page, request }) => {
-  test.skip(!!process.env.NEXT_PUBLIC_SUPABASE_URL, "accounts are configured");
+  test.skip(!!process.env.BASE_URL || !!process.env.NEXT_PUBLIC_SUPABASE_URL, "accounts are configured there");
   for (const path of ["/signin", "/onboarding", "/admin"]) expect((await request.get(path)).status()).toBe(404);
   expect((await request.post("/api/account/delete")).status()).toBe(404);
   await page.goto("/app");

@@ -77,3 +77,9 @@ Rollback: Vercel "Instant Rollback" to the previous production deployment.
 - Why: owner asked for a clean sidebar tailored to each mode and for Claude-like projects, cowork and permission modes.
 - Recent limit: 15 (pinned chats count toward it and sort first); everything else is one click away and searchable.
 - Code permission modes: Ask (apply/reject each change), Auto-accept (default), Plan only (no file tools), Bypass (connector tools run without asking; confirmation dialog; tools set to "never" stay blocked; computer use is never bypassed).
+
+## 2026-10-13 Sync and keys without a server secret
+- What: signed-in devices sync chats (+messages), settings (a safe subset, never tokens) and connections. Keys go into Supabase Vault via set_connection_key and come back only to their owner via get_my_connection_key. Account deletion and anonymous download counts use security-definer functions, so the web server holds no Supabase secret key.
+- Why: one account on PC and phone must see the same chats and keys (Phase 1 gate); the owner can't hand over a service key, and fewer secrets on the server is safer.
+- Trade-off: a signed-in session can read its own keys (same trust as keeping them in the browser, which is how it already worked). Conflicts: last change wins per chat and for settings.
+- Admins: private.admin_emails (not exposed through the API, not in the repo) marks the owner's account admin at sign-up.

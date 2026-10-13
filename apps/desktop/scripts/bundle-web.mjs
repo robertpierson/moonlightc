@@ -8,7 +8,9 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const web = path.resolve(here, "../../web");
 const out = path.resolve(here, "../app-server");
 
-execSync("pnpm exec next build", { cwd: web, stdio: "inherit", env: { ...process.env, DESKTOP_BUILD: "1" } });
+// The account service's address and public key (both are meant to be public), so the desktop app can sign in and sync.
+const ACCOUNTS = { NEXT_PUBLIC_SUPABASE_URL: "https://znkusjdspjssmwohrbzl.supabase.co", NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_h2uJrc28XIPLe_oytNMBzw_UjS2zPZ7" };
+execSync("pnpm exec next build", { cwd: web, stdio: "inherit", env: { ...ACCOUNTS, ...process.env, DESKTOP_BUILD: "1" } });
 
 const standalone = path.join(web, ".next-desktop", "standalone");
 fs.rmSync(out, { recursive: true, force: true });
