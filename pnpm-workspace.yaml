@@ -1,6 +1,7 @@
 packages:
   - apps/*
   - packages/*
+  - supabase
 allowBuilds:
   electron-winstaller: true
   node-pty: true
