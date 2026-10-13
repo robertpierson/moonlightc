@@ -7,14 +7,15 @@ import { ThemeToggle } from "@/components/theme";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { getState, patchChat, saveChat, useStore, type Chat, type ModelRef } from "@/lib/store";
+import { getState, patchChat, saveChat, update, useStore, type Chat, type ModelRef } from "@/lib/store";
 import type { Artifact } from "@/lib/artifacts";
 import { ArtifactPanel } from "./artifact-panel";
 import { ChatView } from "./chat-view";
 import { CompareView } from "./compare-view";
 import { KeysDialog } from "./keys-dialog";
 import { ModelPicker } from "./model-picker";
-import { ModeSelect, useModes } from "./modes";
+import { ModeSelect, ModesDialog, useModes } from "./modes";
+import { CommandPalette } from "./command-palette";
 import { Sidebar } from "./sidebar";
 
 const newChat = (): Chat => ({ id: crypto.randomUUID(), title: "", messages: [], updatedAt: Date.now() });
@@ -38,6 +39,7 @@ function Inner() {
   const [draftMode, setDraftMode] = useState("general");
   const [artifact, setArtifact] = useState<Artifact>();
   const [comparing, setComparing] = useState(false);
+  const [modesOpen, setModesOpen] = useState(false);
   const modes = useModes();
 
   const chat = chats.find((c) => c.id === activeId) ?? draft;
@@ -143,6 +145,25 @@ function Inner() {
         )}
       </div>
       <KeysDialog open={keysOpen} onOpenChange={setKeysOpen} />
+      <ModesDialog open={modesOpen} onOpenChange={setModesOpen} />
+      <CommandPalette
+        actions={{
+          newChat: () => start(),
+          openChat: (id) => {
+            setActiveId(id);
+            setArtifact(undefined);
+            setComparing(false);
+          },
+          pickModel: (r) => {
+            update((s) => ({ ...s, lastModel: r }));
+            if (saved) patchChat(chat.id, { model: r });
+            else setDraftModel(r);
+          },
+          openKeys: () => setKeysOpen(true),
+          openModes: () => setModesOpen(true),
+          toggleCompare: () => setComparing((c) => !c),
+        }}
+      />
     </TooltipProvider>
   );
 }

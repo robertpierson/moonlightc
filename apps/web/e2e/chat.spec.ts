@@ -3,6 +3,14 @@ import { expect, test, type Page } from "@playwright/test";
 // These use the local mock provider (e2e/mock-openai.mjs), so they only run against a local server.
 test.skip(!!process.env.BASE_URL, "needs the local mock provider");
 
+// Any uncaught error in the page fails the test, even if the UI happens to look fine.
+let pageErrors: string[] = [];
+test.beforeEach(({ page }) => {
+  pageErrors = [];
+  page.on("pageerror", (e) => pageErrors.push(e.message));
+});
+test.afterEach(() => expect(pageErrors).toEqual([]));
+
 async function connectMock(page: Page) {
   await page.goto("/app");
   await page.getByRole("button", { name: "Connect a model" }).click();
@@ -168,4 +176,17 @@ test("compare sends one prompt to several models", async ({ page }) => {
   await page.getByRole("button", { name: "Send to all models" }).click();
   await expect(cols.nth(0).getByText("Echo from mock-fast: same question")).toBeVisible();
   await expect(cols.nth(1).getByText("Echo from mock-other: same question")).toBeVisible();
+});
+
+test("command palette switches model and opens dialogs", async ({ page, isMobile }) => {
+  test.skip(isMobile, "keyboard shortcut");
+  await connectMock(page);
+  await page.keyboard.press("Control+k");
+  await page.getByPlaceholder("Type a command, chat or model…").fill("mock-other");
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("combobox", { name: "Choose model" })).toHaveText(/mock-other/);
+  await page.keyboard.press("Control+k");
+  await page.getByPlaceholder("Type a command, chat or model…").fill("models and keys");
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("dialog", { name: "Models and keys" })).toBeVisible();
 });
