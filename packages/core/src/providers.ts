@@ -155,3 +155,17 @@ export function estimateCost(m: ModelInfo, inputTokens: number, outputTokens: nu
   if (!m.pricing) return undefined;
   return (inputTokens * m.pricing.input + outputTokens * m.pricing.output) / 1e6;
 }
+
+// Fixed, long-lived Whisper ids (not "latest" aliases). Only OpenAI and Groq offer Whisper over the API.
+const WHISPER: Record<string, { baseURL: string; model: string }> = {
+  openai: { baseURL: "https://api.openai.com/v1", model: "whisper-1" },
+  groq: { baseURL: "https://api.groq.com/openai/v1", model: "whisper-large-v3-turbo" },
+};
+
+export const canTranscribe = (providerId: string) => providerId in WHISPER;
+
+export function transcriptionModel(c: Connection) {
+  const w = WHISPER[c.providerId];
+  if (!w) throw new ProviderError("Voice typing needs an OpenAI or Groq key.");
+  return createOpenAI({ apiKey: c.apiKey, baseURL: w.baseURL }).transcription(w.model);
+}

@@ -199,3 +199,33 @@ test("web tools: the model reads a link", async ({ page }) => {
   await expect(page.locator('[data-role="assistant"]').last()).toContainText("Page says:");
   await expect(page.locator('[data-role="assistant"]').last()).toContainText("Example Domain");
 });
+
+test.describe("voice typing", () => {
+  test.use({ permissions: ["microphone"] });
+
+  test("records, uploads to Whisper and fills the message box", async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem(
+        "moonc:v1",
+        JSON.stringify({ connections: [{ id: "c1", providerId: "openai", apiKey: "sk-test", label: "OpenAI", models: [{ id: "m", name: "M" }], addedAt: 0 }], chats: [], favorites: [], modes: [] }),
+      );
+    });
+    let uploaded = 0;
+    await page.route("**/api/transcribe", async (route) => {
+      uploaded = route.request().postDataBuffer()?.length ?? 0;
+      await route.fulfill({ json: { text: "hello from my voice" } });
+    });
+    await page.goto("/app");
+    await page.getByRole("button", { name: "Voice typing" }).click();
+    await page.waitForTimeout(700);
+    await page.getByRole("button", { name: "Stop recording" }).click();
+    await expect(page.getByLabel("Message", { exact: true })).toHaveValue("hello from my voice");
+    expect(uploaded).toBeGreaterThan(1000);
+  });
+
+  test("a bad Whisper key gets a clear error", async ({ request }) => {
+    const res = await request.post("/api/transcribe", { multipart: { audio: { name: "a.webm", mimeType: "audio/webm", buffer: Buffer.alloc(2000) }, connection: JSON.stringify({ providerId: "openai", apiKey: "sk-bad" }) } });
+    expect(res.status()).toBe(400);
+    expect((await res.json()).error).toMatch(/key/);
+  });
+});

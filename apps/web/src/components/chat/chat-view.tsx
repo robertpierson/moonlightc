@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { findModel, getState, saveChat, update, useStore, type Chat, type Mode, type ModelRef } from "@/lib/store";
 import { Message, textOf, type Usage } from "./message";
+import { MicButton } from "./mic-button";
 
 function costLabel(m: UIMessage): string | undefined {
   const meta = m.metadata as { usage?: Usage; modelId?: string } | undefined;
@@ -255,6 +256,7 @@ export function ChatView({
           <Button type="button" variant="ghost" size="icon-sm" aria-label="Attach files" onClick={() => fileInput.current?.click()}>
             <Paperclip />
           </Button>
+          <MicButton onText={(t) => setInput((v) => (v ? `${v} ${t}` : t))} />
           <WebToggle />
           {modeSlot(messages.length > 0)}
         </div>

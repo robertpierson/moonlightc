@@ -4,7 +4,7 @@ const baseURL = process.env.BASE_URL ?? "http://localhost:3000";
 
 export default defineConfig({
   testDir: "e2e",
-  use: { baseURL, screenshot: "only-on-failure" },
+  use: { baseURL, screenshot: "only-on-failure", launchOptions: { args: ["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream"] } },
   projects: [
     { name: "desktop", use: { ...devices["Desktop Chrome"] } },
     { name: "mobile", use: { ...devices["Pixel 7"] } },

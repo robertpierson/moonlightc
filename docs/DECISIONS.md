@@ -21,3 +21,7 @@ features the compat layer lacks). Azure OpenAI and AWS Bedrock still to add (dif
 ## 2026-10-13 Unreleased phases live on branches
 What: phases that can't pass their gate yet are built on `phase-N-*` branches (Vercel preview URLs), merged to main only after the gate.
 Why: SPEC "never let unfinished phases leak visible UI into production".
+
+## 2026-10-13 Voice typing: Whisper via the user's OpenAI or Groq key, browser speech as fallback
+What: fixed Whisper ids `whisper-1` (OpenAI) and `whisper-large-v3-turbo` (Groq); these are stable ids, not "latest" aliases.
+If neither key exists, use the browser's SpeechRecognition (audio goes to the browser vendor; the button tooltip says so). Hidden if neither works.
