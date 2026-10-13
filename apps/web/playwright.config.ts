@@ -24,6 +24,7 @@ export default defineConfig({
             // Fake Google so the sign-in and Gmail flow can be tested end to end.
             GOOGLE_CLIENT_ID: "test-client",
             GOOGLE_CLIENT_SECRET: "test-secret",
+            MOONC_TEST_OPENROUTER: "http://127.0.0.1:4010",
             MOONC_TEST_GOOGLE_AUTH_URL: "http://127.0.0.1:4030/auth",
             MOONC_TEST_GOOGLE_TOKEN_URL: "http://127.0.0.1:4030/token",
             MOONC_TEST_GOOGLE_API: "http://127.0.0.1:4030",

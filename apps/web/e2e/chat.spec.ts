@@ -269,3 +269,17 @@ test("unattended runs (automations) return the model's answer", async ({ request
   expect(res.status()).toBe(200);
   expect((await res.json()).text).toBe("Echo from mock-fast: daily brief");
 });
+
+test("sign in with OpenRouter instead of pasting a key", async ({ page }) => {
+  // Stand in for OpenRouter's sign-in page: it sends the person back with a one-time code.
+  await page.route("https://openrouter.ai/auth?**", (r) => {
+    const q = new URL(r.request().url()).searchParams;
+    expect(q.get("code_challenge_method")).toBe("S256");
+    return r.fulfill({ status: 302, headers: { location: `${q.get("callback_url")}?code=good-code&state=${q.get("state")}` } });
+  });
+  await page.goto("/app");
+  await page.getByRole("button", { name: "Sign in with OpenRouter" }).click();
+  await expect(page.getByText("Signed in to OpenRouter: 2 models unlocked.")).toBeVisible();
+  await expect(page).toHaveURL(/\/app$/);
+  await expect(page.getByRole("combobox", { name: "Choose model" })).toHaveText(/mock-fast/);
+});

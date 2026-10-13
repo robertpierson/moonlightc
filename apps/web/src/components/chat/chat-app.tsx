@@ -30,6 +30,8 @@ import { decodeDistro, DISTROS, matchShortcut, type Distro } from "@/lib/customi
 import { desktop } from "@/lib/desktop";
 import { consumeMcpAuth } from "@/lib/mcp-auth-client";
 import { consumeOAuthResult } from "@/lib/oauth-client";
+import { finishOpenRouterSignIn, isOpenRouterReturn } from "@/lib/openrouter-auth";
+import { toast } from "sonner";
 import { ModHost } from "@/components/mods/mod-host";
 import { AutomationRunner } from "@/components/desktop/automation-runner";
 import { RenewalReminders } from "@/components/subscriptions/reminders";
@@ -143,6 +145,16 @@ function Inner() {
 
   // Sign-in results for connectors arrive in the address fragment (web) or a moonlightc:// link (desktop).
   useEffect(() => {
+    const finishOpenRouter = (params: URLSearchParams) =>
+      finishOpenRouterSignIn(params).then(
+        (n) => toast.success(`Signed in to OpenRouter: ${n} models unlocked.`),
+        (e: Error) => toast.error(e.message),
+      );
+    const query = new URLSearchParams(location.search);
+    if (isOpenRouterReturn(query)) {
+      history.replaceState(null, "", location.pathname);
+      finishOpenRouter(query);
+    }
     const hash = location.hash;
     if (consumeOAuthResult(hash)) history.replaceState(null, "", location.pathname + location.search);
     if (hash.includes("mcpauth=") || hash.includes("mcperror=")) {
@@ -150,6 +162,10 @@ function Inner() {
       consumeMcpAuth(hash).then(() => openSettings("connectors"));
     }
     return desktop()?.onDeepLink((url) => {
+      if (url.startsWith("moonlightc://openrouter")) {
+        finishOpenRouter(new URL(url).searchParams);
+        return;
+      }
       if (url.startsWith("moonlightc://mcpauth")) {
         consumeMcpAuth(new URL(url).hash).then(() => openSettings("connectors"));
         return;

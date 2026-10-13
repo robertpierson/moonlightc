@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { desktop } from "@/lib/desktop";
+import { startOpenRouterSignIn } from "@/lib/openrouter-auth";
 import { update, useStore, type SavedConnection } from "@/lib/store";
 
 async function fetchModels(c: {
@@ -165,6 +166,31 @@ function SearchKeySection() {
   );
 }
 
+/** One-click alternative to pasting a key: OpenRouter's sign-in returns a key for hundreds of models. */
+export function OpenRouterSignIn({ compact }: { compact?: boolean }) {
+  const [busy, setBusy] = useState(false);
+  const go = () => {
+    setBusy(true);
+    startOpenRouterSignIn().catch((e: Error) => toast.error(e.message)).finally(() => setBusy(false));
+  };
+  if (compact)
+    return (
+      <Button variant="outline" onClick={go} disabled={busy}>
+        {busy && <Loader2 className="animate-spin" />} Sign in with OpenRouter
+      </Button>
+    );
+  return (
+    <div className="grid gap-2 rounded-lg border p-3 text-sm">
+      <p>
+        <strong>Easiest:</strong> sign in with OpenRouter to get one key for hundreds of models (Claude, GPT, Gemini, Llama and more). You pay OpenRouter only for what you use.
+      </p>
+      <Button onClick={go} disabled={busy} className="justify-self-start">
+        {busy && <Loader2 className="animate-spin" />} Sign in with OpenRouter
+      </Button>
+    </div>
+  );
+}
+
 export function KeysDialog({
   open,
   onOpenChange,
@@ -287,6 +313,7 @@ export function KeysPanel() {
 
   return (
     <div className="grid gap-4">
+      {!connections.some((c) => c.providerId === "openrouter") && <OpenRouterSignIn />}
       {connections.length > 0 && (
         <ul
           className="divide-y rounded-lg border"

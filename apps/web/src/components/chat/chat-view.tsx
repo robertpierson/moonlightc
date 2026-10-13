@@ -1,6 +1,7 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
+import { OpenRouterSignIn } from "./keys-dialog";
 import { BROWSER_TOOLS, callExtension, hasExtension } from "@/lib/browser-ext";
 import {
   expandPluginCommand,
@@ -507,9 +508,12 @@ export function ChatView({
                 </p>
               )}
               {!usable ? (
-                <Button onClick={onOpenKeys}>
-                  <KeyRound /> Connect a model
-                </Button>
+                <div className="flex flex-wrap justify-center gap-2">
+                  <Button onClick={onOpenKeys}>
+                    <KeyRound /> Connect a model
+                  </Button>
+                  <OpenRouterSignIn compact />
+                </div>
               ) : (
                 needsSearch && (
                   <Button onClick={onOpenKeys}>

@@ -5,6 +5,16 @@ const port = Number(process.env.MOCK_PORT ?? 4010);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 createServer(async (req, res) => {
+  // Also serves as a fake OpenRouter (its API lives under /api/v1).
+  if (req.url.startsWith("/api/v1/")) req.url = req.url.slice(4);
+  if (req.method === "POST" && req.url === "/v1/auth/keys") {
+    let raw = "";
+    for await (const c of req) raw += c;
+    const b = JSON.parse(raw);
+    res.setHeader("content-type", "application/json");
+    if (b.code !== "good-code" || !b.code_verifier || b.code_challenge_method !== "S256") return (res.statusCode = 403), res.end(JSON.stringify({ error: { message: "Invalid code" } }));
+    return res.end(JSON.stringify({ key: "sk-or-mock" }));
+  }
   if (req.method === "GET" && req.url === "/v1/models") {
     res.setHeader("content-type", "application/json");
     return res.end(JSON.stringify({ data: [{ id: "mock-fast" }, { id: "mock-other" }] }));

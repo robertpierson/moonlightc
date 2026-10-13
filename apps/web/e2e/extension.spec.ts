@@ -11,6 +11,9 @@ const SHOP_HTML = `<!doctype html><title>Moon Shop</title><h1>Moon Shop</h1><p i
 <button onclick="document.getElementById('msg').textContent='Hi there!'">Say hi</button>
 <button onclick="document.getElementById('msg').textContent='Bought!'">Buy now</button>`;
 
+// Each step waits on a model reply plus the extension; give it room when the whole suite runs in parallel.
+const slow = expect.configure({ timeout: 15_000 });
+
 let context: BrowserContext;
 let worker: Worker;
 
@@ -31,7 +34,7 @@ test("the AI reads a shared tab, clicks, and risky clicks wait for the person", 
   await shop.goto(SHOP);
   const app = await context.newPage();
   await app.goto(`${baseURL}/app`);
-  await expect(app.locator("html")).toHaveAttribute("data-moonc-extension", /\d/);
+  await slow(app.locator("html")).toHaveAttribute("data-moonc-extension", /\d/);
 
   // Nothing is shared yet: the AI is told to ask for a tab.
   await app.getByRole("button", { name: "Connect a model" }).click();
@@ -39,10 +42,10 @@ test("the AI reads a shared tab, clicks, and risky clicks wait for the person", 
   await app.getByRole("option", { name: /Custom/ }).click();
   await app.getByLabel("Base URL").fill("http://127.0.0.1:4010/v1");
   await app.getByRole("button", { name: "Check key and connect" }).click();
-  await expect(app.getByText("2 models unlocked")).toBeVisible();
+  await slow(app.getByText("2 models unlocked")).toBeVisible();
   await app.keyboard.press("Escape");
   await send(app, "read my tab");
-  await expect(app.locator('[data-role="assistant"]').last()).toContainText("No tab is shared");
+  await slow(app.locator('[data-role="assistant"]').last()).toContainText("No tab is shared");
 
   // Share the shop tab (what the popup's "Share this tab" does).
   await worker.evaluate(async (url) => {
@@ -52,25 +55,25 @@ test("the AI reads a shared tab, clicks, and risky clicks wait for the person", 
   }, SHOP);
 
   await send(app, "read my tab");
-  await expect(app.getByText("Read a shared tab")).toBeVisible();
-  await expect(app.locator('[data-role="assistant"]').last()).toContainText("Moon Shop");
+  await slow(app.getByText("Read a shared tab")).toBeVisible();
+  await slow(app.locator('[data-role="assistant"]').last()).toContainText("Moon Shop");
 
   await send(app, "click say hi");
-  await expect(shop.locator("#msg")).toHaveText("Hi there!");
+  await slow(shop.locator("#msg")).toHaveText("Hi there!");
 
   // "Buy now" is risky: the extension asks in its own window (web pages can't draw over it), and Deny is the default.
   let ask = context.waitForEvent("page");
   await send(app, "buy it");
   let prompt = await ask;
-  await expect(prompt.getByRole("heading")).toHaveText('The AI wants to click "Buy now"');
+  await slow(prompt.getByRole("heading")).toHaveText('The AI wants to click "Buy now"');
   await prompt.getByRole("button", { name: "Deny" }).click();
-  await expect(app.locator('[data-role="assistant"]').last()).toContainText("said no");
-  await expect(shop.locator("#msg")).toHaveText("Hi there!");
+  await slow(app.locator('[data-role="assistant"]').last()).toContainText("said no");
+  await slow(shop.locator("#msg")).toHaveText("Hi there!");
 
   ask = context.waitForEvent("page");
   await send(app, "buy it");
   prompt = await ask;
   await prompt.getByRole("button", { name: "Allow" }).click();
-  await expect(shop.locator("#msg")).toHaveText("Bought!");
-  await expect(app.locator('[data-role="assistant"]').last()).toContainText("Buy now");
+  await slow(shop.locator("#msg")).toHaveText("Bought!");
+  await slow(app.locator('[data-role="assistant"]').last()).toContainText("Buy now");
 });

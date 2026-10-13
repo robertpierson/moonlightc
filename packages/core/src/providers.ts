@@ -24,8 +24,11 @@ export interface ProviderDef {
   media?: boolean;
 }
 
+// Tests point OpenRouter at a local fake; never set in production.
+export const OPENROUTER = (typeof process !== "undefined" && process.env.MOONC_TEST_OPENROUTER) || "https://openrouter.ai";
+
 export const PROVIDERS: ProviderDef[] = [
-  { id: "openrouter", name: "OpenRouter", kind: "compat", baseURL: "https://openrouter.ai/api/v1", keyUrl: "https://openrouter.ai/settings/keys" },
+  { id: "openrouter", name: "OpenRouter", kind: "compat", baseURL: `${OPENROUTER}/api/v1`, keyUrl: "https://openrouter.ai/settings/keys" },
   { id: "anthropic", name: "Anthropic", kind: "anthropic", keyUrl: "https://console.anthropic.com/settings/keys" },
   { id: "openai", name: "OpenAI", kind: "openai", keyUrl: "https://platform.openai.com/api-keys" },
   { id: "google", name: "Google Gemini", kind: "google", keyUrl: "https://aistudio.google.com/app/apikey" },
