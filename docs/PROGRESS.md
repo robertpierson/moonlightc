@@ -14,6 +14,16 @@ STATUS: BUILDING
 - [x] 8 Customization (on branch; drag/dock deferred): distros, themes/editor, layout, mods SDK and store
 - [~] 9 Hardening (a11y: 0 axe violations; SECURITY.md; rest after Phases 1/5): security review, RLS audit, perf, a11y, docs, v1.0 release
 
+## Owner requests (2026-10-13, do in this order; these come before blocked Phase 1 work)
+- [ ] R1 Remove Compare (owner doesn't want it)
+- [ ] R2 Mode menu: 3 main modes + "More options" (rest also reachable in Settings)
+- [ ] R3 Chat / Code switch at the top (Code is its own tab, like Claude)
+- [ ] R4 Full Settings screen like Claude's: General, Models & keys (all keys, masked), Auto model, Connectors, Local models (downloaded), Plugins, Appearance, Privacy & data, Shortcuts
+- [ ] R5 Auto model: picks a model per task type (everyday / coding / deep thinking / quick / images), mapped in Settings
+- [ ] R6 Claude plugins: install from GitHub (plugin.json / marketplace.json): skills, slash commands, MCP servers
+- [ ] R7 Marketing site: light, clean, lots of gradients; moon must not clash with the background
+- [ ] R8 (needs Supabase, Phase 5) remote control + Chrome extension for screen access + file access
+
 ## Phase 0 tasks
 - [x] Check prerequisites (node 22, pnpm 11, git, gh logged in as robertpierson; Vercel + Supabase via MCP)
 - [x] Monorepo scaffold (pnpm + turbo, apps/web Next.js 16.4)
