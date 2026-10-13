@@ -28,12 +28,15 @@ STATUS: BUILDING
 - [x] /api/models + /api/chat streaming proxy, SSRF guard, friendly errors
 - [x] Chat UI: model picker (search, favorites), stream + Stop (partial kept), edit/resend, regenerate, branch, copy, read aloud, markdown/code/math/mermaid, search, pin, rename, export, delete; device-local storage
 - [x] e2e: mock OpenAI-compatible provider (e2e/mock-openai.mjs); 10 tests pass desktop+mobile
-- [ ] Modes/personas (General, Coder, Writer, Researcher, Tutor, Private incognito) + custom
-- [ ] Attachments (images, PDFs, text/code files; drag-drop, paste)
-- [ ] Artifacts side panel (HTML/SVG/Mermaid live, edit, download)
-- [ ] Compare mode (2-4 models side by side)
-- [ ] Command palette (Ctrl/Cmd+K)
-- [ ] Tools: web search (Tavily/Exa/Brave BYOK), URL fetch
+- [x] Modes/personas (General, Coder, Writer, Researcher, Tutor, Private incognito) + custom
+- [x] Attachments (images, PDFs, text/code files; drag-drop, paste)
+- [x] Artifacts side panel (HTML/SVG/Mermaid live, edit, download)
+- [x] Compare mode (2-4 models side by side)
+- [x] Command palette (Ctrl/Cmd+K)
+- [x] Tools: web search (Tavily/Exa/Brave BYOK), URL fetch
+- [x] Voice typing (Whisper via OpenAI/Groq key, browser fallback); read aloud
+- [ ] Code interpreter (Pyodide in browser)
+- [ ] Deep Research mode
 - [ ] Azure OpenAI + AWS Bedrock providers
 - [ ] NEEDS SUPABASE: accounts sync, key vault (cloud), projects, memory (pgvector), cross-device chats
 
@@ -45,5 +48,6 @@ STATUS: BUILDING
 - No Docker, so no local Supabase stack; test against the hosted project.
 
 ## Notes (last 10)
+- 2026-10-13: Draft PR https://github.com/robertpierson/moonlightc/pull/1 carries Phase 2; CI green; 27 e2e tests.
 - 2026-10-13: Phase 2 chat core working locally on branch phase-2-chat (device-local storage until Supabase).
 - 2026-10-13: Phase 0 done. Next: Phase 2 provider layer (no DB needed) while Supabase is blocked; Phase 1 resumes when OWNER_TODO #1 is done.
