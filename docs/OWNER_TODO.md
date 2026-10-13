@@ -29,7 +29,7 @@ Creating MoonlightC's database would require a paid plan. Pick ONE option:
 These go live at moonlightc.vercel.app once sign-in (step 1 above) is done. Until then, use the preview:
 1. Open https://github.com/robertpierson/moonlightc/pull/1 and click the **Visit Preview** link in the Vercel comment (log in to Vercel if asked).
 2. On the home page, scroll slowly: the moon's light moves. Click **Open web app**.
-3. Click **Connect a model**. Pick **OpenRouter**, click **Get a OpenRouter key**, make a key there, paste it, and click **Check key and connect**.
+3. Click **Connect a model**. Pick **OpenRouter**, click **Get a key from OpenRouter**, make a key there, paste it, and click **Check key and connect**.
 4. Ask anything. Press the square **Stop** button mid-answer: the partial answer stays.
 5. Click **Compare** at the top, pick a second model, and send one question to both.
 6. Open the preview on your phone and use the browser menu to **Install** / **Add to Home screen**.

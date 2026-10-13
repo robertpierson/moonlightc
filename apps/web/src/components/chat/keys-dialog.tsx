@@ -79,7 +79,7 @@ function SearchKeySection() {
             <Input type="password" aria-label="Search API key" autoComplete="off" required placeholder="Paste key" value={key} onChange={(e) => setKey(e.target.value)} />
           </div>
           <a href={p.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-primary underline-offset-4 hover:underline">
-            Get a {p.name} key <ExternalLink className="size-3" />
+            Get a key from {p.name} <ExternalLink className="size-3" />
           </a>
           {error && (
             <p role="alert" className="rounded-md bg-destructive/10 p-2 text-sm text-destructive">
@@ -212,7 +212,7 @@ export function KeysDialog({ open, onOpenChange }: { open: boolean; onOpenChange
               <Label htmlFor="apikey">API key</Label>
               {provider.keyUrl && (
                 <a href={provider.keyUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-primary underline-offset-4 hover:underline">
-                  Get a {provider.name} key <ExternalLink className="size-3" />
+                  Get a key from {provider.name} <ExternalLink className="size-3" />
                 </a>
               )}
             </div>
