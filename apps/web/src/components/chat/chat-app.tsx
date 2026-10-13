@@ -1,6 +1,8 @@
 "use client";
 
 import type { UIMessage } from "ai";
+import { track, trackSessionStart } from "@/lib/analytics";
+import { ConsentPrompt } from "@/components/account/consent";
 import dynamic from "next/dynamic";
 
 // Screens other than chat load on demand, so opening the app only downloads what chat needs.
@@ -87,7 +89,8 @@ function Inner() {
   const [draft, setDraft] = useState<Chat>(newChat);
   const [activeId, setActiveId] = useState<string>();
   const [navOpen, setNavOpen] = useState(false);
-  const [keysOpen, setKeysOpen] = useState(false);
+  // ?keys=1 (from onboarding) opens the key form straight away.
+  const [keysOpen, setKeysOpen] = useState(() => new URLSearchParams(location.search).has("keys"));
   const [draftModel, setDraftModel] = useState<ModelRef>();
   const [draftMode, setDraftMode] = useState(() => distroDefaultMode() ?? "general");
   const look = useLook();
@@ -113,6 +116,7 @@ function Inner() {
   const [quick] = useState(() => new URLSearchParams(location.search).has("quick"));
   const go = (v: View) => {
     setView(v);
+    track(`feature.${v}`);
     if (v === "terminal") setTermOpened(true);
     setNavOpen(false);
   };
@@ -150,7 +154,9 @@ function Inner() {
         (n) => toast.success(`Signed in to OpenRouter: ${n} models unlocked.`),
         (e: Error) => toast.error(e.message),
       );
+    trackSessionStart();
     const query = new URLSearchParams(location.search);
+    if (query.has("keys")) history.replaceState(null, "", location.pathname);
     if (isOpenRouterReturn(query)) {
       history.replaceState(null, "", location.pathname);
       finishOpenRouter(query);
@@ -224,6 +230,7 @@ function Inner() {
       <ModHost />
       <AutomationRunner />
       <RenewalReminders />
+      <ConsentPrompt />
       {offer && (
         <div role="dialog" aria-label="Apply shared distro" className="fixed inset-x-0 top-0 z-50 flex flex-wrap items-center gap-3 border-b bg-popover p-3 text-sm shadow">
           <span className="flex-1">

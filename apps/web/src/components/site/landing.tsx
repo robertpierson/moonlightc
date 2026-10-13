@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Arrival } from "./arrival";
 import type { Release } from "@/lib/releases";
 import { REPO } from "@/lib/releases";
 import { Moon } from "./moon";
@@ -148,6 +149,7 @@ const FAQ = [
 export function Landing({ release }: { release: Release | null }) {
   return (
     <div className="site relative min-h-dvh overflow-x-clip">
+      <Arrival />
       <div
         aria-hidden
         className="sky pointer-events-none absolute inset-x-0 top-0 h-[min(110vh,62rem)] [mask-image:linear-gradient(black_75%,transparent)]"

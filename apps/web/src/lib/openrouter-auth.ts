@@ -1,6 +1,7 @@
 "use client";
 
 import { getProvider, type ModelInfo } from "@moonc/core";
+import { track } from "./analytics";
 import { desktop } from "./desktop";
 import { update, type SavedConnection } from "./store";
 
@@ -44,5 +45,6 @@ export async function finishOpenRouterSignIn(params: URLSearchParams): Promise<n
     connections: [...s.connections, conn],
     lastModel: s.lastModel ?? { connectionId: conn.id, modelId: md.models![0].id },
   }));
+  track("provider.connected", { provider: "openrouter", via: "signin" });
   return md.models.length;
 }

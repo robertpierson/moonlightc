@@ -1,6 +1,6 @@
 "use client";
 
-import { Cpu, Download, FolderOpen, Globe, KeyRound, Laptop, Moon, Palette, Plug, Puzzle, Shield, SlidersHorizontal, Sparkles, Sun, Trash2, Upload, UserRound, Wand2, X } from "lucide-react";
+import { Cpu, Download, FolderOpen, Globe, KeyRound, Laptop, Moon, Palette, Plug, Puzzle, Shield, SlidersHorizontal, Sparkles, Sun, KeySquare, Trash2, Upload, UserRound, Wand2, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
@@ -9,6 +9,8 @@ import { ModelPicker } from "@/components/chat/model-picker";
 import { KeysPanel } from "@/components/chat/keys-dialog";
 import { ModesManager } from "@/components/chat/modes";
 import { ClaudePlugins } from "./claude-plugins";
+import { AccountPanel } from "@/components/account/account";
+import { accountsEnabled } from "@/lib/supabase/client";
 import { Avatar } from "./avatar";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -23,10 +25,11 @@ const Customize = dynamic(() => import("@/components/customize/customize").then(
 const ModsView = dynamic(() => import("@/components/mods/mods-view").then((m) => m.ModsView), { loading: () => <div className="flex-1" /> });
 const LocalModels = dynamic(() => import("@/components/desktop/local-models").then((m) => m.LocalModels), { loading: () => <div className="flex-1" /> });
 
-export type SettingsSection = "profile" | "general" | "models" | "auto" | "modes" | "connectors" | "plugins" | "files" | "browser" | "local" | "appearance" | "privacy";
+export type SettingsSection = "profile" | "account" | "general" | "models" | "auto" | "modes" | "connectors" | "plugins" | "files" | "browser" | "local" | "appearance" | "privacy";
 
-const SECTIONS: { id: SettingsSection; label: string; icon: React.ReactNode; desktopOnly?: boolean; webOnly?: boolean }[] = [
+const SECTIONS: { id: SettingsSection; label: string; icon: React.ReactNode; desktopOnly?: boolean; webOnly?: boolean; needsAccounts?: boolean }[] = [
   { id: "profile", label: "Profile", icon: <UserRound /> },
+  { id: "account", label: "Account", icon: <KeySquare />, needsAccounts: true },
   { id: "general", label: "General", icon: <SlidersHorizontal /> },
   { id: "models", label: "Models & API keys", icon: <KeyRound /> },
   { id: "auto", label: "Auto model", icon: <Sparkles /> },
@@ -42,7 +45,7 @@ const SECTIONS: { id: SettingsSection; label: string; icon: React.ReactNode; des
 
 export function Settings({ section, onSection, availableViews, onClose, onChat }: { section: SettingsSection; onSection: (s: SettingsSection) => void; availableViews: ViewId[]; onClose: () => void; onChat: () => void }) {
   const isDesktop = !!desktop();
-  const sections = SECTIONS.filter((s) => (isDesktop ? !s.webOnly : !s.desktopOnly));
+  const sections = SECTIONS.filter((s) => (isDesktop ? !s.webOnly : !s.desktopOnly) && (accountsEnabled || !s.needsAccounts));
   return (
     <div className="flex min-h-0 flex-1 flex-col md:flex-row">
       <nav aria-label="Settings" className="flex shrink-0 gap-1 overflow-x-auto border-b p-2 md:w-56 md:flex-col md:overflow-visible md:border-r md:border-b-0">
@@ -65,6 +68,11 @@ export function Settings({ section, onSection, availableViews, onClose, onChat }
       </nav>
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         {section === "profile" && <Profile />}
+        {section === "account" && (
+          <Page title="Account" description="Sign-in methods, two-step sign-in and your account data.">
+            <AccountPanel />
+          </Page>
+        )}
         {section === "general" && <General />}
         {section === "models" && (
           <Page title="Models & API keys" description="Every provider you've connected, with its key (only the last 4 characters are shown). Keys stay on this device.">

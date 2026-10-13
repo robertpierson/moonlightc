@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { DocPage } from "@/components/site/doc-page";
+import { accountsEnabled } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Privacy · MoonlightC" };
 
@@ -20,8 +21,16 @@ export default function Privacy() {
       </ul>
       <h2>The providers you choose</h2>
       <p>Each AI or search provider you connect handles your requests under its own privacy policy. Read theirs before you connect them. Voice typing without an OpenAI or Groq key uses your browser&apos;s built-in speech service, which may send audio to the browser maker.</p>
-      <h2>Accounts and analytics</h2>
-      <p>MoonlightC doesn&apos;t have accounts or analytics yet. When they arrive, this page will be updated before they go live, and you&apos;ll be able to see, export and delete everything tied to your account.</p>
+      <h2>Accounts and usage stats</h2>
+      {accountsEnabled ? (
+        <>
+          <p>An account is optional. If you create one, we store your email or sign-in provider (Google, GitHub, Apple, Discord or Microsoft), your name, username and picture choice, your onboarding answers (what you use AI for, which tools you use, how you heard about us, an optional phone number, your starting layout), how you signed up and the campaign or site that sent you, and your country.</p>
+          <p>Signed-in usage stats record which features you use, which AI providers you connected (names only), whether a message went to a cloud or local model, your country, device type, operating system and browser, and when you used the app. They never include your messages, prompts, files or keys. In the EU, EEA, UK and Switzerland we only count anything after you say yes. Download buttons are counted anonymously.</p>
+          <p>In Settings &gt; Account you can download all your account data or delete your account, which removes everything tied to it.</p>
+        </>
+      ) : (
+        <p>MoonlightC doesn&apos;t have accounts or usage stats yet. When they arrive, this page will be updated before they go live, and you&apos;ll be able to see, export and delete everything tied to your account.</p>
+      )}
       <h2>Children</h2>
       <p>MoonlightC is not for children under 13.</p>
       <h2>Contact</h2>

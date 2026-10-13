@@ -1,6 +1,7 @@
 "use client";
 
 import { getProvider, PROVIDERS, type ModelInfo } from "@moonc/core";
+import { track } from "@/lib/analytics";
 import { ExternalLink, Loader2, RefreshCw, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -271,6 +272,7 @@ export function KeysPanel() {
       }));
       setApiKey("");
       setBaseURL("");
+      track("provider.connected", { provider: providerId });
       toast.success(
         provider.media
           ? `${label} connected. Use it in the Studio.`

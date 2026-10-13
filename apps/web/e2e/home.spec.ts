@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { nav } from "./helpers";
 
 test("home page: hero, links and footer all work", async ({ page, request }) => {
   const errors: string[] = [];
@@ -38,4 +39,13 @@ test("privacy and terms pages load", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Privacy", level: 1 })).toBeVisible();
   await page.goto("/terms");
   await expect(page.getByRole("heading", { name: "Terms", level: 1 })).toBeVisible();
+});
+
+test("account pages stay hidden until accounts are set up", async ({ page, request }) => {
+  test.skip(!!process.env.NEXT_PUBLIC_SUPABASE_URL, "accounts are configured");
+  for (const path of ["/signin", "/onboarding", "/admin"]) expect((await request.get(path)).status()).toBe(404);
+  expect((await request.post("/api/account/delete")).status()).toBe(404);
+  await page.goto("/app");
+  await nav(page, "Settings");
+  await expect(page.getByRole("navigation", { name: "Settings" }).getByRole("button", { name: "Account" })).toHaveCount(0);
 });

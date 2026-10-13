@@ -93,6 +93,19 @@ test("analytics: users can log their own events but read none; admin numbers nee
   assert.equal(o.users, 2);
   assert.equal(o.activated, 1);
   assert.equal(o.signup_methods.google, 1);
+  assert.deepEqual(Object.keys(o.retention).sort(), ["d1", "d30", "d7"]);
+});
+
+test("admin numbers include onboarding answers, downloads by OS and local vs cloud chats", async () => {
+  await as(A, `update public.profiles set onboarding = '{"uses":["Coding","Writing"],"tools":["Claude"],"heard_from":"YouTube"}' where id = $1`, [A]);
+  await as(A, `insert into public.events (user_id, name, props) values ($1, 'message.sent', '{"where":"local"}')`, [A]);
+  await as(null, "insert into public.events (name, os, props) values ('download', 'windows', '{}')");
+  const o = (await as(A, "select public.admin_overview() o")).rows[0].o;
+  assert.deepEqual(o.uses, { Coding: 1, Writing: 1 });
+  assert.equal(o.tools.Claude, 1);
+  assert.equal(o.heard_from.YouTube, 1);
+  assert.equal(o.downloads.windows, 1);
+  assert.equal(o.local_vs_cloud.local, 1);
 });
 
 test("export returns only the caller's data", async () => {

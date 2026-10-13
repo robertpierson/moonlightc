@@ -66,3 +66,8 @@ Rollback: Vercel "Instant Rollback" to the previous production deployment.
 - Why: owner asked for browser/screen access through an extension. Confirming inside the page could be clickjacked by the page; an extension window can't be.
 - Alternatives: externally_connectable with a fixed extension ID (needs a signing key and breaks when published under a new ID); approving in the chat (the AI SDK's client-tool approval path is less certain). Remote use from another device waits for Supabase (Phase 5).
 - Updating: after changing apps/extension, run `pnpm --filter @moonc/extension zip` and commit the zip.
+
+## 2026-10-13 First-party usage stats instead of PostHog (for now)
+- What: /api/track writes event names plus a few short plain values to the Supabase events table (signed-in people; anonymous download counts via the server key). /admin reads them through admin_overview(). EU/EEA/UK/CH visitors are asked first; elsewhere it's disclosed in the privacy policy.
+- Why: covers every /admin number in SPEC §3 without a third-party key or extra cookie; PostHog needs an owner account and key.
+- Alternatives: PostHog (add later if the owner wants session replays or funnels; events can be forwarded).

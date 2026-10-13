@@ -125,6 +125,7 @@ STATUS: BUILDING
 - No Docker, so no local Supabase stack; test against the hosted project.
 
 ## Notes (last 10)
+- 2026-10-13: Sign in with OpenRouter (PKCE, web + desktop deep link). Phase 1 prep, hidden until Supabase: onboarding (7 steps, 13+), Settings > Account (link/unlink, TOTP two-step, export, delete), /admin (retention, onboarding answers, downloads, local vs cloud), /api/track with EU consent, privacy text. 8 PGlite tests, 66 unit, 102 web e2e.
 - 2026-10-13: Desktop 0.2.0 built and installed on the owner's PC (silent NSIS). Fixed data loss: desktop now keeps port 47821 (saved in userData/port.json) so localStorage survives restarts. 14 desktop e2e.
 - 2026-10-13: R9/R10: black accents on dark blue, link color token, profile name+picture (greets you, AI knows your name), My themes. Desktop tests now run hidden (no extra window/tray). 99 web e2e, 13 desktop e2e.
 - 2026-10-13: R8b Chrome extension (apps/extension; zip at /downloads): share a tab, AI reads/clicks/types/opens; risky steps confirmed in an extension window (clickjack-proof), 15-min idle stop, Alt+Shift+M, audit. 97 web e2e incl. real-extension test.
@@ -134,4 +135,3 @@ STATUS: BUILDING
 - 2026-10-13: Owner requests R1-R5: Compare removed, mode menu (3 pinned + More options), Chat/Code switch, Claude-style Settings, Auto model; sign-in code ready (hidden until Supabase). 92 web e2e.
 - 2026-10-13: X BYOK + 10 more one-click MCP services; in-text links underlined (a11y); 92 web e2e.
 - 2026-10-13: Multi-provider OAuth (Google, Spotify, Slack, Discord); fixed desktop search-key deletion bug; 90 web e2e.
-- 2026-10-13: Subscriptions hub; 87 web e2e.

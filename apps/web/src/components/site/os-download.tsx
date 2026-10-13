@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { track } from "../../lib/analytics";
 import { useSyncExternalStore } from "react";
 import type { Build, Platform, Release } from "@/lib/releases";
 
@@ -64,7 +65,7 @@ export function PrimaryDownload({ release, className }: { release: Release | nul
   const build = release && d ? pickBuild(release.builds, d) : undefined;
   if (build) {
     return (
-      <a href={build.url} className={className}>
+      <a href={build.url} className={className} onClick={() => track("download", { os: build.platform })}>
         Download for {NAMES[d!.platform === "chromeos" ? "linux" : d!.platform]}
         <span className="block text-xs font-normal opacity-75">
           v{release!.version} · {build.kind} · {(build.size / 1e6).toFixed(0)} MB

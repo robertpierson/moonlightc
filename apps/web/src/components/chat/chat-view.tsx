@@ -1,6 +1,8 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
+import { getProvider } from "@moonc/core";
+import { track } from "@/lib/analytics";
 import { OpenRouterSignIn } from "./keys-dialog";
 import { BROWSER_TOOLS, callExtension, hasExtension } from "@/lib/browser-ext";
 import {
@@ -457,6 +459,8 @@ export function ChatView({
       { text: composeText(expandCommand(text), attachments), files },
       request(),
     );
+    const used = findModel(isAuto(model) ? getState().autoPicks?.everyday : model);
+    if (used) track("message.sent", { provider: used.conn.providerId, where: getProvider(used.conn.providerId).local ? "local" : "cloud" });
     setInput("");
     setAttachments([]);
   };
