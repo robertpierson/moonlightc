@@ -16,6 +16,7 @@ let server;
 let win;
 let quick;
 let tray;
+let quitting = false;
 
 if (!app.requestSingleInstanceLock()) app.quit();
 app.setAsDefaultProtocolClient("moonlightc");
@@ -24,7 +25,7 @@ const freePort = () =>
   new Promise((resolve, reject) => {
     const s = net.createServer();
     s.listen(0, "127.0.0.1", () => {
-      const { port } = s.address();
+      const { port } = /** @type {net.AddressInfo} */ (s.address());
       s.close(() => resolve(port));
     });
     s.on("error", reject);
@@ -38,7 +39,7 @@ async function startServer() {
   const port = await freePort();
   server = spawn(process.execPath, [entry], {
     cwd: path.dirname(entry),
-    env: { ...process.env, ELECTRON_RUN_AS_NODE: "1", PORT: String(port), HOSTNAME: "127.0.0.1", MOONC_DESKTOP: "1", NODE_ENV: "production" },
+    env: { ...process.env, NODE_PATH: path.join(root, "node_modules", ".pnpm", "node_modules"), ELECTRON_RUN_AS_NODE: "1", PORT: String(port), HOSTNAME: "127.0.0.1", MOONC_DESKTOP: "1", NODE_ENV: "production" },
     stdio: ["ignore", "pipe", "pipe"],
     windowsHide: true,
   });
@@ -76,7 +77,7 @@ function createWindow() {
   win.loadURL(appURL + "/app");
   win.on("close", (e) => {
     // Closing the window keeps MoonlightC in the tray (so the hotkey still works). Quit from the tray menu.
-    if (!app.isQuitting) {
+    if (!quitting) {
       e.preventDefault();
       win.hide();
     }
@@ -111,7 +112,7 @@ function createTray() {
       { label: "Open MoonlightC", click: () => (win.show(), win.focus()) },
       { label: "Quick ask (Alt+Space)", click: toggleQuickAsk },
       { type: "separator" },
-      { label: "Quit MoonlightC", click: () => ((app.isQuitting = true), app.quit()) },
+      { label: "Quit MoonlightC", click: () => app.quit() },
     ]),
   );
   tray.on("click", () => (win.isVisible() ? win.focus() : win.show()));
@@ -198,7 +199,7 @@ app.whenReady().then(async () => {
 });
 
 app.on("before-quit", () => {
-  app.isQuitting = true;
+  quitting = true;
   terminals.killAll();
   server?.kill();
 });

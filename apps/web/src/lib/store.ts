@@ -102,6 +102,10 @@ let state: State = empty;
 let loaded = false;
 const listeners = new Set<() => void>();
 
+// In the desktop app, API keys live in the OS keychain (window.moonc.secrets), not in localStorage.
+const bridge = () => (typeof window === "undefined" ? undefined : window.moonc);
+const secretOf = (id: string) => `key:${id}`;
+
 function load() {
   if (loaded || typeof window === "undefined") return;
   loaded = true;
@@ -110,13 +114,41 @@ function load() {
   } catch {
     state = empty;
   }
+  const b = bridge();
+  if (b) {
+    // Fill keys in from the keychain, then rewrite storage without them (also migrates older plain-text keys).
+    Promise.all([
+      ...state.connections.map(async (c) => ({ ...c, apiKey: c.apiKey || ((await b.secrets.get(secretOf(c.id))) ?? "") })),
+    ]).then(async (connections) => {
+      const searchKey = state.searchKey && { ...state.searchKey, key: state.searchKey.key || ((await b.secrets.get("search")) ?? "") };
+      update((s) => ({ ...s, connections, searchKey }));
+    });
+  }
+}
+
+function persist(prev: State) {
+  const b = bridge();
+  let saved: State = state;
+  if (b) {
+    for (const c of state.connections) if (c.apiKey && prev.connections.find((p) => p.id === c.id)?.apiKey !== c.apiKey) b.secrets.set(secretOf(c.id), c.apiKey);
+    for (const c of prev.connections) if (!state.connections.some((x) => x.id === c.id)) b.secrets.set(secretOf(c.id), null);
+    if (state.searchKey?.key && state.searchKey.key !== prev.searchKey?.key) b.secrets.set("search", state.searchKey.key);
+    else if (prev.searchKey) b.secrets.set("search", null);
+    saved = {
+      ...state,
+      connections: state.connections.map((c) => ({ ...c, apiKey: "" })),
+      searchKey: state.searchKey && { ...state.searchKey, key: "" },
+    };
+  }
+  localStorage.setItem(KEY, JSON.stringify(saved));
 }
 
 export function update(fn: (s: State) => State) {
   load();
+  const prev = state;
   state = fn(state);
   try {
-    localStorage.setItem(KEY, JSON.stringify(state));
+    persist(prev);
   } catch {
     // Storage full or blocked: keep working in memory.
   }

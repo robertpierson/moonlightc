@@ -8,14 +8,11 @@ test.beforeAll(async () => {
   await page.waitForURL(/127\.0\.0\.1:\d+\/app/);
 });
 test.afterAll(async () => {
-  await app?.evaluate(({ app }) => {
-    app.isQuitting = true;
-    app.quit();
-  });
+  await app?.evaluate(({ app }) => app.quit());
 });
 
 test("opens the app from its own local server with the desktop bridge", async () => {
-  await expect(page.getByRole("button", { name: "Connect a model" })).toBeVisible();
+  await expect(page.getByLabel("Message", { exact: true })).toBeVisible();
   const info = await page.evaluate(() => ({ platform: window.moonc?.platform, version: window.moonc?.version, node: typeof window.require }));
   expect(info.platform).toBe(process.platform);
   expect(info.version).toMatch(/\d+\.\d+\.\d+/);
@@ -51,4 +48,56 @@ test("runs a real terminal", async () => {
 test("pages can call the local API", async () => {
   const status = await page.evaluate(() => fetch("/api/models", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" }).then((r) => r.status));
   expect(status).toBe(400); // same-origin call reaches the handler (bad body)
+});
+
+test("desktop sections: local models, terminal, projects", async () => {
+  await page.getByRole("button", { name: "Local models" }).click();
+  await expect(page.getByRole("heading", { name: "Local models" })).toBeVisible();
+  await expect(page.getByText(/This computer: .* GB memory/)).toBeVisible({ timeout: 15000 });
+  await page.getByRole("button", { name: "Terminal" }).click();
+  await expect(page.getByTestId("terminal").first()).toBeVisible();
+  await page.getByRole("button", { name: "My AI Projects" }).click();
+  await expect(page.getByRole("button", { name: "Allow AI tool folders" })).toBeVisible();
+  await page.getByRole("button", { name: "Chat", exact: true }).click();
+  await expect(page.getByLabel("Message", { exact: true })).toBeVisible();
+});
+
+test("keys are kept in the OS keychain, not in page storage", async () => {
+  await page.evaluate(async () => {
+    await window.moonc.secrets.set("key:test-conn", "sk-secret-value");
+  });
+  expect(await page.evaluate(() => window.moonc.secrets.get("key:test-conn"))).toBe("sk-secret-value");
+  await page.evaluate(() => window.moonc.secrets.set("key:test-conn", null));
+  expect(await page.evaluate(() => window.moonc.secrets.get("key:test-conn"))).toBeNull();
+});
+
+test("gate: download a local model with one click and chat with it (no cloud involved)", async () => {
+  test.setTimeout(10 * 60_000);
+  await page.getByRole("button", { name: "Local models" }).click();
+  // Use the Hugging Face search + one-click download path with a tiny model to keep the test fast.
+  await page.getByLabel("Search Hugging Face models").fill("SmolLM2-135M-Instruct-GGUF");
+  await page.getByRole("button", { name: "Search", exact: true }).click();
+  const row = page.getByRole("list", { name: "Hugging Face results" }).getByRole("listitem").filter({ hasText: /SmolLM2-135M-Instruct-GGUF/i }).first();
+  const name = (await row.locator("span").first().innerText()).trim();
+  if (await row.getByRole("button", { name: "Download" }).isVisible()) await row.getByRole("button", { name: "Download" }).click();
+  await expect(row.getByText("Installed")).toBeVisible({ timeout: 9 * 60_000 });
+
+  const installed = page.getByRole("list", { name: "Installed models" }).getByRole("listitem").filter({ hasText: `hf.co/${name}` }).first();
+  await installed.getByRole("button", { name: "Chat" }).click();
+  await expect(page.getByRole("combobox", { name: "Choose model" })).toContainText(name.split("/")[1].slice(0, 10));
+  await page.getByLabel("Message", { exact: true }).fill("Say hello in five words.");
+  await page.getByRole("button", { name: "Send message" }).click();
+  await expect(page.locator('[data-role="assistant"]').last()).toHaveText(/\w+/, { timeout: 120_000 });
+  await expect(page.getByRole("button", { name: "Send message" })).toBeVisible({ timeout: 120_000 });
+});
+
+test("gate: Claude Code opens in the built-in terminal (if installed)", async () => {
+  const tools = await page.evaluate(() => window.moonc.terminals.tools());
+  test.skip(!tools.find((t) => t.id === "claude")?.installed, "Claude Code isn't installed on this machine");
+  await page.getByRole("button", { name: "Terminal" }).click();
+  await page.getByRole("button", { name: "Claude Code" }).click();
+  await expect(page.getByRole("tab", { name: "Claude Code" })).toBeVisible();
+  // Claude Code draws its own UI; seeing any of its output proves it launched inside our terminal.
+  await expect(page.getByTestId("terminal").last()).toContainText(/Claude|claude|trust|Welcome/, { timeout: 30000 });
+  await page.getByRole("button", { name: "Close Claude Code" }).click();
 });

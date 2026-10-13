@@ -32,7 +32,7 @@ export function Sidebar({ activeId, onSelect, onNew }: { activeId?: string; onSe
   }, [chats, q]);
 
   return (
-    <nav aria-label="Chats" className="flex h-full min-h-0 flex-col gap-2 p-2">
+    <nav aria-label="Chats" className="flex min-h-0 flex-1 flex-col gap-2 p-2">
       <Button onClick={onNew} className="justify-start">
         <Plus /> New chat
       </Button>

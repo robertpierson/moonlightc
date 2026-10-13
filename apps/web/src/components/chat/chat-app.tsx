@@ -10,6 +10,11 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { getState, patchChat, saveChat, update, useStore, type Chat, type ModelRef } from "@/lib/store";
 import type { Artifact } from "@/lib/artifacts";
 import { ArtifactPanel } from "./artifact-panel";
+import { LocalModels } from "@/components/desktop/local-models";
+import { DesktopNav, type View } from "@/components/desktop/nav";
+import { Projects } from "@/components/desktop/projects";
+import { Terminals, type LaunchRequest } from "@/components/desktop/terminals";
+import { desktop } from "@/lib/desktop";
 import { ChatView } from "./chat-view";
 import { CompareView } from "./compare-view";
 import { KeysDialog } from "./keys-dialog";
@@ -40,6 +45,16 @@ function Inner() {
   const [artifact, setArtifact] = useState<Artifact>();
   const [comparing, setComparing] = useState(false);
   const [modesOpen, setModesOpen] = useState(false);
+  const [view, setView] = useState<View>("chat");
+  const [termOpened, setTermOpened] = useState(false);
+  const [launch, setLaunch] = useState<LaunchRequest>();
+  const isDesktop = !!desktop();
+  const [quick] = useState(() => new URLSearchParams(location.search).has("quick"));
+  const go = (v: View) => {
+    setView(v);
+    if (v === "terminal") setTermOpened(true);
+    setNavOpen(false);
+  };
   const modes = useModes();
 
   const chat = chats.find((c) => c.id === activeId) ?? draft;
@@ -56,6 +71,7 @@ function Inner() {
     setDraftMode("general");
     setArtifact(undefined);
     setComparing(false);
+    setView("chat");
     setNavOpen(false);
   };
 
@@ -67,22 +83,26 @@ function Inner() {
   };
 
   const sidebar = (
+    <div className="flex h-full min-h-0 flex-col">
+      {isDesktop && <DesktopNav view={view} onChange={go} />}
     <Sidebar
       activeId={saved ? chat.id : undefined}
       onSelect={(id) => {
         setActiveId(id);
         setArtifact(undefined);
         setComparing(false);
+        setView("chat");
         setNavOpen(false);
       }}
       onNew={() => start()}
     />
+    </div>
   );
 
   return (
     <TooltipProvider>
       <div className="flex h-dvh min-h-0">
-        <aside className="hidden w-72 shrink-0 border-r bg-sidebar md:block">{sidebar}</aside>
+        {!quick && <aside className="hidden w-72 shrink-0 border-r bg-sidebar md:block">{sidebar}</aside>}
         <Sheet open={navOpen} onOpenChange={setNavOpen}>
           <SheetContent side="left" className="w-72 bg-sidebar p-0">
             <SheetTitle className="sr-only">Chats</SheetTitle>
@@ -91,8 +111,23 @@ function Inner() {
         </Sheet>
 
         <main className="flex min-w-0 flex-1 flex-col">
+          {view === "models" && <LocalModels onChat={() => go("chat")} />}
+          {view === "projects" && (
+            <Projects
+              onResume={(command, cwd, title) => {
+                setLaunch((l) => ({ id: (l?.id ?? 0) + 1, command, cwd, title }));
+                go("terminal");
+              }}
+            />
+          )}
+          {termOpened && (
+            <div className={view === "terminal" ? "flex min-h-0 flex-1 flex-col" : "hidden"}>
+              <Terminals request={launch} />
+            </div>
+          )}
+          {view === "chat" && (<>
           <header className="flex h-14 shrink-0 items-center gap-1 border-b px-2">
-            <Button variant="ghost" size="icon" className="md:hidden" aria-label="Open chats" onClick={() => setNavOpen(true)}>
+            <Button variant="ghost" size="icon" className={quick ? "hidden" : "md:hidden"} aria-label="Open chats" onClick={() => setNavOpen(true)}>
               <Menu />
             </Button>
             {comparing ? (
@@ -137,6 +172,7 @@ function Inner() {
             onOpenArtifact={setArtifact}
           />
           )}
+          </>)}
         </main>
         {artifact && (
           <aside className="fixed inset-0 z-40 md:static md:z-auto md:w-[45%] md:shrink-0 md:border-l">

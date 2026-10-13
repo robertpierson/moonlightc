@@ -1,0 +1,22 @@
+{
+  "checked": "2026-10-13",
+  "note": "Sizes and licenses read from registry.ollama.ai on the date above. To update, run: node apps/web/scripts/refresh-catalog.mjs",
+  "models": [
+    { "tag": "llama3.2:3b", "name": "Llama 3.2 3B", "sizeGB": 2.0, "license": "Llama 3.2 Community", "goodAt": "Fast everyday chat on modest PCs" },
+    { "tag": "smollm2:1.7b", "name": "SmolLM2 1.7B", "sizeGB": 1.8, "license": "Apache 2.0", "goodAt": "Tiny and quick; older laptops and Raspberry Pi" },
+    { "tag": "qwen3.5:4b", "name": "Qwen 3.5 4B", "sizeGB": 3.3, "license": "Apache 2.0", "goodAt": "Strong small all-rounder, many languages" },
+    { "tag": "gemma4:e2b", "name": "Gemma 4 E2B", "sizeGB": 4.6, "license": "Apache 2.0", "goodAt": "Efficient chat and image understanding" },
+    { "tag": "mistral:7b", "name": "Mistral 7B", "sizeGB": 4.4, "license": "Apache 2.0", "goodAt": "Reliable classic for chat and writing" },
+    { "tag": "llama3.1:8b", "name": "Llama 3.1 8B", "sizeGB": 4.9, "license": "Llama 3.1 Community", "goodAt": "Balanced chat and tool use" },
+    { "tag": "deepseek-r1:8b", "name": "DeepSeek R1 8B", "sizeGB": 5.2, "license": "MIT", "goodAt": "Step-by-step reasoning, math" },
+    { "tag": "qwen3-vl:8b", "name": "Qwen3 VL 8B", "sizeGB": 6.1, "license": "Apache 2.0", "goodAt": "Reads images, screenshots and documents" },
+    { "tag": "gemma4:e4b", "name": "Gemma 4 E4B", "sizeGB": 6.6, "license": "Apache 2.0", "goodAt": "Capable everyday model with vision" },
+    { "tag": "qwen3.5:9b", "name": "Qwen 3.5 9B", "sizeGB": 6.6, "license": "Apache 2.0", "goodAt": "Smart mid-size model for most tasks" },
+    { "tag": "gemma4:12b", "name": "Gemma 4 12B", "sizeGB": 8.0, "license": "Apache 2.0", "goodAt": "High quality on a gaming GPU" },
+    { "tag": "phi4:14b", "name": "Phi-4 14B", "sizeGB": 9.1, "license": "MIT", "goodAt": "Reasoning and math for its size" },
+    { "tag": "gpt-oss:20b", "name": "gpt-oss 20B", "sizeGB": 13.8, "license": "Apache 2.0", "goodAt": "OpenAI's open model; reasoning and tools" },
+    { "tag": "qwen3.6:27b", "name": "Qwen 3.6 27B", "sizeGB": 17.8, "license": "Apache 2.0", "goodAt": "Near-frontier quality on a big GPU" },
+    { "tag": "qwen3-coder:30b", "name": "Qwen3 Coder 30B", "sizeGB": 18.6, "license": "Apache 2.0", "goodAt": "Coding agents and large codebases" },
+    { "tag": "gemma4:26b", "name": "Gemma 4 26B", "sizeGB": 18.7, "license": "Apache 2.0", "goodAt": "Top Gemma quality, fast mixture-of-experts" }
+  ]
+}
