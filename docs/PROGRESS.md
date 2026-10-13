@@ -34,7 +34,7 @@ STATUS: BUILDING
 - [x] R16 Code permission modes: Ask, Auto-accept edits, Plan, Bypass (warning)
 - [x] R17 Cowork tab (Chat | Cowork | Code): files, screen and browser tabs with permissions
 - [x] R18 Settings > Usage: tokens and cost per model, OpenRouter credits and limits
-- [ ] R19 Rebuild + install desktop so it matches
+- [x] R19 Rebuild + install desktop so it matches
 - [ ] R8c (needs Supabase, Phase 5) remote control from another device
 
 ## Phase 0 tasks

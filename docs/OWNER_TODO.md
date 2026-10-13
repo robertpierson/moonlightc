@@ -50,6 +50,14 @@ For each one, after step 3 add the two values in Vercel exactly like step 6 of s
 3. On the same page copy **Client ID** into `DISCORD_CLIENT_ID`; click **Reset Secret**, copy it into `DISCORD_CLIENT_SECRET`.
 
 ---
+## Try this yourself: Chat, Cowork and Code (desktop app updated to 0.3.0)
+1. Top left, switch between **Chat**, **Cowork** and **Code**: each has its own sidebar.
+2. In Chat, open **Projects**, make one, then use a chat's **⋯ > Move to project**. Click the arrow next to the project to see its chats.
+3. Only your 15 latest chats show; click **All chats** to see the rest.
+4. In Code, click the folder icon to make a folder, then **+** next to it for a new project. Try the **Permission mode** menu above the code assistant.
+5. In Cowork (desktop app), click **Share a folder**, or turn on **Use this PC**, and ask it to do something with your files.
+6. Settings > **Usage** shows tokens and cost per model; Settings > **Memory** holds what the AI remembers.
+
 ## Try this yourself: sign in with OpenRouter (easiest way to get every model)
 1. Open https://moonlightc.vercel.app/app (or the desktop app, now 0.2.1).
 2. Click **Sign in with OpenRouter** under "What can I help with?".
