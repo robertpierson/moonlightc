@@ -13,6 +13,14 @@ create table auth.users (id uuid primary key, email text, raw_user_meta_data jso
 create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
 grant usage on schema auth to anon, authenticated, service_role;
 grant execute on function auth.uid() to anon, authenticated, service_role;
+create function auth.jwt() returns jsonb language sql stable as $$ select coalesce(nullif(current_setting('request.jwt.claims', true), ''), '{}')::jsonb $$;
+grant execute on function auth.jwt() to anon, authenticated, service_role;
+create schema realtime;
+create table realtime.messages (id bigserial primary key, topic text, payload jsonb);
+create function realtime.topic() returns text language sql stable as $$ select current_setting('realtime.topic', true) $$;
+grant usage on schema realtime to authenticated;
+grant all on realtime.messages to authenticated;
+alter table realtime.messages enable row level security;
 create schema vault;
 create table vault.secrets (id uuid primary key default gen_random_uuid(), secret text, name text);
 create function vault.create_secret(s text, n text) returns uuid language sql as $$ insert into vault.secrets (secret, name) values (s, n) returning id $$;
@@ -153,4 +161,22 @@ test("owner emails on the private list become admins at sign-up; keys come back 
   await as(O, "select public.set_connection_key($1, 'sk-owner')", [conn]);
   assert.equal((await as(O, "select public.get_my_connection_key($1) k", [conn])).rows[0].k, "sk-owner");
   assert.equal((await as(B, "select public.get_my_connection_key($1) k", [conn])).rows[0].k, null);
+});
+
+test("remote-control channels: only the device owner with two-step sign-in", async () => {
+  const D = "00000000-0000-0000-0000-0000000000d1";
+  await as(B, "insert into public.devices (id, user_id, name) values ($1, $2, 'PC')", [D, B]);
+  const canUse = async (user, aal) => {
+    await db.exec(`reset role; select set_config('request.jwt.claim.sub', '${user}', false); select set_config('request.jwt.claims', '{"aal":"${aal}"}', false); select set_config('realtime.topic', 'device:${D}', false); set role authenticated;`);
+    try {
+      return (await db.query("select count(*)::int n from realtime.messages")).rows[0].n >= 0 && (await db.query("select public.can_use_device_channel($1) ok", [`device:${D}`])).rows[0].ok;
+    } finally {
+      await db.exec("reset role;");
+    }
+  };
+  assert.equal(await canUse(B, "aal2"), true);
+  assert.equal(await canUse(B, "aal1"), false);
+  const O = "00000000-0000-0000-0000-0000000000a1";
+  assert.equal(await canUse(O, "aal2"), false);
+  assert.equal((await as(O, "select count(*)::int n from public.devices")).rows[0].n, 0);
 });

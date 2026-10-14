@@ -263,15 +263,55 @@ test("files: the AI reads shared folders and asks before writing", async () => {
 
 test("chats and settings survive a restart (same local address every launch)", async () => {
   const before = new URL(page.url()).port;
-  await page.evaluate(() => {
-    const s = JSON.parse(localStorage.getItem("moonc:v1") || "{}");
-    localStorage.setItem("moonc:v1", JSON.stringify({ ...s, profile: { name: "Restart check" } }));
-  });
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await page.getByRole("navigation", { name: "Settings" }).getByRole("button", { name: "Profile" }).click();
+  await page.getByLabel("Your name").fill("Restart check");
+  await expect(page.getByText("Restart check").first()).toBeVisible();
   await app.evaluate(({ app }) => app.quit());
   await app.close().catch(() => {});
   app = await launch();
   page = await app.firstWindow();
   await page.waitForURL(/127\.0\.0\.1:\d+\/app/);
   expect(new URL(page.url()).port).toBe(before);
-  await expect(page.getByRole("button", { name: "Restart check" })).toBeVisible();
+  // Signed out with accounts on, the name links to sign-in; either way it's shown.
+  await expect(page.getByText("Restart check").first()).toBeVisible();
+});
+
+test("remote control: allowed device sees the screen; only what it was allowed; home folder only; panic disconnects", async () => {
+  const robot = (await import("@jitsi/robotjs")).default;
+  const r = await page.evaluate(async () => {
+    const b = window.moonc.remote;
+    const c = await b.connect({ id: "phone-test", name: "Test phone" }, ["view", "files"]);
+    const f = await b.frame("phone-test");
+    const fail = async (fn) => {
+      try {
+        await fn();
+        return "";
+      } catch (e) {
+        return String(e.message);
+      }
+    };
+    const home = await b.list("phone-test");
+    return {
+      c,
+      jpeg: f.image.startsWith("/9j/"),
+      input: await fail(() => b.input("phone-test", { action: "click", x: 1, y: 1 })),
+      stranger: await fail(() => b.frame("someone-else")),
+      outside: await fail(() => b.list("phone-test", home.path + "/../..")),
+      homeOk: Array.isArray(home.entries),
+      sessions: (await b.state()).length,
+    };
+  });
+  expect(r.c).toEqual({ allowed: true, tiers: ["view", "files"] });
+  expect(r.jpeg).toBe(true);
+  expect(r.input).toContain("mouse and keyboard");
+  expect(r.stranger).toContain("Not connected");
+  expect(r.outside).toContain("home folder");
+  expect(r.homeOk).toBe(true);
+  expect(r.sessions).toBe(1);
+
+  robot.keyTap("m", ["control", "alt", "shift"]);
+  await expect.poll(() => page.evaluate(() => window.moonc.remote.state().then((s) => s.length)), { timeout: 5000 }).toBe(0);
+  const log = await page.evaluate(() => window.moonc.remote.audit());
+  expect(log.find((e) => e.action === "end")?.reason).toBe("panic hotkey");
 });

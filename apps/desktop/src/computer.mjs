@@ -2,7 +2,7 @@
 // overlay shows while it runs, Ctrl+Alt+Shift+M stops everything, sessions time out, destructive steps ask first,
 // and every action is written to an audit log.
 import robot from "@jitsi/robotjs";
-import { app, BrowserWindow, desktopCapturer, dialog, globalShortcut, screen } from "electron";
+import { app, BrowserWindow, desktopCapturer, dialog, screen } from "electron";
 import fs from "node:fs";
 import path from "node:path";
 import { looksDestructive } from "./safety.mjs";
@@ -54,7 +54,6 @@ export function stop(reason = "stopped") {
   session = undefined;
   overlay?.destroy();
   overlay = undefined;
-  globalShortcut.unregister(PANIC);
   emit();
 }
 
@@ -79,7 +78,6 @@ export async function start(parent, task) {
     return false;
   }
   session = { id: Date.now().toString(36), task: String(task).slice(0, 300), startedAt: Date.now(), timer: setTimeout(() => stop("timeout"), TIMEOUT_MS) };
-  globalShortcut.register(PANIC, () => stop("panic hotkey"));
   audit("session.start", { task: session.task });
   showOverlay();
   emit();
@@ -100,26 +98,9 @@ async function screenshot() {
 
 const KEY_ALIASES = { ctrl: "control", cmd: "command", win: "command", esc: "escape", del: "delete", return: "enter", pgup: "pageup", pgdn: "pagedown" };
 
-/** Run one action and return a fresh screenshot. */
-export async function act(parent, a) {
-  if (!session) throw new Error("No computer-use session is running. It may have been stopped or timed out.");
-  if (looksDestructive(a)) {
-    const { response } = await ask(parent, {
-      type: "warning",
-      buttons: ["Allow this step", "Stop"],
-      defaultId: 1,
-      cancelId: 1,
-      title: "Risky step",
-      message: "The AI wants to do something that might delete, buy, send or install.",
-      detail: `${a.reason ? `Why: ${String(a.reason).slice(0, 300)}\n` : ""}Step: ${JSON.stringify({ ...a, reason: undefined }).slice(0, 400)}`,
-    });
-    audit("step.confirm", { step: a.action, allowed: response === 0 });
-    if (response !== 0) {
-      stop("user refused a risky step");
-      return { stopped: true, note: "The person stopped the session instead of allowing that step." };
-    }
-  }
-  const at = (x, y) => [Math.round(Number(x) * scale), Math.round(Number(y) * scale)];
+/** Mouse and keyboard, in screenshot coordinates (sc = screen pixels per screenshot pixel). Shared with remote control. */
+export async function runAction(a, sc) {
+  const at = (x, y) => [Math.round(Number(x) * sc), Math.round(Number(y) * sc)];
   switch (a.action) {
     case "screenshot":
       break;
@@ -154,6 +135,37 @@ export async function act(parent, a) {
     default:
       throw new Error(`Unknown action ${a.action}`);
   }
+}
+
+/** A screenshot as JPEG data (smaller, for streaming to another device). Returns the scale for runAction. */
+export async function captureJpeg(maxWidth = 1024, quality = 55) {
+  const { width, height } = screen.getPrimaryDisplay().size;
+  const w = Math.min(maxWidth, width);
+  const h = Math.round((height * w) / width);
+  const [src] = await desktopCapturer.getSources({ types: ["screen"], thumbnailSize: { width: w, height: h } });
+  return { image: src.thumbnail.toJPEG(quality).toString("base64"), width: w, height: h, scale: width / w };
+}
+
+/** Run one action and return a fresh screenshot. */
+export async function act(parent, a) {
+  if (!session) throw new Error("No computer-use session is running. It may have been stopped or timed out.");
+  if (looksDestructive(a)) {
+    const { response } = await ask(parent, {
+      type: "warning",
+      buttons: ["Allow this step", "Stop"],
+      defaultId: 1,
+      cancelId: 1,
+      title: "Risky step",
+      message: "The AI wants to do something that might delete, buy, send or install.",
+      detail: `${a.reason ? `Why: ${String(a.reason).slice(0, 300)}\n` : ""}Step: ${JSON.stringify({ ...a, reason: undefined }).slice(0, 400)}`,
+    });
+    audit("step.confirm", { step: a.action, allowed: response === 0 });
+    if (response !== 0) {
+      stop("user refused a risky step");
+      return { stopped: true, note: "The person stopped the session instead of allowing that step." };
+    }
+  }
+  await runAction(a, scale);
   audit("step", { step: a.action, x: a.x, y: a.y, keys: a.keys, chars: a.text ? String(a.text).length : undefined });
   await new Promise((r) => setTimeout(r, a.action === "screenshot" ? 0 : 400));
   return screenshot();

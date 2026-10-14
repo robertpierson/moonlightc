@@ -83,3 +83,8 @@ Rollback: Vercel "Instant Rollback" to the previous production deployment.
 - Why: one account on PC and phone must see the same chats and keys (Phase 1 gate); the owner can't hand over a service key, and fewer secrets on the server is safer.
 - Trade-off: a signed-in session can read its own keys (same trust as keeping them in the browser, which is how it already worked). Conflicts: last change wins per chat and for settings.
 - Admins: private.admin_emails (not exposed through the API, not in the repo) marks the owner's account admin at sign-up.
+
+## 2026-10-13 Remote control over Supabase Realtime (screen as JPEG frames for now)
+- What: each desktop app registers in public.devices; remote sessions use private Realtime channels device:<id> whose RLS only admits the owner with an aal2 (two-step) session on both ends. The PC approves each device in a native prompt (optional remember), and every bridge call re-checks the approved tiers (view, control, files, terminal, chat). Screen streams as ~1024px JPEG frames on request (about 2 per second), not WebRTC.
+- Why: no port forwarding, no extra server, and the strongest checks live in the database and on the PC. JPEG frames work everywhere without a TURN server; WebRTC can replace them later for smoother video.
+- Safety (SPEC §8): off by default, MFA required, per-device approval and revoke, orange on-screen frame, Ctrl+Alt+Shift+M ends AI and remote sessions, 15-minute idle timeout, audit log in Settings > Remote control. Files are limited to the home folder.

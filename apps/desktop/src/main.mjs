@@ -5,6 +5,7 @@ import net from "node:net";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import * as computer from "./computer.mjs";
+import * as remote from "./remote.mjs";
 import { hardware } from "./hardware.mjs";
 import * as ollama from "./ollama.mjs";
 import * as projects from "./projects.mjs";
@@ -233,6 +234,20 @@ handle("computer:act", (_e, a) => computer.act(win, a ?? {}));
 handle("computer:status", () => computer.status());
 handle("computer:audit", () => computer.readAudit());
 computer.onState((st) => BrowserWindow.getAllWindows().forEach((w) => !w.isDestroyed() && w.webContents.send("computer:state", st)));
+remote.onState((st) => BrowserWindow.getAllWindows().forEach((w) => !w.isDestroyed() && w.webContents.send("remote:state", st)));
+handle("device:info", () => remote.deviceInfo());
+handle("remote:connect", (_e, client, tiers) => remote.connect(win, client, tiers));
+handle("remote:end", (_e, clientId, reason) => remote.end(clientId ?? undefined, reason ? String(reason).slice(0, 80) : undefined));
+handle("remote:allowed", (_e, clientId, tier) => remote.allowed(String(clientId), String(tier)));
+handle("remote:frame", (_e, clientId) => remote.frame(String(clientId)));
+handle("remote:input", (_e, clientId, a) => remote.input(String(clientId), a));
+handle("remote:list", (_e, clientId, dir) => remote.list(String(clientId), dir));
+handle("remote:read", (_e, clientId, p) => remote.read(String(clientId), p));
+handle("remote:write", (_e, clientId, dir, name, data) => remote.write(String(clientId), dir, name, data));
+handle("remote:state", () => remote.state());
+handle("remote:grants", () => remote.grants());
+handle("remote:revoke", (_e, clientId) => remote.revoke(String(clientId)));
+handle("remote:audit", () => remote.readAudit());
 handle("terminals:tools", () => terminals.tools());
 handle("terminals:create", (e, opts) => terminals.create(e.sender, opts));
 const on = (channel, fn) =>
@@ -319,6 +334,11 @@ app.whenReady().then(async () => {
   if (!testRun) createTray();
   if (pendingLink) win.webContents.once("did-finish-load", () => setTimeout(() => win.webContents.send("deep-link", pendingLink), 1500));
   if (!globalShortcut.register("Alt+Space", toggleQuickAsk)) console.warn("Alt+Space is taken by another app.");
+  // One panic key for everything that can control this PC: AI computer use and remote sessions.
+  globalShortcut.register(computer.PANIC, () => {
+    computer.stop("panic hotkey");
+    remote.end(undefined, "panic hotkey");
+  });
 });
 
 app.on("before-quit", () => {

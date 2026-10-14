@@ -1,0 +1,221 @@
+// Remote control of this PC from your other devices (SPEC §8). Requests arrive through the app page, which listens on
+// a private channel only the signed-in owner can join (with two-step sign-in). Everything that touches this PC runs
+// here, and only after the person at this PC approved that device: native prompt, visible frame while connected,
+// Ctrl+Alt+Shift+M ends it, 15 idle minutes end it, and every action is written to an audit log.
+import { app, BrowserWindow, dialog, Notification, screen } from "electron";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { captureJpeg, runAction } from "./computer.mjs";
+
+const IDLE_MS = 15 * 60_000;
+const MAX_FILE = 10 * 1024 * 1024;
+export const TIERS = { view: "See the screen", control: "Use the mouse and keyboard", files: "Browse, download and upload files in your home folder", terminal: "Run commands in a terminal", chat: "Chat with the AI models on this PC" };
+const INPUTS = new Set(["click", "double_click", "right_click", "move", "type", "key", "scroll"]);
+
+const sessions = new Map(); // clientId -> { name, tiers, startedAt, timer }
+let overlay;
+let scale = 1;
+const listeners = new Set();
+export const onState = (fn) => (listeners.add(fn), () => listeners.delete(fn));
+export const state = () => [...sessions.entries()].map(([id, s]) => ({ clientId: id, name: s.name, tiers: s.tiers, startedAt: s.startedAt }));
+const emit = () => listeners.forEach((fn) => fn(state()));
+
+const file = (n) => path.join(app.getPath("userData"), n);
+function audit(action, detail = {}) {
+  fs.appendFileSync(file("remote-audit.jsonl"), JSON.stringify({ at: new Date().toISOString(), action, ...detail }) + "\n");
+}
+export function readAudit(limit = 200) {
+  try {
+    return fs.readFileSync(file("remote-audit.jsonl"), "utf8").trim().split("\n").slice(-limit).reverse().map((l) => JSON.parse(l));
+  } catch {
+    return [];
+  }
+}
+export function grants() {
+  try {
+    return JSON.parse(fs.readFileSync(file("remote-grants.json"), "utf8"));
+  } catch {
+    return [];
+  }
+}
+const saveGrants = (list) => fs.writeFileSync(file("remote-grants.json"), JSON.stringify(list), { mode: 0o600 });
+export function revoke(clientId) {
+  saveGrants(grants().filter((g) => g.clientId !== clientId));
+  end(clientId, "access removed on this PC");
+  audit("revoke", { clientId });
+  return grants();
+}
+
+/** Stable id and name for this computer (the id is how your other devices find it). */
+export function deviceInfo() {
+  let id;
+  try {
+    id = JSON.parse(fs.readFileSync(file("device.json"), "utf8")).id;
+  } catch {}
+  if (!id) {
+    id = crypto.randomUUID();
+    fs.writeFileSync(file("device.json"), JSON.stringify({ id }));
+  }
+  return { id, name: os.hostname().slice(0, 80), os: process.platform === "win32" ? "windows" : process.platform === "darwin" ? "mac" : "linux", version: app.getVersion() };
+}
+
+function showOverlay() {
+  if (overlay) return overlay.webContents.executeJavaScript(`document.getElementById("who").textContent=${JSON.stringify(names())}`).catch(() => {});
+  const { bounds } = screen.getPrimaryDisplay();
+  overlay = new BrowserWindow({ ...bounds, frame: false, transparent: true, alwaysOnTop: true, focusable: false, skipTaskbar: true, hasShadow: false, resizable: false, webPreferences: { sandbox: true } });
+  overlay.setIgnoreMouseEvents(true);
+  overlay.setAlwaysOnTop(true, "screen-saver");
+  overlay.loadURL(
+    "data:text/html;charset=utf-8," +
+      encodeURIComponent(`<!doctype html><html><body style="margin:0;height:100vh;box-sizing:border-box;border:4px solid #f59e0b;background:transparent;font-family:system-ui">
+<div style="position:fixed;top:0;left:50%;transform:translateX(-50%);background:#111827;color:#fde68a;padding:6px 14px;border-radius:0 0 10px 10px;font-size:13px">
+Remote control: <span id="who">${names().replace(/[<>&]/g, "")}</span> connected · Ctrl+Alt+Shift+M to disconnect</div></body></html>`),
+  );
+}
+const names = () => [...sessions.values()].map((s) => s.name).join(", ");
+
+export function end(clientId, reason = "disconnected") {
+  const ids = clientId ? [clientId] : [...sessions.keys()];
+  for (const id of ids) {
+    const s = sessions.get(id);
+    if (!s) continue;
+    clearTimeout(s.timer);
+    sessions.delete(id);
+    audit("end", { clientId: id, name: s.name, reason });
+  }
+  if (!sessions.size) {
+    overlay?.destroy();
+    overlay = undefined;
+  } else showOverlay();
+  emit();
+}
+
+function touch(clientId) {
+  const s = sessions.get(clientId);
+  if (!s) return;
+  clearTimeout(s.timer);
+  s.timer = setTimeout(() => end(clientId, "idle for 15 minutes"), IDLE_MS);
+}
+
+function need(clientId, tier) {
+  const s = sessions.get(clientId);
+  if (!s) throw new Error("Not connected. Connect again from your other device.");
+  if (!s.tiers.includes(tier)) throw new Error(`This device wasn't allowed to ${TIERS[tier].toLowerCase()}.`);
+  touch(clientId);
+}
+export const allowed = (clientId, tier) => {
+  try {
+    need(clientId, tier);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+// Automated tests of unpackaged builds can't click native dialogs; installed apps always ask a person.
+const autoApprove = () => !app.isPackaged && process.env.MOONC_E2E_AUTO_APPROVE === "1";
+
+/** A device asks to connect. Remembered devices skip the prompt for the access they already have. */
+export async function connect(parent, client, wanted) {
+  const id = String(client?.id ?? "").slice(0, 64);
+  const name = String(client?.name ?? "Another device").slice(0, 60);
+  const tiers = [...new Set((Array.isArray(wanted) ? wanted : []).filter((t) => t in TIERS))];
+  if (!id || !tiers.length) throw new Error("Nothing to allow.");
+  const remembered = grants().find((g) => g.clientId === id);
+  let ok = !!remembered && tiers.every((t) => remembered.tiers.includes(t));
+  if (!ok) {
+    const r = autoApprove()
+      ? { response: 0, checkboxChecked: false }
+      : await dialog.showMessageBox(parent, {
+          type: "warning",
+          buttons: ["Allow", "Don't allow"],
+          defaultId: 1,
+          cancelId: 1,
+          title: "Remote control request",
+          message: `Allow "${name}" to control this PC?`,
+          detail: `It's asking to:\n${tiers.map((t) => `• ${TIERS[t]}`).join("\n")}\n\nAn orange frame shows while it's connected. Press Ctrl+Alt+Shift+M at any time to disconnect. It disconnects by itself after 15 idle minutes.`,
+          checkboxLabel: "Remember this device (you can remove it in Settings > Remote control)",
+        });
+    ok = r.response === 0;
+    audit(ok ? "approve" : "deny", { clientId: id, name, tiers });
+    if (ok && r.checkboxChecked) saveGrants([...grants().filter((g) => g.clientId !== id), { clientId: id, name, tiers, at: new Date().toISOString() }]);
+  }
+  if (!ok) return { allowed: false };
+  const prev = sessions.get(id);
+  if (prev) clearTimeout(prev.timer);
+  sessions.set(id, { name, tiers, startedAt: Date.now() });
+  touch(id);
+  audit("connect", { clientId: id, name, tiers });
+  showOverlay();
+  new Notification({ title: "Remote control", body: `${name} is connected. Ctrl+Alt+Shift+M disconnects.` }).show();
+  emit();
+  return { allowed: true, tiers };
+}
+
+export async function frame(clientId) {
+  need(clientId, "view");
+  const f = await captureJpeg(1024, 55);
+  scale = f.scale;
+  return { image: f.image, width: f.width, height: f.height };
+}
+
+export async function input(clientId, a) {
+  need(clientId, "control");
+  if (!a || !INPUTS.has(a.action)) throw new Error("Unknown action.");
+  audit("input", { clientId, action: a.action, x: a.x, y: a.y, keys: a.keys, chars: a.text ? String(a.text).length : undefined });
+  await runAction(a, scale);
+  return { ok: true };
+}
+
+// Files: only inside the home folder (links included, resolved before checking).
+function inHome(p) {
+  const home = fs.realpathSync.native(os.homedir());
+  const abs = path.resolve(home, String(p ?? ""));
+  let real = abs;
+  try {
+    real = fs.realpathSync.native(abs);
+  } catch {
+    real = path.join(fs.realpathSync.native(path.dirname(abs)), path.basename(abs));
+  }
+  const rel = path.relative(home, real);
+  if (rel.startsWith("..") || path.isAbsolute(rel)) throw new Error("Only files in your home folder are available.");
+  return { real, home };
+}
+export function list(clientId, dir) {
+  need(clientId, "files");
+  const { real, home } = inHome(dir || ".");
+  audit("files.list", { clientId, path: real });
+  const entries = fs.readdirSync(real, { withFileTypes: true }).filter((e) => !e.name.startsWith(".")).slice(0, 1000);
+  return {
+    path: real,
+    parent: real === home ? null : path.dirname(real),
+    entries: entries.map((e) => {
+      let size;
+      try {
+        size = e.isFile() ? fs.statSync(path.join(real, e.name)).size : undefined;
+      } catch {}
+      return { name: e.name, dir: e.isDirectory(), size };
+    }),
+  };
+}
+export function read(clientId, p) {
+  need(clientId, "files");
+  const { real } = inHome(p);
+  const st = fs.statSync(real);
+  if (!st.isFile()) throw new Error("That's a folder.");
+  if (st.size > MAX_FILE) throw new Error("Files over 10 MB can't be downloaded remotely yet.");
+  audit("files.download", { clientId, path: real });
+  return { name: path.basename(real), data: fs.readFileSync(real).toString("base64") };
+}
+export function write(clientId, dir, name, data) {
+  need(clientId, "files");
+  const clean = String(name ?? "").replace(/[\\/:*?"<>|]/g, "_").slice(0, 200);
+  if (!clean) throw new Error("Pick a file name.");
+  const buf = Buffer.from(String(data ?? ""), "base64");
+  if (buf.length > MAX_FILE) throw new Error("Files over 10 MB can't be uploaded remotely yet.");
+  const { real } = inHome(path.join(String(dir || "."), clean));
+  fs.writeFileSync(real, buf);
+  audit("files.upload", { clientId, path: real, bytes: buf.length });
+  return { saved: real };
+}

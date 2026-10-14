@@ -1,6 +1,7 @@
 "use client";
 
-import { Brain, Cpu, Download, FolderOpen, Gauge, Globe, KeyRound, Laptop, Moon, Palette, Plug, Puzzle, Shield, SlidersHorizontal, Sparkles, Sun, KeySquare, Trash2, Upload, UserRound, Wand2, X } from "lucide-react";
+import { Brain, Cpu, MonitorSmartphone, Download, FolderOpen, Gauge, Globe, KeyRound, Laptop, Moon, Palette, Plug, Puzzle, Shield, SlidersHorizontal, Sparkles, Sun, KeySquare, Trash2, Upload, UserRound, Wand2, X } from "lucide-react";
+import { RemoteSettings } from "@/components/remote/remote-settings";
 import dynamic from "next/dynamic";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
@@ -27,7 +28,7 @@ const Customize = dynamic(() => import("@/components/customize/customize").then(
 const ModsView = dynamic(() => import("@/components/mods/mods-view").then((m) => m.ModsView), { loading: () => <div className="flex-1" /> });
 const LocalModels = dynamic(() => import("@/components/desktop/local-models").then((m) => m.LocalModels), { loading: () => <div className="flex-1" /> });
 
-export type SettingsSection = "profile" | "account" | "general" | "usage" | "memory" | "models" | "auto" | "modes" | "connectors" | "plugins" | "files" | "browser" | "local" | "appearance" | "privacy";
+export type SettingsSection = "profile" | "account" | "general" | "usage" | "memory" | "models" | "auto" | "modes" | "connectors" | "plugins" | "files" | "remote" | "browser" | "local" | "appearance" | "privacy";
 
 const SECTIONS: { id: SettingsSection; label: string; icon: React.ReactNode; desktopOnly?: boolean; webOnly?: boolean; needsAccounts?: boolean }[] = [
   { id: "profile", label: "Profile", icon: <UserRound /> },
@@ -41,6 +42,7 @@ const SECTIONS: { id: SettingsSection; label: string; icon: React.ReactNode; des
   { id: "connectors", label: "Connectors", icon: <Plug /> },
   { id: "plugins", label: "Plugins & mods", icon: <Puzzle /> },
   { id: "files", label: "Files", icon: <FolderOpen />, desktopOnly: true },
+  { id: "remote", label: "Remote control", icon: <MonitorSmartphone />, desktopOnly: true, needsAccounts: true },
   { id: "browser", label: "Chrome extension", icon: <Globe />, webOnly: true },
   { id: "local", label: "Local models", icon: <Cpu />, desktopOnly: true },
   { id: "appearance", label: "Appearance", icon: <Palette /> },
@@ -109,6 +111,11 @@ export function Settings({ section, onSection, availableViews, onClose, onChat }
           </div>
         )}
         {section === "files" && <Files />}
+        {section === "remote" && (
+          <Page title="Remote control" description="Use this PC from your phone or another computer signed in to your account: see the screen, use the mouse and keyboard, a terminal, files and this PC's AI models. Off until you switch it on.">
+            <RemoteSettings onSetup={() => onSection("account")} />
+          </Page>
+        )}
         {section === "browser" && <BrowserExtension />}
         {section === "local" && <LocalModels onChat={onChat} />}
         {section === "appearance" && <Customize availableViews={availableViews} />}

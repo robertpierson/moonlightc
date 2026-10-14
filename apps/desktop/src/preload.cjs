@@ -51,6 +51,26 @@ contextBridge.exposeInMainWorld("moonc", {
     get: () => invoke("settings:get"),
     setOpenAtLogin: (on) => invoke("settings:openAtLogin", on),
   },
+  device: { info: () => invoke("device:info") },
+  remote: {
+    connect: (client, tiers) => invoke("remote:connect", client, tiers),
+    end: (clientId, reason) => invoke("remote:end", clientId, reason),
+    allowed: (clientId, tier) => invoke("remote:allowed", clientId, tier),
+    frame: (clientId) => invoke("remote:frame", clientId),
+    input: (clientId, a) => invoke("remote:input", clientId, a),
+    list: (clientId, dir) => invoke("remote:list", clientId, dir),
+    read: (clientId, p) => invoke("remote:read", clientId, p),
+    write: (clientId, dir, name, data) => invoke("remote:write", clientId, dir, name, data),
+    state: () => invoke("remote:state"),
+    grants: () => invoke("remote:grants"),
+    revoke: (clientId) => invoke("remote:revoke", clientId),
+    audit: () => invoke("remote:audit"),
+    onState: (cb) => {
+      const fn = (_e, st) => cb(st);
+      ipcRenderer.on("remote:state", fn);
+      return () => ipcRenderer.removeListener("remote:state", fn);
+    },
+  },
   computer: {
     start: (task) => invoke("computer:start", task),
     stop: () => invoke("computer:stop"),

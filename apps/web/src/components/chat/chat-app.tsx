@@ -1,6 +1,8 @@
 "use client";
 
 import type { UIMessage } from "ai";
+import { YourComputers } from "@/components/remote/your-computers";
+import { RemoteHost } from "@/components/remote/remote-host";
 import { SyncRunner } from "@/components/account/sync-runner";
 import { accountsEnabled } from "@/lib/supabase/client";
 import { track, trackSessionStart } from "@/lib/analytics";
@@ -9,6 +11,7 @@ import dynamic from "next/dynamic";
 
 // Screens other than chat load on demand, so opening the app only downloads what chat needs.
 const ArtifactPanel = dynamic(() => import("./artifact-panel").then((m) => m.ArtifactPanel), { loading: () => <div className="flex-1" /> });
+const RemoteView = dynamic(() => import("@/components/remote/remote-view").then((m) => m.RemoteView), { ssr: false, loading: () => <div className="flex-1" /> });
 const Settings = dynamic(() => import("@/components/settings/settings").then((m) => m.Settings), { loading: () => <div className="flex-1" /> });
 const Automations = dynamic(() => import("@/components/desktop/automations").then((m) => m.Automations), { loading: () => <div className="flex-1" /> });
 const CodeWorkspace = dynamic(() => import("@/components/code/code-workspace").then((m) => m.CodeWorkspace), { ssr: false, loading: () => <div className="flex-1" /> });
@@ -52,7 +55,7 @@ import { ModeSelect, ModesDialog, useModes } from "./modes";
 import { CommandPalette } from "./command-palette";
 import { AllChats, Sidebar } from "./sidebar";
 
-const VIEW_TITLES: Record<View, string> = { chat: "Chat", chats: "All chats", cowork: "Cowork", code: "Code", subscriptions: "Subscriptions", library: "Projects", studio: "Studio", terminal: "Terminal", projects: "Local projects", automations: "Automations", settings: "Settings" };
+const VIEW_TITLES: Record<View, string> = { chat: "Chat", remote: "Your computer", chats: "All chats", cowork: "Cowork", code: "Code", subscriptions: "Subscriptions", library: "Projects", studio: "Studio", terminal: "Terminal", projects: "Local projects", automations: "Automations", settings: "Settings" };
 
 // The Code sidebar looks like an editor's file panel: near-black in both light and dark mode.
 const CODE_SIDEBAR = "dark bg-[oklch(0.1_0.015_268)] text-foreground";
@@ -116,6 +119,7 @@ function Inner() {
   const [workspace, setWorkspace] = useState<Workspace>("chat");
   const [codeProjectId, setCodeProjectId] = useState<string>();
   const [libraryProject, setLibraryProject] = useState<string>();
+  const [remoteDevice, setRemoteDevice] = useState<string>();
   const [section, setSection] = useState<SettingsSection>("general");
   const [termOpened, setTermOpened] = useState(false);
   const [launch, setLaunch] = useState<LaunchRequest>();
@@ -238,6 +242,17 @@ function Inner() {
         />
       ) : (
         <Sidebar
+          top={
+            workspace === "cowork" && accountsEnabled ? (
+              <YourComputers
+                activeId={view === "remote" ? remoteDevice : undefined}
+                onOpen={(id) => {
+                  setRemoteDevice(id);
+                  go("remote");
+                }}
+              />
+            ) : undefined
+          }
           workspace={workspace}
           activeId={saved ? chat.id : undefined}
           onSelect={(id) => {
@@ -266,6 +281,7 @@ function Inner() {
       <RenewalReminders />
       <ConsentPrompt />
       {accountsEnabled && <SyncRunner />}
+      {accountsEnabled && desktop() && <RemoteHost />}
       {offer && (
         <div role="dialog" aria-label="Apply shared distro" className="fixed inset-x-0 top-0 z-50 flex flex-wrap items-center gap-3 border-b bg-popover p-3 text-sm shadow">
           <span className="flex-1">
@@ -299,6 +315,7 @@ function Inner() {
             </header>
           )}
           {view === "settings" && <Settings section={section} onSection={setSection} availableViews={availableViews()} onClose={() => go(workspace)} onChat={() => go("chat")} />}
+          {view === "remote" && remoteDevice && <RemoteView key={remoteDevice} deviceId={remoteDevice} onSetup={() => openSettings("account")} />}
           {view === "code" && <CodeWorkspace projectId={codeProjectId} onSelect={setCodeProjectId} onConnectGitHub={() => openSettings("connectors")} onOpenConnectors={() => openSettings("connectors")} />}
           {view === "chats" && (
             <AllChats

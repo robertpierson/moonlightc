@@ -8,13 +8,13 @@ import { useStore } from "@/lib/store";
 import { accountsEnabled, useUser } from "@/lib/supabase/client";
 import { Avatar } from "@/components/settings/avatar";
 
-export type View = "chat" | "chats" | "library" | "studio" | "subscriptions" | "automations" | "cowork" | "code" | "terminal" | "projects" | "settings";
+export type View = "chat" | "remote" | "chats" | "library" | "studio" | "subscriptions" | "automations" | "cowork" | "code" | "terminal" | "projects" | "settings";
 export type Workspace = "chat" | "cowork" | "code";
 
 /** Which of the three modes a screen belongs to (Settings keeps whichever mode you came from). */
 export function workspaceOf(v: View, previous: Workspace): Workspace {
   if (v === "code" || v === "terminal" || v === "projects") return "code";
-  if (v === "cowork") return "cowork";
+  if (v === "cowork" || v === "remote") return "cowork";
   if (v === "settings") return previous;
   return "chat";
 }

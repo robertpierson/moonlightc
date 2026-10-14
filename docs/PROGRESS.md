@@ -8,7 +8,7 @@ STATUS: BUILDING
 - [ ] 2 Chat core: provider registry, key vault, model picker, streaming/stop, chats, projects, attachments, artifacts, memory, modes, compare, search
 - [x] 3 Marketing site, download page, PWA (built on branch phase-2-chat; ships to prod with Phase 1+2)
 - [x] 4 Desktop app (on branch; SQLite+sync waits for Supabase): Electron, offline SQLite + sync, Ollama manager, Model Store, terminals, My AI Projects, tray/hotkey, CI release builds
-- [ ] 5 Devices and remote control (§8 safety)
+- [~] 5 Devices and remote control (§8 safety): built (devices, approval, Realtime relay, screen/control/terminal/files/local-model chat, aal2-only channels, overlay, panic, timeout, audit); live phone↔PC check needs the owner's account with two-step sign-in
 - [~] 6 Creative studio: images, video, audio, gallery
 - [~] 7 Connections and automations: MCP client, GitHub, Google, Discord, Spotify, Notion, Slack, YouTube, custom MCP, subscriptions, scheduled agents, deep research
 - [x] 8 Customization (on branch; drag/dock deferred): distros, themes/editor, layout, mods SDK and store
@@ -35,7 +35,7 @@ STATUS: BUILDING
 - [x] R17 Cowork tab (Chat | Cowork | Code): files, screen and browser tabs with permissions
 - [x] R18 Settings > Usage: tokens and cost per model, OpenRouter credits and limits
 - [x] R19 Rebuild + install desktop so it matches
-- [ ] R8c (needs Supabase, Phase 5) remote control from another device
+- [x] R8c (needs Supabase, Phase 5) remote control from another device
 
 ## Phase 0 tasks
 - [x] Check prerequisites (node 22, pnpm 11, git, gh logged in as robertpierson; Vercel + Supabase via MCP)
@@ -133,6 +133,7 @@ STATUS: BUILDING
 - No Docker, so no local Supabase stack; test against the hosted project.
 
 ## Notes (last 10)
+- 2026-10-13: Remote control: devices table + private Realtime channels (owner + aal2 only, enforced by RLS), PC approves each device (remember option), screen ~2 fps JPEG, mouse/keyboard, xterm terminal, home-folder files, local-model chat; orange overlay, one panic key for AI + remote, 15-min idle end, audit. 11 PGlite, 72 unit, 15 desktop e2e.
 - 2026-10-13: Supabase live. Accounts on (email + magic link; Google/GitHub need owner OAuth apps). Sync engine (chats, settings, keys via Vault) with two-device test; delete account + download counts via DB functions (no secret key). Vercel env set; desktop build bakes the public URL/key. 10 PGlite, 69 unit, 109 web e2e.
 - 2026-10-13: Chat | Cowork | Code modes with their own sidebars (editor-style Code sidebar), recents capped at 15 + All chats, Claude-style chat Projects (move chats in, connectors + skills per project), code folders, code permission modes (ask/auto/plan/bypass), Cowork (files, screen, browser with permissions), Settings > Usage (tokens, est. cost, OpenRouter credits) and Memory. 109 web e2e, 14 desktop e2e, 67 unit.
 - 2026-10-13: Sign in with OpenRouter (PKCE, web + desktop deep link). Phase 1 prep, hidden until Supabase: onboarding (7 steps, 13+), Settings > Account (link/unlink, TOTP two-step, export, delete), /admin (retention, onboarding answers, downloads, local vs cloud), /api/track with EU consent, privacy text. 8 PGlite tests, 66 unit, 102 web e2e.
@@ -142,4 +143,3 @@ STATUS: BUILDING
 - 2026-10-13: R8a desktop file access (folder grants live in the desktop app; server re-checks every path incl. links); 13 desktop e2e, 64 unit.
 - 2026-10-13: R7 website redesign: always-light daytime-moon look with gradients; moon setup deferred until idle (Lighthouse mobile 92, a11y 100). 96 web e2e.
 - 2026-10-13: R6 Claude plugins from GitHub (skills via load_skill, slash commands, agents as modes, MCP connectors; browse Anthropic's directory, verified against the real 315-plugin list). Fixed: mode/model changes didn't stick in a just-started chat. 96 web e2e.
-- 2026-10-13: Owner requests R1-R5: Compare removed, mode menu (3 pinned + More options), Chat/Code switch, Claude-style Settings, Auto model; sign-in code ready (hidden until Supabase). 92 web e2e.

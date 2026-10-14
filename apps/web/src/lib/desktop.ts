@@ -88,6 +88,23 @@ export interface MooncBridge {
     get(): Promise<{ openAtLogin: boolean }>;
     setOpenAtLogin(on: boolean): Promise<void>;
   };
+  device: { info(): Promise<{ id: string; name: string; os: string; version: string }> };
+  /** Remote control of this PC from your other devices (every call is checked against what the person allowed). */
+  remote: {
+    connect(client: { id: string; name: string }, tiers: string[]): Promise<{ allowed: boolean; tiers?: string[] }>;
+    end(clientId?: string, reason?: string): Promise<void>;
+    allowed(clientId: string, tier: string): Promise<boolean>;
+    frame(clientId: string): Promise<{ image: string; width: number; height: number }>;
+    input(clientId: string, a: { action: string; x?: number; y?: number; text?: string; keys?: string; amount?: number }): Promise<{ ok: true }>;
+    list(clientId: string, dir?: string): Promise<{ path: string; parent: string | null; entries: { name: string; dir: boolean; size?: number }[] }>;
+    read(clientId: string, path: string): Promise<{ name: string; data: string }>;
+    write(clientId: string, dir: string, name: string, data: string): Promise<{ saved: string }>;
+    state(): Promise<RemoteSession[]>;
+    grants(): Promise<{ clientId: string; name: string; tiers: string[]; at: string }[]>;
+    revoke(clientId: string): Promise<{ clientId: string; name: string; tiers: string[]; at: string }[]>;
+    audit(): Promise<{ at: string; action: string; name?: string; clientId?: string; [k: string]: unknown }[]>;
+    onState(cb: (s: RemoteSession[]) => void): () => void;
+  };
   computer: {
     /** Native "Let the AI control this PC?" dialog. Resolves true if allowed. */
     start(task: string): Promise<boolean>;
@@ -121,5 +138,7 @@ declare global {
     moonc?: MooncBridge;
   }
 }
+
+export type RemoteSession = { clientId: string; name: string; tiers: string[]; startedAt: number };
 
 export const desktop = (): MooncBridge | undefined => (typeof window === "undefined" ? undefined : window.moonc);

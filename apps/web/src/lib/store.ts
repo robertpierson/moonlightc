@@ -173,6 +173,8 @@ export interface State {
   codeFolders?: string[];
   /** How the code assistant may change files: ask first, apply automatically, plan only, or skip all approvals. */
   codePermission?: "ask" | "auto" | "plan" | "bypass";
+  /** Desktop app: let your other devices control this PC (off until switched on in Settings > Remote control). */
+  remoteEnabled?: boolean;
   myThemes?: { id: string; name: string; look: Pick<Look, "theme" | "overrides" | "radius"> }[];
   subscriptions?: { items: Subscription[]; remindDays: number; reminded?: Record<string, number>; scannedAt?: number };
   memory?: { enabled: boolean; items: MemoryItem[] };

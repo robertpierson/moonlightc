@@ -131,7 +131,9 @@ export function Sidebar({
   onAllChats,
   onOpenProject,
   workspace = "chat",
+  top,
 }: {
+  top?: React.ReactNode;
   activeId?: string;
   onSelect: (id: string) => void;
   onNew: () => void;
@@ -168,6 +170,7 @@ export function Sidebar({
           )
         ) : (
           <>
+            {top}
             {workspace === "chat" && projects.length > 0 && (
               <section aria-label="Your projects" className="mb-2">
                 <h3 className="px-2.5 py-1 text-xs font-medium text-muted-foreground">Projects</h3>
