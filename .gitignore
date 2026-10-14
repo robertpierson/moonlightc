@@ -11,3 +11,5 @@ test-results
 playwright-report
 coverage
 .claude/hooks/.continue-count
+apps/web/e2e/tmp/
+docs/screens/
