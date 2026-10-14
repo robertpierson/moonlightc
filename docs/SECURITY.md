@@ -67,6 +67,13 @@ Report vulnerabilities privately through GitHub's "Report a vulnerability" butto
 ## Usage stats
 - `/api/track` keeps only event names and short `[\w.:/-]` values (unit-tested), plus country, device type, OS and browser. No message content, file names or keys. EU/EEA/UK/CH: nothing is recorded without consent. Anonymous events are limited to download counts.
 
+## Remote control (SPEC §8)
+- Realtime channels `device:<id>` are private; RLS on realtime.messages admits only the device owner with an aal2 session (both ends). Off by default (Settings > Remote control on the PC).
+- The PC approves each device in a native prompt (optional remember, revocable); every bridge call re-checks the approved tiers. Files are limited to the home folder (links resolved). Orange frame while connected, Ctrl+Alt+Shift+M ends AI and remote sessions, 15-minute idle timeout, audit log.
+
+## Database functions (Supabase advisor notes, all intentional)
+- `delete_my_account`, `export_my_data`, `get_my_connection_key`, `set_connection_key`, `can_use_device_channel` act only on the caller's own rows. `admin_overview` refuses non-admins. `log_download` (anonymous) only inserts a fixed event for six known system names. `handle_new_user` and `is_admin` are not callable through the API.
+
 ## Not built yet (tracked in PROGRESS.md)
 - Remote control from other devices (SPEC §8): MFA, device pairing and approval, relay, remote screen/terminal/files.
 - Accounts, RLS and Supabase Vault (Phase 1).
