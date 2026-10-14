@@ -20,3 +20,4 @@
 - 2026-10-13: Owner requests R1-R5: Compare removed, mode menu (3 pinned + More options), Chat/Code switch, Claude-style Settings, Auto model; sign-in code ready (hidden until Supabase). 92 web e2e.
 - 2026-10-13: R6 Claude plugins from GitHub (skills via load_skill, slash commands, agents as modes, MCP connectors; browse Anthropic's directory, verified against the real 315-plugin list). Fixed: mode/model changes didn't stick in a just-started chat. 96 web e2e.
 - 2026-10-13: R7 website redesign: always-light daytime-moon look with gradients; moon setup deferred until idle (Lighthouse mobile 92, a11y 100). 96 web e2e.
+- 2026-10-13: R8a desktop file access (folder grants live in the desktop app; server re-checks every path incl. links); 13 desktop e2e, 64 unit.

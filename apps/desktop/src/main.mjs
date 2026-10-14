@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, globalShortcut, ipcMain, Menu, nativeImage, Notification, safeStorage, shell, Tray } from "electron";
+import { app, BrowserWindow, dialog, globalShortcut, ipcMain, Menu, nativeImage, Notification, safeStorage, session, shell, Tray } from "electron";
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import net from "node:net";
@@ -25,7 +25,7 @@ let quitting = false;
 // They also run without a visible window or tray icon, so they never look like a second MoonlightC on the screen.
 const testRun = !app.isPackaged && !!process.env.MOONC_E2E_USER_DATA;
 if (testRun) app.setPath("userData", process.env.MOONC_E2E_USER_DATA);
-if (!app.requestSingleInstanceLock()) app.quit();
+if (!app.requestSingleInstanceLock() || process.argv.includes("--quit")) app.quit();
 app.setAsDefaultProtocolClient("moonlightc");
 
 const freePort = () =>
@@ -99,10 +99,12 @@ function lockDown(w) {
   w.webContents.session.setPermissionRequestHandler((_wc, permission, cb) => cb(["media", "clipboard-sanitized-write", "notifications"].includes(permission)));
 }
 
+// --hidden: start in the tray (used when starting with Windows, and after quiet updates).
+const startHidden = process.argv.includes("--hidden");
 const webPreferences = { preload: path.join(here, "preload.cjs"), contextIsolation: true, sandbox: true, nodeIntegration: false };
 
 function createWindow() {
-  win = new BrowserWindow({ width: 1280, height: 840, minWidth: 360, minHeight: 500, backgroundColor: "#0e1220", title: "MoonlightC", icon: iconPath(), show: !testRun, webPreferences: testRun ? { ...webPreferences, backgroundThrottling: false } : webPreferences });
+  win = new BrowserWindow({ width: 1280, height: 840, minWidth: 360, minHeight: 500, backgroundColor: "#0e1220", title: "MoonlightC", icon: iconPath(), show: !testRun && !startHidden, webPreferences: testRun ? { ...webPreferences, backgroundThrottling: false } : webPreferences });
   lockDown(win);
   win.loadURL(appURL + "/app");
   // Settings has unsaved changes: ask instead of silently refusing to quit.
@@ -295,7 +297,7 @@ handle("secrets:set", (_e, key, value) => {
   fs.writeFileSync(secretsFile(), JSON.stringify(all), { mode: 0o600 });
 });
 handle("settings:get", () => ({ openAtLogin: app.getLoginItemSettings().openAtLogin }));
-handle("settings:openAtLogin", (_e, on) => app.setLoginItemSettings({ openAtLogin: !!on }));
+handle("settings:openAtLogin", (_e, on) => app.setLoginItemSettings({ openAtLogin: !!on, args: ["--hidden"] }));
 handle("open-external", (_e, url) => {
   if (!/^https:\/\//.test(url)) throw new Error("Only https links can be opened.");
   return shell.openExternal(url);
@@ -325,6 +327,9 @@ app.on("open-url", (e, url) => {
   else pendingLink = url;
 });
 app.on("second-instance", (_e, argv) => {
+  // "MoonlightC.exe --quit": close cleanly (used by updates) so nothing in memory is lost.
+  if (argv.includes("--quit")) return app.quit();
+  if (argv.includes("--hidden")) return;
   win?.show();
   win?.focus();
   const link = argv.find((a) => a.startsWith("moonlightc://"));
@@ -339,6 +344,12 @@ app.whenReady().then(async () => {
     app.quit();
     return;
   }
+  // Write cookies (your sign-in) to disk as soon as they change, so a crash or forced close doesn't sign you out.
+  let flush;
+  session.defaultSession.cookies.on("changed", () => {
+    clearTimeout(flush);
+    flush = setTimeout(() => session.defaultSession.cookies.flushStore().catch(() => {}), 500);
+  });
   createWindow();
   if (!testRun) createTray();
   if (pendingLink) win.webContents.once("did-finish-load", () => setTimeout(() => win.webContents.send("deep-link", pendingLink), 1500));
@@ -355,6 +366,7 @@ app.on("before-quit", () => {
   computer.stop("app closed");
   terminals.killAll();
   server?.kill();
+  session.defaultSession.cookies.flushStore().catch(() => {});
 });
 app.on("will-quit", () => globalShortcut.unregisterAll());
 app.on("window-all-closed", () => {});

@@ -142,9 +142,10 @@ STATUS: BUILDING
 - Vercel previews are SSO-protected; tests send x-vercel-protection-bypass (secret in .env.local and GitHub secret VERCEL_AUTOMATION_BYPASS_SECRET).
 - Vercel MCP returns 403/404 for this team; use Vercel CLI (logged in as robertpierson196-1427). In Git Bash prefix `vercel api` with MSYS_NO_PATHCONV=1.
 - No Docker, so no local Supabase stack; test against the hosted project.
-- Owner asked (2026-10-13): never move the mouse/keyboard or show windows on their PC. Locally run desktop e2e with `--grep-invert "computer use|remote control"`; those run in CI. Install desktop updates with /S and don't launch.
+- Owner asked (2026-10-13): never move the mouse/keyboard or show windows on their PC. Locally run desktop e2e with `--grep-invert "computer use|remote control"`; those run in CI. Update desktop: `MoonlightC.exe --quit`, then installer `/S`, then `MoonlightC.exe --hidden`.
 
 ## Notes (last 10)
+- 2026-10-14: Fix: desktop lost its sign-in after a forced close (Electron flushes cookies on a timer) so the home PC went offline. Cookies now flushed on every change and on quit; `MoonlightC.exe --quit` quits cleanly (use it for updates, never Stop-Process -Force); `--hidden` starts in the tray (also used for start-with-Windows). All apps 0.5.2.
 - 2026-10-14: Fix: phone couldn't reach home PC (phone session was aal1; Realtime RLS needs aal2). Cowork home-PC Connect now asks for the two-step code first and shows the real error. All apps 0.5.1.
 - 2026-10-13: R25 key scan (env vars + Windows user env, masked, add only picked) and R28 home PC (Settings > Remote control > Make this my home PC; Cowork on another device connects, AI gets pc_list/read/write/run tools, writes + commands need Allow on that device, PC still enforces tiers + home folder, audit). Fixed: background defaults (Ollama auto-detect) made Settings look unsaved and blocked leaving; unsaved changes blocked quitting the desktop app (now asks). All versions 0.5.0. 77 unit, 113 web e2e, 11 PGlite, 18 desktop e2e.
 - 2026-10-13: Remote control: devices table + private Realtime channels (owner + aal2 only, enforced by RLS), PC approves each device (remember option), screen ~2 fps JPEG, mouse/keyboard, xterm terminal, home-folder files, local-model chat; orange overlay, one panic key for AI + remote, 15-min idle end, audit. 11 PGlite, 72 unit, 15 desktop e2e.
@@ -154,4 +155,3 @@ STATUS: BUILDING
 - 2026-10-13: Desktop 0.2.0 built and installed on the owner's PC (silent NSIS). Fixed data loss: desktop now keeps port 47821 (saved in userData/port.json) so localStorage survives restarts. 14 desktop e2e.
 - 2026-10-13: R9/R10: black accents on dark blue, link color token, profile name+picture (greets you, AI knows your name), My themes. Desktop tests now run hidden (no extra window/tray). 99 web e2e, 13 desktop e2e.
 - 2026-10-13: R8b Chrome extension (apps/extension; zip at /downloads): share a tab, AI reads/clicks/types/opens; risky steps confirmed in an extension window (clickjack-proof), 15-min idle stop, Alt+Shift+M, audit. 97 web e2e incl. real-extension test.
-- 2026-10-13: R8a desktop file access (folder grants live in the desktop app; server re-checks every path incl. links); 13 desktop e2e, 64 unit.

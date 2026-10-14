@@ -278,6 +278,17 @@ test("chats and settings survive a restart (same local address every launch)", a
   await expect(page.getByText("Restart check").first()).toBeVisible();
 });
 
+test("sign-in survives a forced close (cookies are written to disk right away)", async () => {
+  await page.evaluate(() => (document.cookie = "moonc-e2e=kept; max-age=86400; path=/"));
+  await page.waitForTimeout(1500);
+  app.process().kill("SIGKILL");
+  await app.close().catch(() => {});
+  app = await launch();
+  page = await app.firstWindow();
+  await page.waitForURL(/127\.0\.0\.1:\d+\/app/);
+  expect(await page.evaluate(() => document.cookie)).toContain("moonc-e2e=kept");
+});
+
 test("remote control: allowed device sees the screen; only what it was allowed; home folder only; panic disconnects", async () => {
   const robot = (await import("@jitsi/robotjs")).default;
   const r = await page.evaluate(async () => {
