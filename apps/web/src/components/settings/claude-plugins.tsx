@@ -1,6 +1,10 @@
 "use client";
 
 import { ExternalLink, Loader2, Plug, RefreshCw, Trash2 } from "lucide-react";
+import { Review } from "@/components/mods/mods-view";
+import { fetchMod, type InstalledMod } from "@/lib/mods";
+import { Catalog } from "./catalog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useState } from "react";
 import { toast } from "sonner";
 import { fetchTools, NeedsSignIn, save } from "@/components/connections/connections";
@@ -8,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { DIRECTORIES, fetchMarketplace, fetchPlugin, parseGitHubInput, type ClaudePlugin, type MarketplaceEntry, type PluginMcp, type PluginSource } from "@/lib/claude-plugins";
+import { fetchMarketplace, fetchPlugin, parseGitHubInput, type ClaudePlugin, type MarketplaceEntry, type PluginMcp, type PluginSource } from "@/lib/claude-plugins";
 import { desktop } from "@/lib/desktop";
 import { beginMcpSignIn } from "@/lib/mcp-auth-client";
 import { update, useStore } from "@/lib/store";
@@ -26,6 +30,7 @@ export function ClaudePlugins() {
   const [market, setMarket] = useState<{ name: string; entries: MarketplaceEntry[] }>();
   const [query, setQuery] = useState("");
   const [preview, setPreview] = useState<Draft>();
+  const [modReview, setModReview] = useState<InstalledMod>();
   const [error, setError] = useState("");
 
   const run = async (key: string, fn: () => Promise<void>) => {
@@ -57,14 +62,6 @@ export function ClaudePlugins() {
     });
   };
 
-  const browse = (d: (typeof DIRECTORIES)[number]) =>
-    run(`dir:${d.name}`, async () => {
-      const entries = await fetchMarketplace(d.source);
-      if (!entries) throw new Error("Couldn't load that directory. Try again later.");
-      setMarket({ name: d.name, entries });
-      setPreview(undefined);
-    });
-
   const install = (p: Draft) => {
     const existing = installed.find((x) => x.name === p.name);
     const plugin: ClaudePlugin = { ...p, id: existing?.id ?? crypto.randomUUID(), enabled: existing?.enabled ?? true, installedAt: Date.now() };
@@ -81,28 +78,14 @@ export function ClaudePlugins() {
   const shown = market?.entries.filter((e) => `${e.name} ${e.description ?? ""} ${e.category ?? ""}`.toLowerCase().includes(query.toLowerCase())).slice(0, 60);
 
   return (
-    <section aria-labelledby="plugins-h" className="mx-auto grid w-full max-w-4xl gap-4 px-4 pt-6">
+    <section aria-labelledby="plugins-h" className="mx-auto grid w-full max-w-5xl gap-6 px-4 pt-6">
       <div>
         <h2 id="plugins-h" className="text-lg font-semibold">
-          Claude plugins
+          Plugins &amp; mods
         </h2>
         <p className="text-sm text-muted-foreground">
-          Install plugins made for Claude from GitHub. MoonlightC uses their skills, slash commands, agents (as modes) and connectors. Hooks and command-line tools only work in Claude Code, so each plugin shows what it can and can&apos;t do here before you install it.
+          Add skills, slash commands, modes and connectors. Plugins made for Claude work here (hooks and command-line tools only work in Claude Code, so each one shows what it can and can&apos;t do before you install it).
         </p>
-      </div>
-
-      <form onSubmit={find} className="flex gap-2">
-        <Input aria-label="GitHub link or owner/repo" placeholder="https://github.com/owner/repo or owner/repo" value={link} onChange={(e) => setLink(e.target.value)} />
-        <Button type="submit" variant="outline" disabled={!!busy}>
-          {busy === "find" && <Loader2 className="animate-spin" />} Find plugin
-        </Button>
-      </form>
-      <div className="flex flex-wrap gap-2">
-        {DIRECTORIES.map((d) => (
-          <Button key={d.name} size="sm" variant="secondary" disabled={!!busy} onClick={() => browse(d)}>
-            {busy === `dir:${d.name}` && <Loader2 className="animate-spin" />} Browse {d.name}
-          </Button>
-        ))}
       </div>
 
       {error && (
@@ -110,50 +93,86 @@ export function ClaudePlugins() {
           {error}
         </p>
       )}
-
-      {preview && <Preview plugin={preview} existing={installed.some((x) => x.name === preview.name)} onInstall={() => install(preview)} onCancel={() => setPreview(undefined)} />}
-
-      {market && !preview && (
-        <div className="grid gap-2 rounded-xl border p-3">
-          <div className="flex items-center gap-2">
-            <span className="font-medium">{market.name}</span>
-            <span className="text-sm text-muted-foreground">{count(market.entries.length, "plugin")}</span>
-            <span className="flex-1" />
-            <Button size="sm" variant="ghost" onClick={() => setMarket(undefined)}>
-              Close
-            </Button>
-          </div>
-          <Input aria-label="Search plugins" placeholder="Search plugins…" value={query} onChange={(e) => setQuery(e.target.value)} />
-          <ul className="grid max-h-96 gap-1 overflow-y-auto" aria-label="Plugins in this directory">
-            {shown?.map((e) => (
-              <li key={e.name} className="flex items-start gap-3 rounded-md p-2 hover:bg-accent/50">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 text-sm font-medium">
-                    {e.name} {e.category && <Badge variant="secondary">{e.category}</Badge>}
-                  </div>
-                  {e.description && <p className="line-clamp-2 text-sm text-muted-foreground">{e.description}</p>}
-                </div>
-                {e.source ? (
-                  <Button size="sm" variant="outline" disabled={!!busy} onClick={() => open(e.source!, e.name, e.manifest)} aria-label={`View ${e.name}`}>
-                    {busy === `plugin:${e.name}` && <Loader2 className="animate-spin" />} View
-                  </Button>
-                ) : (
-                  <span className="text-xs text-muted-foreground">Not on GitHub</span>
-                )}
-              </li>
-            ))}
-            {shown?.length === 0 && <li className="p-2 text-sm text-muted-foreground">No plugin matches.</li>}
-          </ul>
-        </div>
+      {busy?.startsWith("plugin:") && (
+        <p className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="size-4 animate-spin" /> Reading {busy.slice(7)}…
+        </p>
       )}
+
+      <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(undefined)}>
+        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>{preview?.displayName ?? preview?.name}</DialogTitle>
+            <DialogDescription>What this plugin adds to MoonlightC.</DialogDescription>
+          </DialogHeader>
+          {preview && <Preview plugin={preview} existing={installed.some((x) => x.name === preview.name)} onInstall={() => install(preview)} onCancel={() => setPreview(undefined)} />}
+        </DialogContent>
+      </Dialog>
 
       {installed.length > 0 && (
-        <ul className="grid gap-3" aria-label="Installed plugins">
-          {installed.map((p) => (
-            <Installed key={p.id} plugin={p} busy={busy === `plugin:${p.name}`} onUpdate={() => open(p.source, p.name)} onRemove={() => remove(p)} />
-          ))}
-        </ul>
+        <section aria-labelledby="installed-plugins-h" className="grid gap-2">
+          <h3 id="installed-plugins-h" className="font-medium">
+            Installed plugins
+          </h3>
+          <ul className="grid gap-3" aria-label="Installed plugins">
+            {installed.map((p) => (
+              <Installed key={p.id} plugin={p} busy={busy === `plugin:${p.name}`} onUpdate={() => open(p.source, p.name)} onRemove={() => remove(p)} />
+            ))}
+          </ul>
+        </section>
       )}
+
+      <Catalog onPlugin={(e) => open(e.source!, e.name, e.manifest)} onMod={(url) =>
+          run(`plugin:${url.split("/").slice(-2, -1)[0] ?? "mod"}`, async () => {
+            setModReview(await fetchMod(url));
+          })
+        }
+      />
+      {modReview && <Review mod={modReview} onClose={() => setModReview(undefined)} />}
+
+      <section aria-labelledby="add-plugin-h" className="grid gap-2">
+        <h3 id="add-plugin-h" className="font-medium">
+          Add a plugin from GitHub
+        </h3>
+        <form onSubmit={find} className="flex gap-2">
+          <Input aria-label="GitHub link or owner/repo" placeholder="https://github.com/owner/repo or owner/repo" value={link} onChange={(e) => setLink(e.target.value)} />
+          <Button type="submit" variant="outline" disabled={!!busy}>
+            {busy === "find" && <Loader2 className="animate-spin" />} Find plugin
+          </Button>
+        </form>
+        {market && (
+          <div className="grid gap-2 rounded-xl border p-3">
+            <div className="flex items-center gap-2">
+              <span className="font-medium">{market.name}</span>
+              <span className="text-sm text-muted-foreground">{count(market.entries.length, "plugin")}</span>
+              <span className="flex-1" />
+              <Button size="sm" variant="ghost" onClick={() => setMarket(undefined)}>
+                Close
+              </Button>
+            </div>
+            <Input aria-label="Search plugins" placeholder="Search plugins…" value={query} onChange={(e) => setQuery(e.target.value)} />
+            <ul className="grid max-h-96 gap-1 overflow-y-auto" aria-label="Plugins in this directory">
+              {shown?.map((e) => (
+                <li key={e.name} className="flex items-start gap-3 rounded-md p-2 hover:bg-accent/50">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      {e.name} {e.category && <Badge variant="secondary">{e.category}</Badge>}
+                    </div>
+                    {e.description && <p className="line-clamp-2 text-sm text-muted-foreground">{e.description}</p>}
+                  </div>
+                  {e.source ? (
+                    <Button size="sm" variant="outline" disabled={!!busy} onClick={() => open(e.source!, e.name, e.manifest)} aria-label={`View ${e.name}`}>
+                      View
+                    </Button>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">Not on GitHub</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </section>
     </section>
   );
 }

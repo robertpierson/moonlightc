@@ -1,18 +1,15 @@
 "use client";
 
-import { ModIndexSchema } from "@moonc/mods-sdk";
-import { Loader2, Puzzle, ShieldCheck, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ShieldCheck, Trash2 } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { fetchMod, installMod, REGISTRY, removeMod, sandboxDocument, setModEnabled, type InstalledMod } from "@/lib/mods";
+import { fetchMod, installMod, removeMod, sandboxDocument, setModEnabled, type InstalledMod } from "@/lib/mods";
 import { useStore } from "@/lib/store";
-
-type Listing = { id: string; name: string; description: string; manifest: string };
 
 const PERMISSION_TEXT: Record<string, string> = {
   tools: "Give the AI new tools. You'll see when the AI uses them.",
@@ -20,7 +17,7 @@ const PERMISSION_TEXT: Record<string, string> = {
   network: "Connect to the internet from its sandbox.",
 };
 
-function Review({ mod, onClose }: { mod: InstalledMod; onClose: () => void }) {
+export function Review({ mod, onClose }: { mod: InstalledMod; onClose: () => void }) {
   const m = mod.manifest;
   const adds = [
     m.tools.length && `${m.tools.length} AI tool${m.tools.length > 1 ? "s" : ""}: ${m.tools.map((t) => t.name).join(", ")}`,
@@ -75,18 +72,9 @@ function Review({ mod, onClose }: { mod: InstalledMod; onClose: () => void }) {
 
 export function ModsView() {
   const installed = useStore((s) => s.mods) ?? [];
-  const [listings, setListings] = useState<Listing[]>();
-  const [loadError, setLoadError] = useState("");
   const [busy, setBusy] = useState<string>();
   const [review, setReview] = useState<InstalledMod>();
   const [url, setUrl] = useState("");
-
-  useEffect(() => {
-    fetch(REGISTRY)
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`${r.status}`))))
-      .then((j) => setListings(ModIndexSchema.parse(j).mods))
-      .catch(() => setLoadError("Couldn't load the Mod Store. Check your internet connection."));
-  }, []);
 
   const open = async (manifestUrl: string) => {
     setBusy(manifestUrl);
@@ -104,34 +92,9 @@ export function ModsView() {
       {review && <Review mod={review} onClose={() => setReview(undefined)} />}
       <div className="mx-auto grid max-w-4xl gap-8 px-4 py-6">
         <section aria-labelledby="store-h" className="grid gap-3">
-          <div>
-            <h2 id="store-h" className="text-lg font-semibold">Mod Store</h2>
-            <p className="text-sm text-muted-foreground">Mods add tools, commands, modes and themes. Anyone can publish one; every mod shows what it can do before you install it.</p>
-          </div>
-          {loadError && <p className="text-sm text-destructive">{loadError}</p>}
-          {!listings && !loadError && <Loader2 className="size-5 animate-spin text-muted-foreground" />}
-          {listings && (
-            <ul className="grid gap-3 sm:grid-cols-2">
-              {listings.map((l) => {
-                const have = installed.find((i) => i.manifest.id === l.id);
-                return (
-                  <li key={l.id} className="flex flex-col gap-2 rounded-xl border p-4">
-                    <div className="flex items-center gap-2 font-medium">
-                      <Puzzle className="size-4" /> {l.name}
-                    </div>
-                    <p className="flex-1 text-sm text-muted-foreground">{l.description}</p>
-                    {have ? (
-                      <span className="text-sm text-muted-foreground">Installed (v{have.manifest.version})</span>
-                    ) : (
-                      <Button size="sm" className="justify-self-start" disabled={!!busy} onClick={() => open(l.manifest)}>
-                        {busy === l.manifest && <Loader2 className="animate-spin" />} Install
-                      </Button>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+          <h2 id="store-h" className="font-medium">
+            Add a mod from a link
+          </h2>
           <form
             className="flex gap-2"
             onSubmit={(e) => {

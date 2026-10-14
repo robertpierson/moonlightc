@@ -29,7 +29,7 @@ test("install the example mod: its tool, command, mode, theme and panel all work
   await expect(page.getByRole("dialog")).toHaveCount(0);
 
   await nav(page, "Mods");
-  await page.getByRole("listitem").filter({ hasText: "Unit Converter" }).getByRole("button", { name: "Install" }).click();
+  await page.getByRole("list", { name: "Featured" }).getByRole("button", { name: "View Unit Converter" }).click();
   const dialog = page.getByRole("dialog", { name: "Install Unit Converter?" });
   await expect(dialog).toContainText("convert_units");
   await expect(dialog).toContainText("Give the AI new tools");
