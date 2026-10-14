@@ -1,16 +1,18 @@
 "use client";
 
 import { FolderOpen, Globe, Loader2, Monitor } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { TwoStepGate } from "@/components/account/two-step-gate";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { hasExtension } from "@/lib/browser-ext";
 import { desktop } from "@/lib/desktop";
 import { connectHomePc, disconnectHomePc, findHomePc, useHomePc } from "@/lib/home-pc";
 import type { Device } from "@/lib/remote";
-import { accountsEnabled, useUser } from "@/lib/supabase/client";
+import { accountsEnabled, supabase, useUser } from "@/lib/supabase/client";
 
 /** Top of Cowork: what the AI can reach right now, and how to give it more. Nothing is shared by default. */
-export function CoworkAccess({ onOpenSettings }: { onOpenSettings: (section: "files" | "browser") => void }) {
+export function CoworkAccess({ onOpenSettings }: { onOpenSettings: (section: "files" | "browser" | "account") => void }) {
   const b = desktop();
   const [folders, setFolders] = useState<string[]>([]);
   const [ext] = useState(hasExtension);
@@ -31,7 +33,7 @@ export function CoworkAccess({ onOpenSettings }: { onOpenSettings: (section: "fi
             </Button>
           </>
         ) : accountsEnabled ? (
-          <HomePcChip />
+          <HomePcChip onSetup={() => onOpenSettings("account")} />
         ) : (
           <span className="text-muted-foreground">Your files: needs the desktop app</span>
         )}
@@ -54,10 +56,17 @@ export function CoworkAccess({ onOpenSettings }: { onOpenSettings: (section: "fi
 }
 
 /** On a phone or another computer: connect to your home PC so the AI can work in its folders. */
-function HomePcChip() {
+function HomePcChip({ onSetup }: { onSetup: () => void }) {
   const pc = useHomePc();
   const user = useUser();
   const [found, setFound] = useState<Device | null>();
+  // Reaching your PC needs this device signed in with your two-step code too (the server refuses otherwise).
+  const [unlock, setUnlock] = useState(false);
+  const connect = async (d: Device) => {
+    const { data } = await supabase().auth.mfa.getAuthenticatorAssuranceLevel();
+    if (data?.currentLevel !== "aal2") return setUnlock(true);
+    connectHomePc(d);
+  };
   useEffect(() => {
     if (user)
       findHomePc()
@@ -87,12 +96,39 @@ function HomePcChip() {
   if (!found) return <span className="text-muted-foreground">Your files: pick a home PC in the desktop app (Settings &gt; Remote control)</span>;
   return (
     <>
-      <span className="min-w-0 flex-1 truncate" title={pc.error}>
-        {pc.connecting ? `Approve on ${found.name}…` : pc.error ? "Couldn't connect" : `Home PC: ${found.name}`}
+      <span className="min-w-0 flex-1">
+        {pc.connecting ? `Approve on ${found.name}…` : `Home PC: ${found.name}`}
+        {pc.error && !pc.connecting && (
+          <span role="alert" className="block text-xs text-destructive">
+            {pc.error}
+          </span>
+        )}
       </span>
-      <Button size="xs" variant="outline" disabled={pc.connecting} onClick={() => connectHomePc(found)}>
+      <Button size="xs" variant="outline" disabled={pc.connecting} onClick={() => connect(found)}>
         Connect
       </Button>
+      <Dialog open={unlock} onOpenChange={setUnlock}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Unlock your home PC</DialogTitle>
+            <DialogDescription>For safety, this device needs your two-step code before it can reach {found.name}.</DialogDescription>
+          </DialogHeader>
+          <TwoStepGate what="Your home PC" onSetup={onSetup}>
+            <Unlocked
+              onReady={() => {
+                setUnlock(false);
+                connectHomePc(found);
+              }}
+            />
+          </TwoStepGate>
+        </DialogContent>
+      </Dialog>
     </>
   );
+}
+
+function Unlocked({ onReady }: { onReady: () => void }) {
+  const once = useRef(onReady);
+  useEffect(() => once.current(), []);
+  return null;
 }

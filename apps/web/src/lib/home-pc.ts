@@ -32,8 +32,9 @@ export async function findHomePc(): Promise<Device | undefined> {
 
 export async function connectHomePc(device: Device) {
   set({ device, connecting: true, error: undefined });
+  let ch: RealtimeChannel | undefined;
   try {
-    const ch = await joinChannel(device.id, { key: `client:${crypto.randomUUID()}` });
+    ch = await joinChannel(device.id, { key: `client:${crypto.randomUUID()}` });
     const client = new RemoteClient(ch);
     await subscribed(ch);
     const r = await client.call<{ allowed: boolean; tiers?: Tier[] }>("connect", { tiers: ["files", "terminal", "chat"] }, 130_000);
@@ -41,6 +42,7 @@ export async function connectHomePc(device: Device) {
     channel = ch;
     set({ client, tiers: r.tiers ?? [], connecting: false });
   } catch (e) {
+    if (ch) supabase().removeChannel(ch);
     set({ connecting: false, error: e instanceof Error ? e.message : String(e) });
   }
 }

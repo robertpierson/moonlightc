@@ -145,6 +145,7 @@ STATUS: BUILDING
 - Owner asked (2026-10-13): never move the mouse/keyboard or show windows on their PC. Locally run desktop e2e with `--grep-invert "computer use|remote control"`; those run in CI. Install desktop updates with /S and don't launch.
 
 ## Notes (last 10)
+- 2026-10-14: Fix: phone couldn't reach home PC (phone session was aal1; Realtime RLS needs aal2). Cowork home-PC Connect now asks for the two-step code first and shows the real error. All apps 0.5.1.
 - 2026-10-13: R25 key scan (env vars + Windows user env, masked, add only picked) and R28 home PC (Settings > Remote control > Make this my home PC; Cowork on another device connects, AI gets pc_list/read/write/run tools, writes + commands need Allow on that device, PC still enforces tiers + home folder, audit). Fixed: background defaults (Ollama auto-detect) made Settings look unsaved and blocked leaving; unsaved changes blocked quitting the desktop app (now asks). All versions 0.5.0. 77 unit, 113 web e2e, 11 PGlite, 18 desktop e2e.
 - 2026-10-13: Remote control: devices table + private Realtime channels (owner + aal2 only, enforced by RLS), PC approves each device (remember option), screen ~2 fps JPEG, mouse/keyboard, xterm terminal, home-folder files, local-model chat; orange overlay, one panic key for AI + remote, 15-min idle end, audit. 11 PGlite, 72 unit, 15 desktop e2e.
 - 2026-10-13: Supabase live. Accounts on (email + magic link; Google/GitHub need owner OAuth apps). Sync engine (chats, settings, keys via Vault) with two-device test; delete account + download counts via DB functions (no secret key). Vercel env set; desktop build bakes the public URL/key. 10 PGlite, 69 unit, 109 web e2e.
@@ -154,4 +155,3 @@ STATUS: BUILDING
 - 2026-10-13: R9/R10: black accents on dark blue, link color token, profile name+picture (greets you, AI knows your name), My themes. Desktop tests now run hidden (no extra window/tray). 99 web e2e, 13 desktop e2e.
 - 2026-10-13: R8b Chrome extension (apps/extension; zip at /downloads): share a tab, AI reads/clicks/types/opens; risky steps confirmed in an extension window (clickjack-proof), 15-min idle stop, Alt+Shift+M, audit. 97 web e2e incl. real-extension test.
 - 2026-10-13: R8a desktop file access (folder grants live in the desktop app; server re-checks every path incl. links); 13 desktop e2e, 64 unit.
-- 2026-10-13: R7 website redesign: always-light daytime-moon look with gradients; moon setup deferred until idle (Lighthouse mobile 92, a11y 100). 96 web e2e.

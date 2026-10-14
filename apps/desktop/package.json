@@ -1,7 +1,7 @@
 {
   "name": "@moonc/desktop",
   "productName": "MoonlightC",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "private": true,
   "description": "Every AI in one place, with your own keys.",
   "author": "MoonlightC contributors",
