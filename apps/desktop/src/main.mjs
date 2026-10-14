@@ -6,6 +6,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import * as computer from "./computer.mjs";
 import * as remote from "./remote.mjs";
+import { scanKeys } from "./keyscan.mjs";
 import { hardware } from "./hardware.mjs";
 import * as ollama from "./ollama.mjs";
 import * as projects from "./projects.mjs";
@@ -104,6 +105,12 @@ function createWindow() {
   win = new BrowserWindow({ width: 1280, height: 840, minWidth: 360, minHeight: 500, backgroundColor: "#0e1220", title: "MoonlightC", icon: iconPath(), show: !testRun, webPreferences: testRun ? { ...webPreferences, backgroundThrottling: false } : webPreferences });
   lockDown(win);
   win.loadURL(appURL + "/app");
+  // Settings has unsaved changes: ask instead of silently refusing to quit.
+  win.webContents.on("will-prevent-unload", (e) => {
+    const leave = testRun || dialog.showMessageBoxSync(win, { type: "question", buttons: ["Quit and discard", "Cancel"], defaultId: 1, cancelId: 1, title: "Unsaved changes", message: "You have unsaved changes in Settings. Quit anyway?" }) === 0;
+    if (leave) e.preventDefault();
+    else quitting = false;
+  });
   win.on("close", (e) => {
     // Closing the window keeps MoonlightC in the tray (so the hotkey still works). Quit from the tray menu.
     if (!quitting) {
@@ -177,6 +184,7 @@ const handle = (channel, fn) =>
 
 ipcMain.on("version", (e) => (e.returnValue = app.getVersion()));
 handle("hardware", () => hardware());
+handle("keys:scan", () => scanKeys());
 handle("mcp:approve", async (_e, command, args) => {
   command = String(command);
   args = Array.isArray(args) ? args.map(String) : [];
@@ -244,6 +252,7 @@ handle("remote:input", (_e, clientId, a) => remote.input(String(clientId), a));
 handle("remote:list", (_e, clientId, dir) => remote.list(String(clientId), dir));
 handle("remote:read", (_e, clientId, p) => remote.read(String(clientId), p));
 handle("remote:write", (_e, clientId, dir, name, data) => remote.write(String(clientId), dir, name, data));
+handle("remote:exec", (_e, clientId, command, cwd) => remote.exec(String(clientId), command, cwd));
 handle("remote:state", () => remote.state());
 handle("remote:grants", () => remote.grants());
 handle("remote:revoke", (_e, clientId) => remote.revoke(String(clientId)));

@@ -88,3 +88,12 @@ Rollback: Vercel "Instant Rollback" to the previous production deployment.
 - What: each desktop app registers in public.devices; remote sessions use private Realtime channels device:<id> whose RLS only admits the owner with an aal2 (two-step) session on both ends. The PC approves each device in a native prompt (optional remember), and every bridge call re-checks the approved tiers (view, control, files, terminal, chat). Screen streams as ~1024px JPEG frames on request (about 2 per second), not WebRTC.
 - Why: no port forwarding, no extra server, and the strongest checks live in the database and on the PC. JPEG frames work everywhere without a TURN server; WebRTC can replace them later for smoother video.
 - Safety (SPEC §8): off by default, MFA required, per-device approval and revoke, orange on-screen frame, Ctrl+Alt+Shift+M ends AI and remote sessions, 15-minute idle timeout, audit log in Settings > Remote control. Files are limited to the home folder.
+
+## Home PC = remote-control channel + client-side AI tools (2026-10-13)
+What: "Make this my home PC" flags one device (devices.is_home). Cowork on another device connects over the existing remote-control channel (files + terminal tiers, approved on the PC) and the AI gets pc_list_files / pc_read_file / pc_write_file / pc_run_command, executed in the browser through that channel. Writes and commands also need Allow on the device you're using.
+Why: reuses the already-audited remote path (aal2 + RLS, PC-side tier checks, home-folder jail, panic key); no new server or tunnel.
+Alternatives: a relay server running the AI on the PC (more moving parts, PC must hold the keys); SSH/tunnels (setup the owner can't do).
+
+## Background changes skip the Settings save bar (2026-10-13)
+What: updateNow() applies a change to both the live state and the saved snapshot; used for defaults picked automatically (local models found, first key added) and memories the AI saves. The unsaved check compares by value.
+Why: those changes made Settings look unsaved and blocked leaving it.

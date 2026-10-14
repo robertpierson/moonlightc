@@ -1,10 +1,13 @@
 "use client";
 
-import { FolderOpen, Globe, Monitor } from "lucide-react";
+import { FolderOpen, Globe, Loader2, Monitor } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { hasExtension } from "@/lib/browser-ext";
 import { desktop } from "@/lib/desktop";
+import { connectHomePc, disconnectHomePc, findHomePc, useHomePc } from "@/lib/home-pc";
+import type { Device } from "@/lib/remote";
+import { accountsEnabled, useUser } from "@/lib/supabase/client";
 
 /** Top of Cowork: what the AI can reach right now, and how to give it more. Nothing is shared by default. */
 export function CoworkAccess({ onOpenSettings }: { onOpenSettings: (section: "files" | "browser") => void }) {
@@ -27,6 +30,8 @@ export function CoworkAccess({ onOpenSettings }: { onOpenSettings: (section: "fi
               Share a folder
             </Button>
           </>
+        ) : accountsEnabled ? (
+          <HomePcChip />
         ) : (
           <span className="text-muted-foreground">Your files: needs the desktop app</span>
         )}
@@ -45,5 +50,49 @@ export function CoworkAccess({ onOpenSettings }: { onOpenSettings: (section: "fi
         )}
       </div>
     </section>
+  );
+}
+
+/** On a phone or another computer: connect to your home PC so the AI can work in its folders. */
+function HomePcChip() {
+  const pc = useHomePc();
+  const user = useUser();
+  const [found, setFound] = useState<Device | null>();
+  useEffect(() => {
+    if (user)
+      findHomePc()
+        .then((d) => setFound(d ?? null))
+        .catch(() => setFound(null));
+  }, [user]);
+  if (user === null)
+    return (
+      <span className="text-muted-foreground">
+        Your files:{" "}
+        <a className="text-link underline underline-offset-4" href="/signin?next=/app">
+          sign in
+        </a>{" "}
+        to work on your home PC
+      </span>
+    );
+  if (pc.client)
+    return (
+      <>
+        <span className="min-w-0 flex-1 truncate">Working on {pc.device?.name}</span>
+        <Button size="xs" variant="outline" onClick={() => disconnectHomePc()}>
+          Disconnect
+        </Button>
+      </>
+    );
+  if (found === undefined) return <Loader2 className="animate-spin" aria-label="Looking for your home PC" />;
+  if (!found) return <span className="text-muted-foreground">Your files: pick a home PC in the desktop app (Settings &gt; Remote control)</span>;
+  return (
+    <>
+      <span className="min-w-0 flex-1 truncate" title={pc.error}>
+        {pc.connecting ? `Approve on ${found.name}…` : pc.error ? "Couldn't connect" : `Home PC: ${found.name}`}
+      </span>
+      <Button size="xs" variant="outline" disabled={pc.connecting} onClick={() => connectHomePc(found)}>
+        Connect
+      </Button>
+    </>
   );
 }

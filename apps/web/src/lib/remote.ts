@@ -12,7 +12,7 @@ export const TIER_LABELS: Record<Tier, string> = { view: "See the screen", contr
 
 export type Req = { id: string; from: string; fromName: string; method: string; params?: Record<string, unknown> };
 export type Res = { id: string; to: string; ok: boolean; result?: unknown; error?: string };
-export type Device = { id: string; name: string; os: string | null; remote_enabled: boolean; local_models: string[]; app_version: string | null; last_seen: string };
+export type Device = { id: string; name: string; os: string | null; remote_enabled: boolean; local_models: string[]; app_version: string | null; last_seen: string; is_home?: boolean };
 
 export const channelName = (deviceId: string) => `device:${deviceId}`;
 export const isOnline = (d: Device, now = Date.now()) => now - Date.parse(d.last_seen) < 3 * 60_000;

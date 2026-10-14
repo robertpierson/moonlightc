@@ -1,6 +1,7 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
+import { HOME_TOOLS, homePcClient, homeToolNeedsOk, runHomeTool } from "@/lib/home-pc";
 import { activePlugins, activeServers, mcpPayload } from "@/lib/project-tools";
 import { getProvider } from "@moonc/core";
 import { track } from "@/lib/analytics";
@@ -121,6 +122,8 @@ export function ChatView({
 }) {
   const [input, setInput] = useState("");
   const [computerOn, setComputerOn] = useState(false);
+  // Cowork on another device: a change or command on the home PC waits for the person's OK here.
+  const [ask, setAsk] = useState<{ what: string; decide: (ok: boolean) => void }>();
   const googleTokenRef = useRef<string | undefined>(undefined);
   const accountsRef = useRef<{
     spotify?: string;
@@ -186,6 +189,7 @@ export function ChatView({
         computer: computerOn || undefined,
         files: (cowork && !!desktop()) || undefined,
         browser: (cowork && hasExtension()) || undefined,
+        homePc: (cowork && !!homePcClient()) || undefined,
         google: googleTokenRef.current
           ? { accessToken: googleTokenRef.current }
           : undefined,
@@ -281,6 +285,24 @@ export function ChatView({
             toolCallId: toolCall.toolCallId,
             output: { error: e instanceof Error ? e.message : String(e) },
           } as never);
+        }
+        return;
+      }
+      if ((HOME_TOOLS as readonly string[]).includes(toolCall.toolName)) {
+        const input = toolCall.input as Record<string, unknown>;
+        try {
+          if (homeToolNeedsOk(toolCall.toolName)) {
+            const what = toolCall.toolName === "pc_run_command" ? `run "${String(input.command ?? "")}"` : `write ${String(input.path ?? "a file")}`;
+            const ok = await new Promise<boolean>((decide) => setAsk({ what, decide }));
+            setAsk(undefined);
+            if (!ok) {
+              addToolOutput({ tool: toolCall.toolName, toolCallId: toolCall.toolCallId, output: { denied: true, message: "The person said no." } } as never);
+              return;
+            }
+          }
+          addToolOutput({ tool: toolCall.toolName, toolCallId: toolCall.toolCallId, output: await runHomeTool(toolCall.toolName, input) } as never);
+        } catch (e) {
+          addToolOutput({ tool: toolCall.toolName, toolCallId: toolCall.toolCallId, output: { error: e instanceof Error ? e.message : String(e) } } as never);
         }
         return;
       }
@@ -587,6 +609,19 @@ export function ChatView({
       </div>
 
       <form onSubmit={submit} className="mx-auto w-full max-w-3xl px-4 pb-4">
+        {ask && (
+          <div role="alertdialog" aria-label="Allow on your home PC?" className="mb-2 flex flex-wrap items-center gap-2 rounded-xl border bg-card p-3 text-sm">
+            <span className="flex-1">
+              The AI wants to <strong className="break-all">{ask.what}</strong> on your home PC.
+            </span>
+            <Button type="button" size="sm" variant="outline" onClick={() => ask.decide(false)}>
+              Deny
+            </Button>
+            <Button type="button" size="sm" onClick={() => ask.decide(true)}>
+              Allow
+            </Button>
+          </div>
+        )}
         <div className="rounded-2xl border bg-card p-2 shadow-sm focus-within:ring-2 focus-within:ring-ring/40">
           {attachments.length > 0 && (
             <ul className="flex flex-wrap gap-2 p-1" aria-label="Attachments">

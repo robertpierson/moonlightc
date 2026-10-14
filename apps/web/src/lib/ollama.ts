@@ -1,4 +1,4 @@
-import { update } from "./store";
+import { updateNow } from "./store";
 
 // Talks to Ollama's own API on this computer. Only used inside the desktop app.
 const API = "http://127.0.0.1:11434";
@@ -44,7 +44,7 @@ export async function remove(name: string) {
 /** Keep the "Ollama" entry in the model picker in step with what's installed. */
 export async function syncOllamaConnection() {
   const models = (await listLocal()).map((m) => ({ id: m.name, name: m.name }));
-  update((s) => {
+  updateNow((s) => {
     const existing = s.connections.find((c) => c.providerId === "ollama");
     if (!models.length) return { ...s, connections: s.connections.filter((c) => c.providerId !== "ollama") };
     if (existing) return { ...s, connections: s.connections.map((c) => (c === existing ? { ...c, models } : c)) };

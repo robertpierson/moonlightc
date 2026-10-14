@@ -89,6 +89,8 @@ export interface MooncBridge {
     setOpenAtLogin(on: boolean): Promise<void>;
   };
   device: { info(): Promise<{ id: string; name: string; os: string; version: string }> };
+  /** API keys already set up on this computer (standard environment variables). */
+  keys: { scan(): Promise<{ provider: string; source: string; value: string; masked: string }[]> };
   /** Remote control of this PC from your other devices (every call is checked against what the person allowed). */
   remote: {
     connect(client: { id: string; name: string }, tiers: string[]): Promise<{ allowed: boolean; tiers?: string[] }>;
@@ -99,6 +101,7 @@ export interface MooncBridge {
     list(clientId: string, dir?: string): Promise<{ path: string; parent: string | null; entries: { name: string; dir: boolean; size?: number }[] }>;
     read(clientId: string, path: string): Promise<{ name: string; data: string }>;
     write(clientId: string, dir: string, name: string, data: string): Promise<{ saved: string }>;
+    exec(clientId: string, command: string, cwd?: string): Promise<{ exitCode: number; stdout: string; stderr: string; timedOut: boolean }>;
     state(): Promise<RemoteSession[]>;
     grants(): Promise<{ clientId: string; name: string; tiers: string[]; at: string }[]>;
     revoke(clientId: string): Promise<{ clientId: string; name: string; tiers: string[]; at: string }[]>;

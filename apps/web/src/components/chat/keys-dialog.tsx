@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/select";
 import { desktop } from "@/lib/desktop";
 import { startOpenRouterSignIn } from "@/lib/openrouter-auth";
-import { update, useStore, type SavedConnection } from "@/lib/store";
+import { update, updateNow, useStore, type SavedConnection } from "@/lib/store";
 
 async function fetchModels(c: {
   providerId: string;
@@ -192,6 +192,69 @@ export function OpenRouterSignIn({ compact }: { compact?: boolean }) {
   );
 }
 
+/** Desktop app: find keys already set up on this PC (standard environment variables) and add the ones you pick. */
+function ScanKeys() {
+  const connections = useStore((s) => s.connections);
+  const [found, setFound] = useState<{ provider: string; source: string; value: string; masked: string }[]>();
+  const [picked, setPicked] = useState<string[]>([]);
+  const [busy, setBusy] = useState(false);
+  const have = (v: string) => connections.some((c) => c.apiKey === v);
+  const scan = async () => {
+    const list = await desktop()!.keys.scan();
+    setFound(list);
+    setPicked(list.filter((k) => !have(k.value)).map((k) => k.source));
+  };
+  const addPicked = async () => {
+    setBusy(true);
+    let added = 0;
+    for (const k of found ?? []) {
+      if (!picked.includes(k.source) || have(k.value)) continue;
+      try {
+        const models = await fetchModels({ providerId: k.provider, apiKey: k.value });
+        const conn: SavedConnection = { id: crypto.randomUUID(), providerId: k.provider, apiKey: k.value, label: getProvider(k.provider).name, models, addedAt: Date.now() };
+        updateNow((s) => ({ ...s, connections: [...s.connections, conn], lastModel: s.lastModel ?? (models[0] && { connectionId: conn.id, modelId: models[0].id }) }));
+        track("provider.connected", { provider: k.provider, via: "scan" });
+        added++;
+      } catch (e) {
+        toast.error(`${getProvider(k.provider).name} (${k.source}): ${e instanceof Error ? e.message : String(e)}`);
+      }
+    }
+    setBusy(false);
+    if (added) toast.success(`Added ${added} key${added > 1 ? "s" : ""} from this PC.`);
+  };
+  return (
+    <div className="grid gap-2 rounded-lg border p-3 text-sm">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="flex-1">Already have keys set up on this PC (for example for Claude Code or the OpenAI tools)?</span>
+        <Button size="sm" variant="outline" onClick={scan}>
+          Scan this PC for API keys
+        </Button>
+      </div>
+      {found && !found.length && <p className="text-muted-foreground">No keys found in this PC&apos;s settings.</p>}
+      {found && found.length > 0 && (
+        <>
+          <ul aria-label="Keys found on this PC" className="grid gap-1">
+            {found.map((k) => (
+              <li key={k.source}>
+                <label className="flex items-center gap-2">
+                  <input type="checkbox" className="size-4 accent-primary" disabled={have(k.value)} checked={picked.includes(k.source)} onChange={() => setPicked((p) => (p.includes(k.source) ? p.filter((x) => x !== k.source) : [...p, k.source]))} />
+                  <span className="flex-1">
+                    {getProvider(k.provider).name} <span className="text-muted-foreground">· {k.source} · {k.masked}</span>
+                  </span>
+                  {have(k.value) && <span className="text-xs text-muted-foreground">Already added</span>}
+                </label>
+              </li>
+            ))}
+          </ul>
+          <Button size="sm" className="justify-self-start" disabled={busy || !picked.some((p) => found.some((k) => k.source === p && !have(k.value)))} onClick={addPicked}>
+            {busy && <Loader2 className="animate-spin" />} Check and add selected
+          </Button>
+        </>
+      )}
+    </div>
+  );
+}
+
 export function KeysDialog({
   open,
   onOpenChange,
@@ -263,7 +326,7 @@ export function KeysPanel() {
         models,
         addedAt: Date.now(),
       };
-      update((s) => ({
+      updateNow((s) => ({
         ...s,
         connections: [...s.connections, conn],
         lastModel:
@@ -316,6 +379,7 @@ export function KeysPanel() {
   return (
     <div className="grid gap-4">
       {!connections.some((c) => c.providerId === "openrouter") && <OpenRouterSignIn />}
+      {desktop() && <ScanKeys />}
       {connections.length > 0 && (
         <ul
           className="divide-y rounded-lg border"

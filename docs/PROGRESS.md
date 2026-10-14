@@ -41,11 +41,11 @@ STATUS: BUILDING
 - [x] R22 Code: a project is a group of chats; chats saved (same model as Chat and Cowork)
 - [x] R23 Plugins & mods catalog: featured row, then everything, searchable
 - [x] R24 Settings > Usage: your plans first (what you pay), tokens, value at list prices
-- [ ] R25 Desktop: scan this PC for existing API keys (environment) and add them with one click
+- [x] R25 Desktop: scan this PC for existing API keys (environment) and add them with one click
 - [ ] R26 Rebuild + install desktop app
 - [x] R27 Settings: Discord-style "unsaved changes — Reset / Save" bar; leaving with unsaved changes is blocked
 - [x] R29 Fix: finishing onboarding looped back to step 1 (email link pointed at onboarding); already-onboarded people skip it
-- [ ] R28 Home PC: from any signed-in device, the AI works on your home PC's folders and code projects (with your approval)
+- [x] R28 Home PC: from any signed-in device, the AI works on your home PC's folders and code projects (with your approval)
 - [ ] R30 Final pass: verify sign-in, create account, key checks and every feature; web app, desktop app and Chrome extension all on the same version
 
 ## Phase 0 tasks
@@ -142,8 +142,10 @@ STATUS: BUILDING
 - Vercel previews are SSO-protected; tests send x-vercel-protection-bypass (secret in .env.local and GitHub secret VERCEL_AUTOMATION_BYPASS_SECRET).
 - Vercel MCP returns 403/404 for this team; use Vercel CLI (logged in as robertpierson196-1427). In Git Bash prefix `vercel api` with MSYS_NO_PATHCONV=1.
 - No Docker, so no local Supabase stack; test against the hosted project.
+- Desktop e2e "computer use … real input" fails while someone is moving the mouse on this PC (robotjs reads the live cursor). Re-run when the PC is idle.
 
 ## Notes (last 10)
+- 2026-10-13: R25 key scan (env vars + Windows user env, masked, add only picked) and R28 home PC (Settings > Remote control > Make this my home PC; Cowork on another device connects, AI gets pc_list/read/write/run tools, writes + commands need Allow on that device, PC still enforces tiers + home folder, audit). Fixed: background defaults (Ollama auto-detect) made Settings look unsaved and blocked leaving; unsaved changes blocked quitting the desktop app (now asks). All versions 0.5.0. 77 unit, 113 web e2e, 11 PGlite, 18 desktop e2e.
 - 2026-10-13: Remote control: devices table + private Realtime channels (owner + aal2 only, enforced by RLS), PC approves each device (remember option), screen ~2 fps JPEG, mouse/keyboard, xterm terminal, home-folder files, local-model chat; orange overlay, one panic key for AI + remote, 15-min idle end, audit. 11 PGlite, 72 unit, 15 desktop e2e.
 - 2026-10-13: Supabase live. Accounts on (email + magic link; Google/GitHub need owner OAuth apps). Sync engine (chats, settings, keys via Vault) with two-device test; delete account + download counts via DB functions (no secret key). Vercel env set; desktop build bakes the public URL/key. 10 PGlite, 69 unit, 109 web e2e.
 - 2026-10-13: Chat | Cowork | Code modes with their own sidebars (editor-style Code sidebar), recents capped at 15 + All chats, Claude-style chat Projects (move chats in, connectors + skills per project), code folders, code permission modes (ask/auto/plan/bypass), Cowork (files, screen, browser with permissions), Settings > Usage (tokens, est. cost, OpenRouter credits) and Memory. 109 web e2e, 14 desktop e2e, 67 unit.
@@ -153,4 +155,3 @@ STATUS: BUILDING
 - 2026-10-13: R8b Chrome extension (apps/extension; zip at /downloads): share a tab, AI reads/clicks/types/opens; risky steps confirmed in an extension window (clickjack-proof), 15-min idle stop, Alt+Shift+M, audit. 97 web e2e incl. real-extension test.
 - 2026-10-13: R8a desktop file access (folder grants live in the desktop app; server re-checks every path incl. links); 13 desktop e2e, 64 unit.
 - 2026-10-13: R7 website redesign: always-light daytime-moon look with gradients; moon setup deferred until idle (Lighthouse mobile 92, a11y 100). 96 web e2e.
-- 2026-10-13: R6 Claude plugins from GitHub (skills via load_skill, slash commands, agents as modes, MCP connectors; browse Anthropic's directory, verified against the real 315-plugin list). Fixed: mode/model changes didn't stick in a just-started chat. 96 web e2e.

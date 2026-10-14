@@ -18,3 +18,4 @@
 - 2026-10-13: Multi-provider OAuth (Google, Spotify, Slack, Discord); fixed desktop search-key deletion bug; 90 web e2e.
 - 2026-10-13: X BYOK + 10 more one-click MCP services; in-text links underlined (a11y); 92 web e2e.
 - 2026-10-13: Owner requests R1-R5: Compare removed, mode menu (3 pinned + More options), Chat/Code switch, Claude-style Settings, Auto model; sign-in code ready (hidden until Supabase). 92 web e2e.
+- 2026-10-13: R6 Claude plugins from GitHub (skills via load_skill, slash commands, agents as modes, MCP connectors; browse Anthropic's directory, verified against the real 315-plugin list). Fixed: mode/model changes didn't stick in a just-started chat. 96 web e2e.

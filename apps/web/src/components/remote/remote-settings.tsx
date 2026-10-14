@@ -8,17 +8,25 @@ import { Switch } from "@/components/ui/switch";
 import { desktop, type RemoteSession } from "@/lib/desktop";
 import { TIER_LABELS, type Tier } from "@/lib/remote";
 import { update, useStore } from "@/lib/store";
+import { supabase } from "@/lib/supabase/client";
 
 /** Desktop app: Settings > Remote control. Off by default. */
 export function RemoteSettings({ onSetup }: { onSetup: () => void }) {
   const b = desktop()!;
   const enabled = useStore((s) => !!s.remoteEnabled);
   const [name, setName] = useState("");
+  const [id, setId] = useState("");
+  const [home, setHome] = useState(false);
   const [sessions, setSessions] = useState<RemoteSession[]>([]);
   const [grants, setGrants] = useState<{ clientId: string; name: string; tiers: string[] }[]>([]);
   const [log, setLog] = useState<{ at: string; action: string; name?: string }[]>([]);
   useEffect(() => {
-    b.device.info().then((i) => setName(i.name));
+    b.device.info().then(async (i) => {
+      setName(i.name);
+      setId(i.id);
+      const { data } = await supabase().from("devices").select("is_home").eq("id", i.id).maybeSingle();
+      setHome(!!data?.is_home);
+    });
     b.remote.state().then(setSessions);
     b.remote.grants().then(setGrants);
     b.remote.audit().then(setLog);
@@ -41,6 +49,24 @@ export function RemoteSettings({ onSetup }: { onSetup: () => void }) {
           </div>
           <Switch aria-label="Let my other devices control this PC" checked={enabled} onCheckedChange={(v) => update((s) => ({ ...s, remoteEnabled: v }))} />
         </div>
+
+        {enabled && id && (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4">
+            <div className="grid gap-0.5">
+              <span className="font-medium">Make this my home PC</span>
+              <span className="text-sm text-muted-foreground">On your phone or laptop, Cowork can then work in this PC&apos;s folders and run commands here (you approve each change). Leave this PC on and signed in.</span>
+            </div>
+            <Switch
+              aria-label="Make this my home PC"
+              checked={home}
+              onCheckedChange={async (v) => {
+                if (v) await supabase().from("devices").update({ is_home: false }).neq("id", id);
+                const { error } = await supabase().from("devices").update({ is_home: v }).eq("id", id);
+                if (!error) setHome(v);
+              }}
+            />
+          </div>
+        )}
 
         <section aria-label="Connected now" className="grid gap-2">
           <h3 className="font-medium">Connected now</h3>

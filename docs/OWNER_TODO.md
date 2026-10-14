@@ -2,13 +2,18 @@
 
 Do them in order. When done, tell Claude "done, continue".
 
-## 1. Create the MoonlightC database (2 minutes) — you paused "Personal App Project", thanks!
-Claude's Supabase tool can't create projects (it asks for a cost confirmation it can't give), so:
-1. Open https://supabase.com/dashboard/new/umzghxzngixiedodscaa
-2. Project name: **moonlightc**
-3. Database password: click **Generate a password** (you don't need to keep it).
-4. Region: **East US (Ohio)**.
-5. Click **Create new project**, then tell Claude "created".
+## Try this yourself: home PC (work on your PC from your phone)
+1. On this PC, open MoonlightC > Settings > **Account** and set up **two-step sign-in** (needed for anything that reaches your PC).
+2. Settings > **Remote control**: turn on **Let my other devices control this PC**, then turn on **Make this my home PC**.
+3. On your phone, open https://moonlightc.vercel.app/app, sign in with the same account, switch to **Cowork**.
+4. At the top it says **Home PC: (your PC's name)**. Tap **Connect**, then click **Allow** on the PC (tick "remember" so you only do this once).
+5. Ask: "list the folders in my home folder" or "in MoonC run git status". Before it changes a file or runs a command, your phone shows **Allow / Deny**.
+
+## Try this yourself: newest bits
+1. Settings > **Models & API keys** > **Scan this PC for API keys** (desktop app): keys already on your PC show up masked; tick and **Check and add selected**.
+2. Settings > **Usage**: add your AI plans (e.g. Claude Pro, $20) to see what you pay, tokens this month, and what they'd cost at list prices.
+3. Change your name in Settings > **Profile**: a **Save changes / Reset** bar appears at the bottom.
+4. Chrome extension: download it again from the Download page, unzip, and in chrome://extensions **Load unpacked** the **moonlightc-chrome-extension** folder.
 
 ## 2. Let MoonlightC connect to Google (Gmail, Calendar, Drive, YouTube) — about 10 minutes
 This makes the **Connect Google** button appear. Google is free for this.

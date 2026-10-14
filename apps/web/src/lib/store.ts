@@ -333,7 +333,7 @@ export function findModel(ref?: ModelRef) {
 }
 
 export function addMemory(text: string, projectId?: string) {
-  update((s) => ({ ...s, memory: { enabled: s.memory?.enabled ?? true, items: [...(s.memory?.items ?? []), { id: crypto.randomUUID(), text, projectId, createdAt: Date.now() }] } }));
+  updateNow((s) => ({ ...s, memory: { enabled: s.memory?.enabled ?? true, items: [...(s.memory?.items ?? []), { id: crypto.randomUUID(), text, projectId, createdAt: Date.now() }] } }));
 }
 
 /** Forget everything on this device (keys in the desktop keychain are removed by the same save path). */
@@ -354,9 +354,17 @@ export function beginEditing() {
   if (!staged) staged = pick(state);
 }
 export const isEditing = () => !!staged;
-export const hasUnsavedChanges = () => !!staged && STAGED_KEYS.some((k) => state[k] !== staged![k]);
+// By value: background refreshes often rebuild the same settings as new objects.
+export const hasUnsavedChanges = () => !!staged && STAGED_KEYS.some((k) => state[k] !== staged![k] && JSON.stringify(state[k]) !== JSON.stringify(staged![k]));
 /** The settings as last saved (what other devices should get while edits are pending). */
 export const savedState = (): State => (staged ? { ...state, ...staged } : state);
+
+/** A change that isn't a Settings edit (a default picked for you, a memory the AI saved): kept at once, never waits for Save. */
+export function updateNow(fn: (s: State) => State) {
+  load();
+  if (staged) staged = pick(fn({ ...state, ...staged }));
+  update(fn);
+}
 
 // After Save or Reset, Settings keeps holding new edits until it closes.
 export function saveEdits() {

@@ -3,6 +3,7 @@
 // here, and only after the person at this PC approved that device: native prompt, visible frame while connected,
 // Ctrl+Alt+Shift+M ends it, 15 idle minutes end it, and every action is written to an audit log.
 import { app, BrowserWindow, dialog, Notification, screen } from "electron";
+import { exec as runShell } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -218,4 +219,19 @@ export function write(clientId, dir, name, data) {
   fs.writeFileSync(real, buf);
   audit("files.upload", { clientId, path: real, bytes: buf.length });
   return { saved: real };
+}
+
+/** Run one command (the AI on your other device asked, and you approved it there). Output is capped. */
+export function exec(clientId, command, cwd) {
+  need(clientId, "terminal");
+  const cmd = String(command ?? "").slice(0, 2000);
+  if (!cmd.trim()) throw new Error("No command.");
+  const dir = cwd ? inHome(cwd).real : fs.realpathSync.native(os.homedir());
+  audit("exec", { clientId, command: cmd.slice(0, 200), cwd: dir });
+  return new Promise((resolve) => {
+    runShell(cmd, { cwd: dir, timeout: 120_000, maxBuffer: 2 * 1024 * 1024, windowsHide: true }, (err, stdout, stderr) => {
+      const cap = (t) => (t.length > 20_000 ? `${t.slice(0, 10_000)}\n…\n${t.slice(-10_000)}` : t);
+      resolve({ exitCode: err ? (typeof err.code === "number" ? err.code : 1) : 0, stdout: cap(String(stdout)), stderr: cap(String(stderr)), timedOut: !!err?.killed });
+    });
+  });
 }

@@ -52,6 +52,7 @@ contextBridge.exposeInMainWorld("moonc", {
     setOpenAtLogin: (on) => invoke("settings:openAtLogin", on),
   },
   device: { info: () => invoke("device:info") },
+  keys: { scan: () => invoke("keys:scan") },
   remote: {
     connect: (client, tiers) => invoke("remote:connect", client, tiers),
     end: (clientId, reason) => invoke("remote:end", clientId, reason),
@@ -61,6 +62,7 @@ contextBridge.exposeInMainWorld("moonc", {
     list: (clientId, dir) => invoke("remote:list", clientId, dir),
     read: (clientId, p) => invoke("remote:read", clientId, p),
     write: (clientId, dir, name, data) => invoke("remote:write", clientId, dir, name, data),
+    exec: (clientId, command, cwd) => invoke("remote:exec", clientId, command, cwd),
     state: () => invoke("remote:state"),
     grants: () => invoke("remote:grants"),
     revoke: (clientId) => invoke("remote:revoke", clientId),

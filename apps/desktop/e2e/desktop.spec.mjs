@@ -8,7 +8,7 @@ let page;
 const grantDir = fs.mkdtempSync(path.join(os.tmpdir(), "moonc-share-"));
 fs.writeFileSync(path.join(grantDir, "hello.txt"), "hi");
 const userData = fs.mkdtempSync(path.join(os.tmpdir(), "moonc-e2e-"));
-const launch = () => electron.launch({ args: ["."], env: { ...process.env, MOONC_E2E_AUTO_APPROVE: "1", MOONC_E2E_USER_DATA: userData, MOONC_E2E_GRANT_DIR: grantDir }, cwd: new URL("..", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1") });
+const launch = () => electron.launch({ args: ["."], env: { ...process.env, MOONC_E2E_AUTO_APPROVE: "1", MOONC_E2E_USER_DATA: userData, MOONC_E2E_GRANT_DIR: grantDir, MISTRAL_API_KEY: "test-mistral-key-0000111122223333" }, cwd: new URL("..", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1") });
 test.beforeAll(async () => {
   app = await launch();
   page = await app.firstWindow();
@@ -266,6 +266,7 @@ test("chats and settings survive a restart (same local address every launch)", a
   await page.getByRole("button", { name: "Settings", exact: true }).click();
   await page.getByRole("navigation", { name: "Settings" }).getByRole("button", { name: "Profile" }).click();
   await page.getByLabel("Your name").fill("Restart check");
+  await page.getByRole("button", { name: "Save changes" }).click();
   await expect(page.getByText("Restart check").first()).toBeVisible();
   await app.evaluate(({ app }) => app.quit());
   await app.close().catch(() => {});
@@ -296,6 +297,7 @@ test("remote control: allowed device sees the screen; only what it was allowed; 
       c,
       jpeg: f.image.startsWith("/9j/"),
       input: await fail(() => b.input("phone-test", { action: "click", x: 1, y: 1 })),
+      noTerminal: await fail(() => b.exec("phone-test", "echo hi")),
       stranger: await fail(() => b.frame("someone-else")),
       outside: await fail(() => b.list("phone-test", home.path + "/../..")),
       homeOk: Array.isArray(home.entries),
@@ -305,6 +307,7 @@ test("remote control: allowed device sees the screen; only what it was allowed; 
   expect(r.c).toEqual({ allowed: true, tiers: ["view", "files"] });
   expect(r.jpeg).toBe(true);
   expect(r.input).toContain("mouse and keyboard");
+  expect(r.noTerminal).not.toBe("");
   expect(r.stranger).toContain("Not connected");
   expect(r.outside).toContain("home folder");
   expect(r.homeOk).toBe(true);
@@ -314,4 +317,32 @@ test("remote control: allowed device sees the screen; only what it was allowed; 
   await expect.poll(() => page.evaluate(() => window.moonc.remote.state().then((s) => s.length)), { timeout: 5000 }).toBe(0);
   const log = await page.evaluate(() => window.moonc.remote.audit());
   expect(log.find((e) => e.action === "end")?.reason).toBe("panic hotkey");
+});
+
+test("home PC: a device allowed the terminal runs commands in the home folder only", async () => {
+  const r = await page.evaluate(async () => {
+    const b = window.moonc.remote;
+    await b.connect({ id: "laptop-test", name: "Test laptop" }, ["files", "terminal"]);
+    const out = await b.exec("laptop-test", "echo moon-home");
+    let outside = "";
+    await b.exec("laptop-test", "echo x", "../..").catch((e) => (outside = String(e.message)));
+    await b.end("laptop-test", "test done");
+    return { out, outside };
+  });
+  expect(r.out.exitCode).toBe(0);
+  expect(r.out.stdout).toContain("moon-home");
+  expect(r.outside).toContain("home folder");
+  const log = await page.evaluate(() => window.moonc.remote.audit());
+  expect(log.some((e) => e.action === "exec")).toBe(true);
+});
+
+test("finds API keys already set up on this PC (shown masked, added only when picked)", async () => {
+  const found = await page.evaluate(() => window.moonc.keys.scan());
+  const k = found.find((x) => x.source === "MISTRAL_API_KEY");
+  expect(k).toMatchObject({ provider: "mistral", masked: "test…3333" });
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await page.getByRole("navigation", { name: "Settings" }).getByRole("button", { name: "Models & API keys" }).click();
+  await page.getByRole("button", { name: "Scan this PC for API keys" }).click();
+  await expect(page.getByRole("list", { name: "Keys found on this PC" })).toContainText("MISTRAL_API_KEY");
+  await expect(page.getByRole("list", { name: "Keys found on this PC" })).not.toContainText("0000111122223333");
 });

@@ -3,7 +3,7 @@
 import { getProvider, type ModelInfo } from "@moonc/core";
 import { track } from "./analytics";
 import { desktop } from "./desktop";
-import { update, type SavedConnection } from "./store";
+import { updateNow, type SavedConnection } from "./store";
 
 // "Sign in with OpenRouter": OAuth with PKCE, no app registration needed. The result is an ordinary OpenRouter key
 // saved like a pasted one. On the desktop the browser hands the code back through a moonlightc:// link.
@@ -40,7 +40,7 @@ export async function finishOpenRouterSignIn(params: URLSearchParams): Promise<n
   const md = (await m.json().catch(() => ({}))) as { models?: ModelInfo[]; error?: string };
   if (!m.ok || !md.models?.length) throw new Error(md.error ?? "Signed in, but OpenRouter didn't list any models.");
   const conn: SavedConnection = { id: crypto.randomUUID(), providerId: "openrouter", apiKey: d.key, label: getProvider("openrouter").name, models: md.models, addedAt: Date.now() };
-  update((s) => ({
+  updateNow((s) => ({
     ...s,
     connections: [...s.connections, conn],
     lastModel: s.lastModel ?? { connectionId: conn.id, modelId: md.models![0].id },

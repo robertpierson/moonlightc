@@ -100,6 +100,8 @@ test("Settings > Usage adds up tokens per model; Cowork shows what it can use", 
   await openMenu(page);
   await page.getByRole("group", { name: "Mode" }).locator("visible=true").getByRole("button", { name: "Cowork" }).click();
   await expect(page.getByRole("region", { name: "What Cowork can use" })).toContainText("needs the desktop app");
+  // Live site (accounts on): a signed-out phone is pointed at sign-in to reach its home PC.
+  if (process.env.BASE_URL) await expect(page.getByRole("region", { name: "What Cowork can use" })).toContainText("to work on your home PC");
   await expect(page.getByRole("button", { name: "Use this PC" })).toHaveCount(0);
 });
 

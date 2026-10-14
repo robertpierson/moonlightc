@@ -66,6 +66,8 @@ export function createHostHandler(
         return b.remote.list(req.from, p.dir as string | undefined);
       case "files.read":
         return b.remote.read(req.from, String(p.path ?? ""));
+      case "exec":
+        return b.remote.exec(req.from, String(p.command ?? ""), p.cwd ? String(p.cwd) : undefined);
       case "files.write":
         return b.remote.write(
           req.from,
