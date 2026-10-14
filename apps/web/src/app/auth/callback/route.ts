@@ -6,7 +6,8 @@ export async function GET(req: NextRequest) {
   if (!accountsEnabled) return new NextResponse(null, { status: 404 });
   const url = req.nextUrl;
   const raw = url.searchParams.get("next");
-  const next = raw && /^\/(?![/\\])/.test(raw) ? raw : "/app";
+  // Coming back from an email link: never land on onboarding or sign-in as the final page (that loops).
+  const next = raw && /^\/(?![/\\])/.test(raw) && !/^\/(onboarding|signin)(\/|\?|$)/.test(raw) ? raw : "/app";
   const fail = (msg: string) => NextResponse.redirect(new URL(`/signin?error=${encodeURIComponent(msg)}`, url.origin));
   const providerError = url.searchParams.get("error_description");
   if (providerError) return fail(providerError);

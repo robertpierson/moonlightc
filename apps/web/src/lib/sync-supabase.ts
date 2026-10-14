@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { getState, subscribe, update } from "./store";
+import { getState, isEditing, subscribe, update } from "./store";
 import { supabase } from "./supabase/client";
 import { emptyMeta, syncOnce, type RemoteChat, type RemoteConnection, type SyncBackend } from "./sync";
 
@@ -82,6 +82,12 @@ export function startSync(userId: string) {
   let busy = false;
   let again = false;
   const run = async () => {
+    // Wait while Settings has unsaved edits, so they don't reach other devices before Save.
+    if (isEditing()) {
+      clearTimeout(timer);
+      timer = setTimeout(run, 5000);
+      return;
+    }
     if (busy) {
       again = true;
       return;

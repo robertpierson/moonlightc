@@ -140,3 +140,24 @@
     @apply font-sans;
   }
 }
+/* Settings "unsaved changes" bar */
+@keyframes savebar-in {
+  from {
+    transform: translateY(12px);
+    opacity: 0;
+  }
+}
+@keyframes savebar-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20%,
+  60% {
+    transform: translateX(-8px);
+  }
+  40%,
+  80% {
+    transform: translateX(8px);
+  }
+}

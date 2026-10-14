@@ -265,6 +265,8 @@ function persist(prev: State) {
       oauth: state.oauth && Object.fromEntries(Object.entries(state.oauth).map(([k, a]) => [k, a && { ...a, accessToken: "", refreshToken: a.refreshToken ? "" : undefined }])),
     };
   }
+  // While Settings has unsaved edits, storage keeps the last saved values for those settings.
+  if (staged) saved = { ...saved, ...staged };
   localStorage.setItem(KEY, JSON.stringify(saved));
 }
 
@@ -338,3 +340,53 @@ export function addMemory(text: string, projectId?: string) {
 export function resetState() {
   update(() => ({ ...empty }));
 }
+
+// ---------- Unsaved changes in Settings (Save / Reset, like Discord) ----------
+// Preference settings edited in Settings show right away but only stick after Save. Actions with their own
+// buttons (adding a key, connecting a service, installing a plugin) still apply immediately.
+export const STAGED_KEYS = ["profile", "look", "distroId", "customDistros", "myThemes", "lastModel", "webTools", "memory", "autoPicks", "pinnedModes", "modes", "remoteEnabled"] as const;
+type StagedKey = (typeof STAGED_KEYS)[number];
+let staged: Partial<Pick<State, StagedKey>> | null = null;
+const pick = (s: State) => Object.fromEntries(STAGED_KEYS.map((k) => [k, s[k]])) as Pick<State, StagedKey>;
+
+export function beginEditing() {
+  load();
+  if (!staged) staged = pick(state);
+}
+export const isEditing = () => !!staged;
+export const hasUnsavedChanges = () => !!staged && STAGED_KEYS.some((k) => state[k] !== staged![k]);
+/** The settings as last saved (what other devices should get while edits are pending). */
+export const savedState = (): State => (staged ? { ...state, ...staged } : state);
+
+// After Save or Reset, Settings keeps holding new edits until it closes.
+export function saveEdits() {
+  if (!staged) return;
+  const prev = state;
+  staged = null;
+  try {
+    persist(prev);
+  } catch {}
+  staged = pick(state);
+  listeners.forEach((l) => l());
+}
+export function revertEdits() {
+  if (!staged) return;
+  state = { ...state, ...staged };
+  staged = null;
+  try {
+    persist(state);
+  } catch {}
+  staged = pick(state);
+  listeners.forEach((l) => l());
+}
+/** Leaving Settings: keep editing only if there's something unsaved. */
+export function endEditing() {
+  if (!hasUnsavedChanges()) staged = null;
+}
+const nudges = new Set<() => void>();
+/** Something tried to leave Settings with unsaved changes. */
+export const nudgeUnsaved = () => nudges.forEach((f) => f());
+export const onNudge = (f: () => void) => {
+  nudges.add(f);
+  return () => void nudges.delete(f);
+};

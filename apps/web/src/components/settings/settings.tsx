@@ -1,6 +1,8 @@
 "use client";
 
 import { Brain, Cpu, MonitorSmartphone, Download, FolderOpen, Gauge, Globe, KeyRound, Laptop, Moon, Palette, Plug, Puzzle, Shield, SlidersHorizontal, Sparkles, Sun, KeySquare, Trash2, Upload, UserRound, Wand2, X } from "lucide-react";
+import { SaveBar } from "./save-bar";
+import { beginEditing, endEditing } from "@/lib/store";
 import { RemoteSettings } from "@/components/remote/remote-settings";
 import dynamic from "next/dynamic";
 import { useTheme } from "next-themes";
@@ -52,6 +54,11 @@ const SECTIONS: { id: SettingsSection; label: string; icon: React.ReactNode; des
 export function Settings({ section, onSection, availableViews, onClose, onChat }: { section: SettingsSection; onSection: (s: SettingsSection) => void; availableViews: ViewId[]; onClose: () => void; onChat: () => void }) {
   const isDesktop = !!desktop();
   const sections = SECTIONS.filter((s) => (isDesktop ? !s.webOnly : !s.desktopOnly) && (accountsEnabled || !s.needsAccounts));
+  // Edits made here wait for Save (or Reset) in the bar at the bottom.
+  useEffect(() => {
+    beginEditing();
+    return endEditing;
+  }, []);
   return (
     <div className="flex min-h-0 flex-1 flex-col md:flex-row">
       <nav aria-label="Settings" className="flex shrink-0 gap-1 overflow-x-auto border-b p-2 md:w-56 md:flex-col md:overflow-visible md:border-r md:border-b-0">
@@ -72,7 +79,7 @@ export function Settings({ section, onSection, availableViews, onClose, onChat }
           </button>
         ))}
       </nav>
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+      <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
         {section === "profile" && <Profile />}
         {section === "account" && (
           <Page title="Account" description="Sign-in methods, two-step sign-in and your account data.">
@@ -120,6 +127,7 @@ export function Settings({ section, onSection, availableViews, onClose, onChat }
         {section === "local" && <LocalModels onChat={onChat} />}
         {section === "appearance" && <Customize availableViews={availableViews} />}
         {section === "privacy" && <Privacy />}
+        <SaveBar />
       </div>
     </div>
   );

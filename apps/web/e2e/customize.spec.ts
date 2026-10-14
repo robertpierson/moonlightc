@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { nav, openMenu } from "./helpers";
+import { nav, openMenu, saveSettings } from "./helpers";
 
 const go = nav;
 
@@ -27,6 +27,7 @@ test("theme picker, editor and reset", async ({ page }) => {
   await page.getByText("Theme editor").click();
   await page.getByLabel("primary color", { exact: true }).fill("#ff0000");
   await expect.poll(() => page.evaluate(() => document.documentElement.style.getPropertyValue("--primary"))).toBe("#ff0000");
+  await saveSettings(page);
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "paper");
   await go(page, "Customize");
@@ -90,4 +91,28 @@ test("profile name and picture, and saving your own theme", async ({ page }) => 
   await page.getByRole("radiogroup", { name: "My themes" }).getByRole("radio", { name: "Night ink" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "paper");
   await expect.poll(() => page.evaluate(() => document.documentElement.style.getPropertyValue("--primary"))).toBe("#123456");
+});
+
+test("Settings changes wait for Save; Reset puts them back; leaving with unsaved changes is blocked", async ({ page }) => {
+  await page.goto("/app");
+  await go(page, "Settings");
+  await page.getByRole("navigation", { name: "Settings" }).getByRole("button", { name: "Profile" }).click();
+  const bar = page.getByRole("region", { name: "Unsaved changes" });
+  await expect(bar).toHaveCount(0);
+  await page.getByLabel("Your name").fill("Draft name");
+  await expect(bar).toBeVisible();
+  await bar.getByRole("button", { name: "Reset" }).click();
+  await expect(page.getByLabel("Your name")).toHaveValue("");
+  await expect(bar).toHaveCount(0);
+
+  await page.getByLabel("Your name").fill("Saved name");
+  await openMenu(page);
+  await page.getByRole("group", { name: "Mode" }).locator("visible=true").getByRole("button", { name: "Chat" }).click();
+  if ((page.viewportSize()?.width ?? 1280) < 768) await page.keyboard.press("Escape");
+  await expect(bar).toContainText("Careful");
+  await expect(page.getByRole("navigation", { name: "Settings" })).toBeVisible();
+  await bar.getByRole("button", { name: "Save changes" }).click();
+  await expect(bar).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "What can I help with, Saved?" })).toBeVisible();
 });

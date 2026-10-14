@@ -1,6 +1,7 @@
 "use client";
 
 import type { UIMessage } from "ai";
+import { hasUnsavedChanges, nudgeUnsaved } from "@/lib/store";
 import { YourComputers } from "@/components/remote/your-computers";
 import { RemoteHost } from "@/components/remote/remote-host";
 import { SyncRunner } from "@/components/account/sync-runner";
@@ -125,7 +126,14 @@ function Inner() {
   const [draftProject, setDraftProject] = useState<string>();
   const projects = useStore((s) => s.projects) ?? [];
   const [quick] = useState(() => new URLSearchParams(location.search).has("quick"));
+  // Like Discord: you can't leave Settings with unsaved changes; the Save / Reset bar shakes instead.
+  const blocked = () => {
+    if (view !== "settings" || !hasUnsavedChanges()) return false;
+    nudgeUnsaved();
+    return true;
+  };
   const go = (v: View) => {
+    if (v !== "settings" && blocked()) return;
     setView(v);
     setWorkspace((w) => workspaceOf(v, w));
     track(`feature.${v}`);
@@ -149,6 +157,7 @@ function Inner() {
   const model = [chat.model, saved ? undefined : draftModel, mode.model, lastModel, fallback].find(valid);
 
   const start = (c: Chat = newChat(), ws: "chat" | "cowork" = workspace === "cowork" ? "cowork" : "chat") => {
+    if (blocked()) return;
     setDraft(ws === "cowork" ? { ...c, workspace: "cowork" } : c);
     setActiveId(undefined);
     setDraftModel(undefined);
@@ -256,6 +265,7 @@ function Inner() {
           workspace={workspace}
           activeId={saved ? chat.id : undefined}
           onSelect={(id) => {
+            if (blocked()) return;
             setActiveId(id);
             setArtifact(undefined);
             setView(workspace);

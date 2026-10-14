@@ -33,5 +33,6 @@ export function useUser() {
 
 /** Only same-site paths are allowed as a place to return to after signing in. */
 export function safeNext(next: string | null | undefined, fallback = "/app") {
-  return next && /^\/(?![/\\])/.test(next) ? next : fallback;
+  // Never send someone back into sign-in or onboarding after finishing them (that loops).
+  return next && /^\/(?![/\\])/.test(next) && !/^\/(onboarding|signin|auth)(\/|\?|$)/.test(next) ? next : fallback;
 }

@@ -79,7 +79,7 @@ function Form() {
         if (error) throw error;
         location.assign(await destinationAfterSignIn(next));
       } else if (step === "signup") {
-        const { data, error } = await sb.signUp({ email, password, options: { emailRedirectTo: authRedirect("/onboarding") } });
+        const { data, error } = await sb.signUp({ email, password, options: { emailRedirectTo: authRedirect("/app") } });
         if (error) throw error;
         if (data.session) location.assign(await destinationAfterSignIn(next));
         else setNotice(`We sent a confirmation link to ${email}. Open it to finish creating your account.`);
@@ -99,7 +99,7 @@ function Form() {
 
   const resend = () =>
     run(async () => {
-      const { error } = await supabase().auth.resend({ type: "signup", email, options: { emailRedirectTo: authRedirect("/onboarding") } });
+      const { error } = await supabase().auth.resend({ type: "signup", email, options: { emailRedirectTo: authRedirect("/app") } });
       if (error) throw error;
       setNotice(`Sent a new confirmation link to ${email}.`);
     });

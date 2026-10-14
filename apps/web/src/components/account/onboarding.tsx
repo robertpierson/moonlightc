@@ -76,11 +76,14 @@ function Steps() {
   useEffect(() => {
     supabase()
       .auth.getUser()
-      .then(({ data }) => {
-        if (!data.user) location.assign("/signin");
-        else setName((n) => n || String(data.user.user_metadata?.full_name ?? data.user.user_metadata?.name ?? ""));
+      .then(async ({ data }) => {
+        if (!data.user) return location.assign("/signin");
+        // Already done once: never ask again.
+        const { data: p } = await supabase().from("profiles").select("onboarded_at").eq("id", data.user.id).maybeSingle();
+        if (p?.onboarded_at) return location.assign(next);
+        setName((n) => n || String(data.user.user_metadata?.full_name ?? data.user.user_metadata?.name ?? ""));
       });
-  }, []);
+  }, [next]);
 
   const save = async (patch: Record<string, unknown>) => {
     const sb = supabase();

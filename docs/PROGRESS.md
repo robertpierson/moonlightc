@@ -43,7 +43,10 @@ STATUS: BUILDING
 - [ ] R24 Settings > Usage: your plans first (what you pay), tokens, value at list prices
 - [ ] R25 Desktop: scan this PC for existing API keys (environment) and add them with one click
 - [ ] R26 Rebuild + install desktop app
-- [ ] R27 Settings: Discord-style "unsaved changes — Reset / Save" bar; leaving with unsaved changes is blocked
+- [x] R27 Settings: Discord-style "unsaved changes — Reset / Save" bar; leaving with unsaved changes is blocked
+- [x] R29 Fix: finishing onboarding looped back to step 1 (email link pointed at onboarding); already-onboarded people skip it
+- [ ] R28 Home PC: from any signed-in device, the AI works on your home PC's folders and code projects (with your approval)
+- [ ] R30 Final pass: verify sign-in, create account, key checks and every feature; web app, desktop app and Chrome extension all on the same version
 
 ## Phase 0 tasks
 - [x] Check prerequisites (node 22, pnpm 11, git, gh logged in as robertpierson; Vercel + Supabase via MCP)

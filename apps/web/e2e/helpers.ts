@@ -13,7 +13,17 @@ export async function openMenu(page: Page) {
 // These live inside Settings now.
 const SETTINGS: Record<string, string> = { Connections: "Connectors", Customize: "Appearance", Mods: "Plugins & mods", "Local models": "Local models", Memory: "Memory", Usage: "Usage" };
 
+/** Keep whatever was changed in Settings (the Save / Reset bar blocks leaving otherwise). */
+export async function saveSettings(page: Page) {
+  const bar = page.getByRole("region", { name: "Unsaved changes" });
+  if (await bar.isVisible()) {
+    await bar.getByRole("button", { name: "Save changes" }).click();
+    await expect(bar).toHaveCount(0);
+  }
+}
+
 export async function nav(page: Page, name: string) {
+  if (!SETTINGS[name] && name !== "Settings") await saveSettings(page);
   await openMenu(page);
   if (SETTINGS[name]) {
     await page.getByRole("button", { name: "Settings", exact: true }).click();
