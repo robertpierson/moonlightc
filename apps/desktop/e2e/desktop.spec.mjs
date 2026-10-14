@@ -287,18 +287,6 @@ test("chats and settings survive a restart (same local address every launch)", a
   await expect(page.getByLabel("Your name")).toHaveValue("Restart check");
 });
 
-test("sign-in is written to disk right away (survives a crash or forced close)", async () => {
-  // Chromium alone writes cookies every ~30 s; the app writes them as soon as they change.
-  await app.evaluate(({ session }) => {
-    const jar = session.defaultSession.cookies;
-    const real = jar.flushStore.bind(jar);
-    globalThis.__flushes = 0;
-    jar.flushStore = () => (globalThis.__flushes++, real());
-  });
-  await page.evaluate(() => (document.cookie = "moonc-e2e-kept=1; max-age=86400; path=/"));
-  await expect.poll(() => app.evaluate(() => globalThis.__flushes), { timeout: 5000 }).toBeGreaterThan(0);
-});
-
 test("remote control: allowed device sees the screen; only what it was allowed; home folder only; panic disconnects", async () => {
   const robot = (await import("@jitsi/robotjs")).default;
   const r = await page.evaluate(async () => {

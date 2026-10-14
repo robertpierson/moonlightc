@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, globalShortcut, ipcMain, Menu, nativeImage, Notification, safeStorage, session, shell, Tray } from "electron";
+import { app, BrowserWindow, dialog, globalShortcut, ipcMain, Menu, nativeImage, Notification, safeStorage, shell, Tray } from "electron";
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import net from "node:net";
@@ -385,12 +385,6 @@ app.whenReady().then(async () => {
     app.quit();
     return;
   }
-  // Write cookies (your sign-in) to disk as soon as they change, so a crash or forced close doesn't sign you out.
-  let flush;
-  session.defaultSession.cookies.on("changed", () => {
-    clearTimeout(flush);
-    flush = setTimeout(() => session.defaultSession.cookies.flushStore().catch(() => {}), 500);
-  });
   createWindow();
   if (!testRun) createTray();
   if (pendingLink) win.webContents.once("did-finish-load", () => setTimeout(() => win.webContents.send("deep-link", pendingLink), 1500));
@@ -407,9 +401,6 @@ app.on("before-quit", () => {
   computer.stop("app closed");
   terminals.killAll();
   server?.kill();
-  // Save page storage (chats, settings) and cookies (sign-in) before the process ends.
-  session.defaultSession.flushStorageData();
-  session.defaultSession.cookies.flushStore().catch(() => {});
 });
 app.on("will-quit", () => globalShortcut.unregisterAll());
 app.on("window-all-closed", () => {});
