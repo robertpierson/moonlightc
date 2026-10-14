@@ -217,11 +217,11 @@ function Steps() {
               onClick={() =>
                 run(async () => {
                   await save({ onboarding: answers(), onboarded_at: new Date().toISOString() });
-                  await startOpenRouterSignIn();
+                  location.assign("/app?keys=1");
                 })
               }
             >
-              Sign in with OpenRouter (one key, hundreds of models)
+              Add an API key
             </Button>
             <Button
               variant="outline"
@@ -229,11 +229,11 @@ function Steps() {
               onClick={() =>
                 run(async () => {
                   await save({ onboarding: answers(), onboarded_at: new Date().toISOString() });
-                  location.assign("/app?keys=1");
+                  await startOpenRouterSignIn();
                 })
               }
             >
-              Paste an API key
+              Sign in with OpenRouter
             </Button>
             <Button variant="outline" asChild>
               <Link href="/download">Install a model on my computer</Link>

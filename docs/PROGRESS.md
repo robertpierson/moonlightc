@@ -47,6 +47,15 @@ STATUS: BUILDING
 - [x] R29 Fix: finishing onboarding looped back to step 1 (email link pointed at onboarding); already-onboarded people skip it
 - [x] R28 Home PC: from any signed-in device, the AI works on your home PC's folders and code projects (with your approval)
 - [x] R30 Final pass: verify sign-in, create account, key checks and every feature; web app, desktop app and Chrome extension all on the same version
+- [x] R31 Remote: See screen from Cowork, full screen, leaving ends the session, smaller frames for busy screens
+- [x] R32 Trusted mode on the PC (own devices skip Allow; logged; confirm dialog)
+- [x] R33 Claude preselected instead of OpenRouter; OpenRouter is an option, not the pitch
+- [x] R34 Model library back in the sidebar (desktop)
+- [x] R35 Home PC local models usable in Chat on other devices (custom transport over the remote link; never synced)
+- [x] R36 Key scan: fixed registry path bug; scans .env files and key formats; desktop offers found keys once
+- [x] R37 Quick connect gallery: opens the company's key page and picks up the copied key (no pasting)
+- [x] R38 Website: glossy navy palette, moon shading in navy
+- [ ] R39 GitHub sign-in: code ready (button shows when enabled); needs owner's GitHub OAuth app (OWNER_TODO)
 
 ## Phase 0 tasks
 - [x] Check prerequisites (node 22, pnpm 11, git, gh logged in as robertpierson; Vercel + Supabase via MCP)
@@ -146,6 +155,7 @@ STATUS: BUILDING
 - Owner asked (2026-10-13): never move the mouse/keyboard or show windows on their PC. Locally run desktop e2e with `--grep-invert "computer use|remote control"`; those run in CI. Update desktop: `MoonlightC.exe --quit`, then installer `/S`, then `MoonlightC.exe --hidden`.
 
 ## Notes (last 10)
+- 2026-10-14: R31-R38 (see checklist). Local Ollama connections no longer sync to other devices. Desktop input tests need the installed app quit first (it holds the panic hotkey). All apps 0.6.0.
 - 2026-10-14: Fix: desktop lost its sign-in when force-closed for an update (Electron writes cookies on a timer). Updates now use `MoonlightC.exe --quit` (clean exit), installer `/S`, `MoonlightC.exe --hidden` (tray only; also start-with-Windows). A crashed app's leftover server is ended on start (only if it answers as MoonlightC) so the port and data stay. Tried flushing cookies on every change: it made quick relaunches hang on CI (bisected), so removed. All apps 0.5.4.
 - 2026-10-14: Fix: phone couldn't reach home PC (phone session was aal1; Realtime RLS needs aal2). Cowork home-PC Connect now asks for the two-step code first and shows the real error. All apps 0.5.1.
 - 2026-10-13: R25 key scan (env vars + Windows user env, masked, add only picked) and R28 home PC (Settings > Remote control > Make this my home PC; Cowork on another device connects, AI gets pc_list/read/write/run tools, writes + commands need Allow on that device, PC still enforces tiers + home folder, audit). Fixed: background defaults (Ollama auto-detect) made Settings look unsaved and blocked leaving; unsaved changes blocked quitting the desktop app (now asks). All versions 0.5.0. 77 unit, 113 web e2e, 11 PGlite, 18 desktop e2e.
@@ -155,4 +165,3 @@ STATUS: BUILDING
 - 2026-10-13: Sign in with OpenRouter (PKCE, web + desktop deep link). Phase 1 prep, hidden until Supabase: onboarding (7 steps, 13+), Settings > Account (link/unlink, TOTP two-step, export, delete), /admin (retention, onboarding answers, downloads, local vs cloud), /api/track with EU consent, privacy text. 8 PGlite tests, 66 unit, 102 web e2e.
 - 2026-10-13: Desktop 0.2.0 built and installed on the owner's PC (silent NSIS). Fixed data loss: desktop now keeps port 47821 (saved in userData/port.json) so localStorage survives restarts. 14 desktop e2e.
 - 2026-10-13: R9/R10: black accents on dark blue, link color token, profile name+picture (greets you, AI knows your name), My themes. Desktop tests now run hidden (no extra window/tray). 99 web e2e, 13 desktop e2e.
-- 2026-10-13: R8b Chrome extension (apps/extension; zip at /downloads): share a tab, AI reads/clicks/types/opens; risky steps confirmed in an extension window (clickjack-proof), 15-min idle stop, Alt+Shift+M, audit. 97 web e2e incl. real-extension test.

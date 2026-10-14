@@ -2,20 +2,27 @@ import { describe, expect, it, vi } from "vitest";
 
 const calls: [string, Record<string, unknown>][] = [];
 vi.mock("./supabase/client", () => ({ supabase: () => ({ removeChannel() {} }) }));
+vi.mock("./store", () => ({ update: () => {} }));
+let chatCb: ((d: { delta?: string; done?: boolean }) => void) | undefined;
 vi.mock("./remote", () => ({
   joinChannel: async () => ({}),
   subscribed: async () => {},
   RemoteClient: class {
+    listenChat(_id: string, cb: typeof chatCb) {
+      chatCb = cb;
+      return () => (chatCb = undefined);
+    }
     async call(method: string, params: Record<string, unknown> = {}) {
       calls.push([method, params]);
       if (method === "connect") return { allowed: true, tiers: params.tiers };
+      if (method === "chat") setTimeout(() => (chatCb?.({ delta: "Hi " }), chatCb?.({ delta: "there", done: true })));
       if (method === "files.read") return { name: "a.txt", data: btoa(String.fromCharCode(...new TextEncoder().encode("héllo"))) };
       return { ok: true };
     }
   },
 }));
 
-const { connectHomePc, homePcClient, homeToolNeedsOk, runHomeTool } = await import("./home-pc");
+const { connectHomePc, homeChatStream, homePcClient, homeToolNeedsOk, runHomeTool } = await import("./home-pc");
 
 describe("home PC tools", () => {
   it("refuse until connected, then map onto the PC's remote requests", async () => {
@@ -36,5 +43,18 @@ describe("home PC tools", () => {
 
     expect(homeToolNeedsOk("pc_write_file") && homeToolNeedsOk("pc_run_command")).toBe(true);
     expect(homeToolNeedsOk("pc_read_file")).toBe(false);
+  });
+
+  it("streams a home PC model's reply as chat chunks", async () => {
+    const chunks: { type: string; delta?: string }[] = [];
+    const reader = homeChatStream("llama3", [{ id: "1", role: "user", parts: [{ type: "text", text: "hello" }] }]).getReader();
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+    }
+    expect(chunks.map((c) => c.type)).toEqual(["start", "text-start", "text-delta", "text-delta", "text-end", "finish"]);
+    expect(chunks.flatMap((c) => c.delta ?? []).join("")).toBe("Hi there");
+    expect(calls.find(([m]) => m === "chat")?.[1]).toMatchObject({ model: "llama3", messages: [{ role: "user", content: "hello" }] });
   });
 });

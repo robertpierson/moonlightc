@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock, Code2, Files, FolderGit2, FolderOpen, MessageSquare, Palette, Receipt, Settings as SettingsIcon, SquareTerminal } from "lucide-react";
+import { Clock, Code2, Cpu, Files, FolderGit2, FolderOpen, MessageSquare, Palette, Receipt, Settings as SettingsIcon, SquareTerminal } from "lucide-react";
 import type { ViewId } from "@/lib/customize";
 import { desktop } from "@/lib/desktop";
 import Link from "next/link";
@@ -8,7 +8,7 @@ import { useStore } from "@/lib/store";
 import { accountsEnabled, useUser } from "@/lib/supabase/client";
 import { Avatar } from "@/components/settings/avatar";
 
-export type View = "chat" | "remote" | "chats" | "library" | "studio" | "subscriptions" | "automations" | "cowork" | "code" | "terminal" | "projects" | "settings";
+export type View = "chat" | "remote" | "chats" | "library" | "studio" | "subscriptions" | "automations" | "cowork" | "code" | "terminal" | "projects" | "models" | "settings";
 export type Workspace = "chat" | "cowork" | "code";
 
 /** Which of the three modes a screen belongs to (Settings keeps whichever mode you came from). */
@@ -22,6 +22,7 @@ export function workspaceOf(v: View, previous: Workspace): Workspace {
 type Item = { id: View; label: string; icon: React.ReactNode; desktopOnly?: boolean };
 const CHAT_ITEMS: Item[] = [
   { id: "library", label: "Projects", icon: <FolderOpen /> },
+  { id: "models", label: "Model library", icon: <Cpu />, desktopOnly: true },
   { id: "studio", label: "Studio", icon: <Palette /> },
   { id: "subscriptions", label: "Subscriptions", icon: <Receipt /> },
   { id: "automations", label: "Automations", icon: <Clock />, desktopOnly: true },

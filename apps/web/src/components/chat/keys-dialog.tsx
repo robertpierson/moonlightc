@@ -3,7 +3,7 @@
 import { getProvider, PROVIDERS, type ModelInfo } from "@moonc/core";
 import { track } from "@/lib/analytics";
 import { ExternalLink, Loader2, RefreshCw, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -182,10 +182,8 @@ export function OpenRouterSignIn({ compact }: { compact?: boolean }) {
     );
   return (
     <div className="grid gap-2 rounded-lg border p-3 text-sm">
-      <p>
-        <strong>Easiest:</strong> sign in with OpenRouter to get one key for hundreds of models (Claude, GPT, Gemini, Llama and more). You pay OpenRouter only for what you use.
-      </p>
-      <Button onClick={go} disabled={busy} className="justify-self-start">
+      <p>Or sign in with OpenRouter for one key that reaches many companies&apos; models (you pay OpenRouter per use).</p>
+      <Button variant="outline" onClick={go} disabled={busy} className="justify-self-start">
         {busy && <Loader2 className="animate-spin" />} Sign in with OpenRouter
       </Button>
     </div>
@@ -204,6 +202,17 @@ function ScanKeys() {
     setFound(list);
     setPicked(list.filter((k) => !have(k.value)).map((k) => k.source));
   };
+  // Opened from the "keys found on this PC" notice: show them straight away.
+  useEffect(() => {
+    if (!new URLSearchParams(location.search).has("scan")) return;
+    desktop()!
+      .keys.scan()
+      .then((list) => {
+        setFound(list);
+        setPicked(list.filter((k) => !have(k.value)).map((k) => k.source));
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, when the dialog opens
+  }, []);
   const addPicked = async () => {
     setBusy(true);
     let added = 0;
@@ -278,15 +287,50 @@ export function KeysDialog({
   );
 }
 
+const QUICK = [
+  ["anthropic", "Claude"],
+  ["openai", "ChatGPT"],
+  ["google", "Gemini"],
+  ["xai", "Grok"],
+  ["mistral", "Mistral"],
+  ["deepseek", "DeepSeek"],
+  ["groq", "Groq"],
+  ["perplexity", "Perplexity"],
+] as const;
+const KEY_SHAPES: Record<string, RegExp> = { anthropic: /^sk-ant-/, openai: /^sk-(?!ant-|or-)/, google: /^AIza/, xai: /^xai-/, groq: /^gsk_/, perplexity: /^pplx-/ };
+/** Copied text that plausibly is this company's key (one long token; known prefixes must match). */
+export const looksLikeKey = (providerId: string, text: string) => /^[\w.-]{20,300}$/.test(text) && (KEY_SHAPES[providerId]?.test(text) ?? true);
+
 /** Connected providers (keys masked) plus the add-a-key form. Used in the dialog and in Settings. */
 export function KeysPanel() {
   const connections = useStore((s) => s.connections);
-  const [providerId, setProviderId] = useState("openrouter");
+  const [providerId, setProviderId] = useState("anthropic");
   const [apiKey, setApiKey] = useState("");
   const [baseURL, setBaseURL] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [refreshing, setRefreshing] = useState<string>();
+  // Quick connect: open the company's key page, then pick up the key you copy there when you come back.
+  const [waiting, setWaiting] = useState<string>();
+  const form = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    if (!waiting) return;
+    const check = async () => {
+      if (document.visibilityState !== "visible") return;
+      const b = desktop();
+      const text = (b ? await b.clipboard.readKey() : await navigator.clipboard?.readText().catch(() => null))?.trim();
+      if (!text || !looksLikeKey(waiting, text) || connections.some((c) => c.apiKey === text)) return;
+      setWaiting(undefined);
+      setApiKey(text);
+      setTimeout(() => form.current?.requestSubmit(), 50); // after the key is in the form
+    };
+    addEventListener("focus", check);
+    document.addEventListener("visibilitychange", check);
+    return () => {
+      removeEventListener("focus", check);
+      document.removeEventListener("visibilitychange", check);
+    };
+  }, [waiting, connections]);
   const provider = PROVIDERS.find((p) => p.id === providerId)!;
   const isCustom = providerId === "custom";
   const keyless = isCustom || !!provider.local;
@@ -420,7 +464,39 @@ export function KeysPanel() {
         </ul>
       )}
 
-      <form onSubmit={add} className="grid gap-3">
+      <section aria-label="Quick connect" className="grid gap-2">
+        <h3 className="text-sm font-medium">Quick connect</h3>
+        <p className="text-xs text-muted-foreground">Pick a company: its key page opens. Create a key and copy it, then come back here. MoonlightC picks up the copied key, checks it and connects.</p>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {QUICK.map(([id, name]) => (
+            <Button
+              key={id}
+              type="button"
+              variant="outline"
+              aria-pressed={waiting === id}
+              onClick={() => {
+                const p = PROVIDERS.find((x) => x.id === id)!;
+                setProviderId(id);
+                setError("");
+                setWaiting(id);
+                window.open(p.keyUrl, "_blank", "noopener");
+              }}
+            >
+              {name}
+            </Button>
+          ))}
+        </div>
+        {waiting && (
+          <p role="status" className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Loader2 className="size-3 animate-spin" /> Waiting for your {QUICK.find(([id]) => id === waiting)?.[1]} key: copy it on the page that opened, then come back.
+            <button type="button" className="underline" onClick={() => setWaiting(undefined)}>
+              Cancel
+            </button>
+          </p>
+        )}
+      </section>
+
+      <form ref={form} onSubmit={add} className="grid gap-3">
         <div className="grid gap-1.5">
           <Label htmlFor="provider">Provider</Label>
           <Select
@@ -434,7 +510,7 @@ export function KeysPanel() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {PROVIDERS.filter((p) => !p.local || desktop()).map((p) => (
+              {PROVIDERS.filter((p) => !p.hidden && (!p.local || desktop())).map((p) => (
                 <SelectItem key={p.id} value={p.id}>
                   {p.name}
                   {p.id === "openrouter"

@@ -209,7 +209,7 @@ export function Landing({ release }: { release: Release | null }) {
               </Link>
               <Link
                 href="/download"
-                className="rounded-full border border-[var(--line)] bg-white/70 px-6 py-3 font-semibold backdrop-blur hover:border-[var(--tide)]"
+                className="rounded-full border border-[var(--line)] bg-white/5 px-6 py-3 font-semibold backdrop-blur hover:border-[var(--tide)]"
               >
                 Download
               </Link>
@@ -226,7 +226,7 @@ export function Landing({ release }: { release: Release | null }) {
 
         <section
           aria-label="Works with"
-          className="overflow-hidden border-b border-[var(--line)] bg-white/60 py-5"
+          className="overflow-hidden border-b border-[var(--line)] bg-white/[0.03] py-5"
         >
           <div className="marquee flex w-max gap-10 whitespace-nowrap">
             {[...PROVIDERS, ...PROVIDERS].map((p, i) => (
@@ -306,7 +306,7 @@ export function Landing({ release }: { release: Release | null }) {
             </h2>
             <PrimaryDownload
               release={release}
-              className="rounded-2xl bg-white px-6 py-4 font-semibold text-[#3b2a9e] shadow-lg hover:bg-white/90"
+              className="rounded-2xl bg-white px-6 py-4 font-semibold text-[#0c2a74] shadow-lg hover:bg-white/90"
             />
             <Link
               href="/download"

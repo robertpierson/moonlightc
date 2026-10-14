@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, globalShortcut, ipcMain, Menu, nativeImage, Notification, safeStorage, shell, Tray } from "electron";
+import { app, BrowserWindow, clipboard, dialog, globalShortcut, ipcMain, Menu, nativeImage, Notification, safeStorage, shell, Tray } from "electron";
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import net from "node:net";
@@ -300,6 +300,27 @@ handle("remote:state", () => remote.state());
 handle("remote:grants", () => remote.grants());
 handle("remote:revoke", (_e, clientId) => remote.revoke(String(clientId)));
 handle("remote:audit", () => remote.readAudit());
+// Quick connect: hand back the clipboard only when it looks like an API key (one token, no spaces).
+handle("clipboard:key", async () => {
+  const t = String((await clipboard.readText()) ?? "").trim();
+  return /^[\w.-]{16,300}$/.test(t) ? t : null;
+});
+handle("remote:trusted", () => remote.trusted());
+handle("remote:setTrusted", async (_e, on) => {
+  if (on && !testRun) {
+    const { response } = await dialog.showMessageBox(win, {
+      type: "warning",
+      buttons: ["Trust my devices", "Cancel"],
+      defaultId: 1,
+      cancelId: 1,
+      title: "Allow your devices without asking?",
+      message: "Your phone and other computers signed in to your account will connect without you clicking Allow here.",
+      detail: "Only devices signed in to your account with two-step sign-in can connect. You still see the orange frame and a notification, everything is logged, and Ctrl+Alt+Shift+M disconnects everyone. Keep your account password and authenticator safe.",
+    });
+    if (response !== 0) return remote.trusted();
+  }
+  return remote.setTrusted(!!on);
+});
 handle("terminals:tools", () => terminals.tools());
 handle("terminals:create", (e, opts) => terminals.create(e.sender, opts));
 const on = (channel, fn) =>

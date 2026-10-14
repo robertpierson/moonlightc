@@ -17,6 +17,7 @@ export function RemoteSettings({ onSetup }: { onSetup: () => void }) {
   const [name, setName] = useState("");
   const [id, setId] = useState("");
   const [home, setHome] = useState(false);
+  const [trust, setTrust] = useState(false);
   const [sessions, setSessions] = useState<RemoteSession[]>([]);
   const [grants, setGrants] = useState<{ clientId: string; name: string; tiers: string[] }[]>([]);
   const [log, setLog] = useState<{ at: string; action: string; name?: string }[]>([]);
@@ -29,6 +30,7 @@ export function RemoteSettings({ onSetup }: { onSetup: () => void }) {
     });
     b.remote.state().then(setSessions);
     b.remote.grants().then(setGrants);
+    b.remote.trusted().then(setTrust);
     b.remote.audit().then(setLog);
     return b.remote.onState((s) => {
       setSessions(s);
@@ -65,6 +67,18 @@ export function RemoteSettings({ onSetup }: { onSetup: () => void }) {
                 if (!error) setHome(v);
               }}
             />
+          </div>
+        )}
+
+        {enabled && (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4">
+            <div className="grid gap-0.5">
+              <span className="font-medium">Allow my devices without asking</span>
+              <span className="text-sm text-muted-foreground">
+                For when you&apos;re away from this PC: your own devices (signed in with two-step sign-in) connect without clicking Allow here. The orange frame, notification, activity log and Ctrl+Alt+Shift+M still work. Only turn this on if your account and authenticator are safe.
+              </span>
+            </div>
+            <Switch aria-label="Allow my devices without asking" checked={trust} onCheckedChange={(v) => b.remote.setTrusted(v).then(setTrust)} />
           </div>
         )}
 

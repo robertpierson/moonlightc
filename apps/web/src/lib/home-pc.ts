@@ -3,6 +3,8 @@
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { useSyncExternalStore } from "react";
 import { joinChannel, RemoteClient, subscribed, type Device, type Tier } from "./remote";
+import type { UIMessage, UIMessageChunk } from "ai";
+import { update } from "./store";
 import { supabase } from "./supabase/client";
 
 // One open connection from this device to your home PC, shared by Cowork's chats.
@@ -25,6 +27,9 @@ export const useHomePc = () =>
   );
 export const homePcClient = () => state.client;
 
+// Closing or leaving the page ends the session on the PC (its orange frame goes away).
+if (typeof window !== "undefined") addEventListener("pagehide", () => void disconnectHomePc());
+
 export async function findHomePc(): Promise<Device | undefined> {
   const { data } = await supabase().from("devices").select("id, name, os, remote_enabled, local_models, app_version, last_seen, is_home").eq("is_home", true).limit(1);
   return (data?.[0] as Device | undefined) ?? undefined;
@@ -41,6 +46,13 @@ export async function connectHomePc(device: Device) {
     if (!r.allowed) throw new Error("The home PC didn't allow this device.");
     channel = ch;
     set({ client, tiers: r.tiers ?? [], connecting: false });
+    // Its local models show up in the model picker on this device (never synced: they only work through this link).
+    const models = (device.local_models ?? []).map((m) => ({ id: m, name: m }));
+    if (models.length && r.tiers?.includes("chat"))
+      update((s) => ({
+        ...s,
+        connections: [...s.connections.filter((c) => c.id !== HOME_CONN), { id: HOME_CONN, providerId: "home-pc", label: `Home PC (${device.name})`, apiKey: "", models, addedAt: Date.now() }],
+      }));
   } catch (e) {
     if (ch) supabase().removeChannel(ch);
     set({ connecting: false, error: e instanceof Error ? e.message : String(e) });
@@ -52,6 +64,52 @@ export async function disconnectHomePc() {
   if (channel) supabase().removeChannel(channel);
   channel = undefined;
   set({ client: undefined, tiers: [] });
+}
+
+export const HOME_CONN = "home-pc";
+
+/** A chat reply from a local model on the home PC, streamed back over the remote link in the AI SDK's format. */
+export function homeChatStream(modelId: string, messages: UIMessage[], signal?: AbortSignal): ReadableStream<UIMessageChunk> {
+  const c = state.client;
+  return new ReadableStream<UIMessageChunk>({
+    async start(ctl) {
+      if (!c || !state.tiers.includes("chat")) {
+        ctl.enqueue({ type: "error", errorText: "Your home PC isn't connected. In Cowork, tap \"Let AI use it\" first." });
+        ctl.close();
+        return;
+      }
+      const reqId = crypto.randomUUID();
+      const id = `home-${reqId}`;
+      ctl.enqueue({ type: "start" });
+      ctl.enqueue({ type: "text-start", id });
+      const finished = new Promise<void>((resolve) => {
+        const off = c.listenChat(reqId, (d) => {
+          if (d.delta) ctl.enqueue({ type: "text-delta", id, delta: d.delta });
+          if (d.error) ctl.enqueue({ type: "error", errorText: d.error });
+          if (d.done) {
+            off();
+            resolve();
+          }
+        });
+        signal?.addEventListener("abort", () => {
+          off();
+          resolve();
+        });
+      });
+      const plain = messages
+        .map((m) => ({ role: m.role, content: m.parts.flatMap((p) => (p.type === "text" ? [p.text] : [])).join("\n") }))
+        .filter((m) => m.content);
+      try {
+        await c.call("chat", { model: modelId, messages: plain, reqId }, 30_000);
+        await finished;
+      } catch (e) {
+        ctl.enqueue({ type: "error", errorText: e instanceof Error ? e.message : String(e) });
+      }
+      ctl.enqueue({ type: "text-end", id });
+      ctl.enqueue({ type: "finish" });
+      ctl.close();
+    },
+  });
 }
 
 /** Tools the AI gets in Cowork while the home PC is connected. Changes and commands ask the person first. */

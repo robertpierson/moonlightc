@@ -2,7 +2,7 @@
 
 import "@xterm/xterm/css/xterm.css";
 import type { RealtimeChannel } from "@supabase/supabase-js";
-import { ArrowDown, ArrowLeft, ArrowUp, Download, FileIcon, Folder, Loader2, Monitor, Power, Upload } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, Download, FileIcon, Folder, Loader2, Maximize, Minimize, Monitor, Power, Upload } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { TwoStepGate } from "@/components/account/two-step-gate";
@@ -33,12 +33,23 @@ export function RemoteView({ deviceId, onSetup }: { deviceId: string; onSetup: (
     setClient(undefined);
     setTiers([]);
   };
-  useEffect(
-    () => () => {
+  // Leaving this screen (or closing the tab) ends the session on the PC too, so its orange frame goes away.
+  const clientRef = useRef<RemoteClient | undefined>(undefined);
+  useEffect(() => {
+    clientRef.current = client;
+  }, [client]);
+  useEffect(() => {
+    const end = () => {
+      clientRef.current?.call("disconnect").catch(() => {});
       if (chRef.current) supabase().removeChannel(chRef.current);
-    },
-    [],
-  );
+      chRef.current = undefined;
+    };
+    addEventListener("pagehide", end);
+    return () => {
+      removeEventListener("pagehide", end);
+      end();
+    };
+  }, []);
 
   const connect = async () => {
     setBusy(true);
@@ -131,6 +142,23 @@ export function RemoteView({ deviceId, onSetup }: { deviceId: string; onSetup: (
 
 function Screen({ client, control }: { client: RemoteClient; control: boolean }) {
   const [frame, setFrame] = useState<{ image: string; width: number; height: number }>();
+  // Fullscreen: the browser's own where it works, otherwise the screen fills the window.
+  const box = useRef<HTMLDivElement>(null);
+  const [full, setFull] = useState(false);
+  useEffect(() => {
+    const sync = () => !document.fullscreenElement && setFull(false);
+    document.addEventListener("fullscreenchange", sync);
+    return () => document.removeEventListener("fullscreenchange", sync);
+  }, []);
+  const toggleFull = () => {
+    if (full) {
+      if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+      setFull(false);
+    } else {
+      setFull(true);
+      box.current?.requestFullscreen?.().catch(() => {});
+    }
+  };
   const [text, setText] = useState("");
   const img = useRef<HTMLImageElement>(null);
   useEffect(() => {
@@ -157,14 +185,17 @@ function Screen({ client, control }: { client: RemoteClient; control: boolean })
     return { x: Math.round(((e.clientX - r.left) / r.width) * (frame?.width ?? 1)), y: Math.round(((e.clientY - r.top) / r.height) * (frame?.height ?? 1)) };
   };
   return (
-    <div className="grid gap-2">
+    <div ref={box} className={full ? "fixed inset-0 z-50 grid content-center gap-2 overflow-auto bg-black p-2" : "grid gap-2"}>
+      <Button size="sm" variant="secondary" className="justify-self-end" onClick={toggleFull} aria-pressed={full}>
+        {full ? <Minimize /> : <Maximize />} {full ? "Exit full screen" : "Full screen"}
+      </Button>
       {frame ? (
         // eslint-disable-next-line @next/next/no-img-element -- a live screenshot from your computer
         <img
           ref={img}
           src={`data:image/jpeg;base64,${frame.image}`}
           alt="Your computer's screen"
-          className={`w-full rounded-lg border ${control ? "cursor-crosshair" : ""}`}
+          className={`rounded-lg border ${full ? "mx-auto max-h-[calc(100dvh-7rem)] w-auto max-w-full" : "w-full"} ${control ? "cursor-crosshair" : ""}`}
           onClick={(e) => control && input({ action: "click", ...at(e) })}
           onDoubleClick={(e) => control && input({ action: "double_click", ...at(e) })}
           onContextMenu={(e) => {

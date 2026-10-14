@@ -97,3 +97,11 @@ Alternatives: a relay server running the AI on the PC (more moving parts, PC mus
 ## Background changes skip the Settings save bar (2026-10-13)
 What: updateNow() applies a change to both the live state and the saved snapshot; used for defaults picked automatically (local models found, first key added) and memories the AI saves. The unsaved check compares by value.
 Why: those changes made Settings look unsaved and blocked leaving it.
+
+## Quick connect = open key page + pick up the copied key (2026-10-14)
+What: tiles for Claude, ChatGPT, Gemini… open the company's API-key page; when the app regains focus it reads the clipboard (desktop: only text shaped like a key; web: browser permission) and connects automatically.
+Why: Anthropic, OpenAI and Google offer no OAuth flow that issues API keys to third-party apps; OpenRouter (which does) stays as its own sign-in.
+
+## Home PC models in Chat via a client-side transport (2026-10-14)
+What: a hidden "home-pc" connection lists the PC's Ollama models while connected; chat-view routes those requests over the remote link instead of /api/chat. Local and home-PC connections are never synced.
+Why: the models only exist on the PC; the server can't reach them.

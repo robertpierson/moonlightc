@@ -12,7 +12,7 @@ import type { Device } from "@/lib/remote";
 import { accountsEnabled, supabase, useUser } from "@/lib/supabase/client";
 
 /** Top of Cowork: what the AI can reach right now, and how to give it more. Nothing is shared by default. */
-export function CoworkAccess({ onOpenSettings }: { onOpenSettings: (section: "files" | "browser" | "account") => void }) {
+export function CoworkAccess({ onOpenSettings, onOpenScreen }: { onOpenSettings: (section: "files" | "browser" | "account") => void; onOpenScreen: (deviceId: string) => void }) {
   const b = desktop();
   const [folders, setFolders] = useState<string[]>([]);
   const [ext] = useState(hasExtension);
@@ -33,7 +33,7 @@ export function CoworkAccess({ onOpenSettings }: { onOpenSettings: (section: "fi
             </Button>
           </>
         ) : accountsEnabled ? (
-          <HomePcChip onSetup={() => onOpenSettings("account")} />
+          <HomePcChip onSetup={() => onOpenSettings("account")} onOpenScreen={onOpenScreen} />
         ) : (
           <span className="text-muted-foreground">Your files: needs the desktop app</span>
         )}
@@ -56,7 +56,7 @@ export function CoworkAccess({ onOpenSettings }: { onOpenSettings: (section: "fi
 }
 
 /** On a phone or another computer: connect to your home PC so the AI can work in its folders. */
-function HomePcChip({ onSetup }: { onSetup: () => void }) {
+function HomePcChip({ onSetup, onOpenScreen }: { onSetup: () => void; onOpenScreen: (deviceId: string) => void }) {
   const pc = useHomePc();
   const user = useUser();
   const [found, setFound] = useState<Device | null>();
@@ -86,7 +86,10 @@ function HomePcChip({ onSetup }: { onSetup: () => void }) {
   if (pc.client)
     return (
       <>
-        <span className="min-w-0 flex-1 truncate">Working on {pc.device?.name}</span>
+        <span className="min-w-0 flex-1 truncate">AI can use {pc.device?.name}</span>
+        <Button size="xs" variant="outline" onClick={() => pc.device && onOpenScreen(pc.device.id)}>
+          See screen
+        </Button>
         <Button size="xs" variant="outline" onClick={() => disconnectHomePc()}>
           Disconnect
         </Button>
@@ -104,8 +107,11 @@ function HomePcChip({ onSetup }: { onSetup: () => void }) {
           </span>
         )}
       </span>
-      <Button size="xs" variant="outline" disabled={pc.connecting} onClick={() => connect(found)}>
-        Connect
+      <Button size="xs" variant="outline" onClick={() => onOpenScreen(found.id)}>
+        See screen
+      </Button>
+      <Button size="xs" variant="outline" disabled={pc.connecting} onClick={() => connect(found)} title="Let the AI read and change files and run commands there">
+        Let AI use it
       </Button>
       <Dialog open={unlock} onOpenChange={setUnlock}>
         <DialogContent>

@@ -345,6 +345,34 @@ test("home PC: a device allowed the terminal runs commands in the home folder on
   expect(log.some((e) => e.action === "exec")).toBe(true);
 });
 
+test("trusted mode: your own devices connect without the Allow prompt (logged)", async () => {
+  const r = await page.evaluate(async () => {
+    const b = window.moonc.remote;
+    await b.setTrusted(true);
+    const c = await b.connect({ id: "tablet-test", name: "Test tablet" }, ["view"]);
+    await b.end("tablet-test", "test done");
+    const off = await b.setTrusted(false);
+    return { c, off, log: (await b.audit()).map((e) => e.action) };
+  });
+  expect(r.c.allowed).toBe(true);
+  expect(r.off).toBe(false);
+  expect(r.log).toContain("approve.trusted");
+  expect(r.log).toContain("trust.on");
+});
+
+test("quick connect reads the clipboard only when it holds a key", async () => {
+  await app.evaluate(({ clipboard }) => clipboard.writeText("sk-ant-test-0000111122223333"));
+  expect(await page.evaluate(() => window.moonc.clipboard.readKey())).toBe("sk-ant-test-0000111122223333");
+  await app.evaluate(({ clipboard }) => clipboard.writeText("my private note with spaces"));
+  expect(await page.evaluate(() => window.moonc.clipboard.readKey())).toBeNull();
+});
+
+test("the model library is in the sidebar again", async () => {
+  await page.getByRole("button", { name: "Chat", exact: true }).click();
+  await page.getByRole("navigation", { name: "Sections" }).getByRole("button", { name: "Model library" }).click();
+  await expect(page.getByRole("heading", { name: "Local models" })).toBeVisible();
+});
+
 test("finds API keys already set up on this PC (shown masked, added only when picked)", async () => {
   const found = await page.evaluate(() => window.moonc.keys.scan());
   const k = found.find((x) => x.source === "MISTRAL_API_KEY");

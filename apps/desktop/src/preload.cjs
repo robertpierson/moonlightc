@@ -53,8 +53,11 @@ contextBridge.exposeInMainWorld("moonc", {
   },
   device: { info: () => invoke("device:info") },
   keys: { scan: () => invoke("keys:scan") },
+  clipboard: { readKey: () => invoke("clipboard:key") },
   remote: {
     connect: (client, tiers) => invoke("remote:connect", client, tiers),
+    trusted: () => invoke("remote:trusted"),
+    setTrusted: (on) => invoke("remote:setTrusted", on),
     end: (clientId, reason) => invoke("remote:end", clientId, reason),
     allowed: (clientId, tier) => invoke("remote:allowed", clientId, tier),
     frame: (clientId) => invoke("remote:frame", clientId),

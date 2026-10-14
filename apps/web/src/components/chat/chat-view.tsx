@@ -1,7 +1,7 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { HOME_TOOLS, homePcClient, homeToolNeedsOk, runHomeTool } from "@/lib/home-pc";
+import { HOME_TOOLS, homeChatStream, homePcClient, homeToolNeedsOk, runHomeTool } from "@/lib/home-pc";
 import { activePlugins, activeServers, mcpPayload } from "@/lib/project-tools";
 import { getProvider } from "@moonc/core";
 import { track } from "@/lib/analytics";
@@ -16,6 +16,7 @@ import { classifyTask, isAuto, resolveAuto } from "@/lib/auto-model";
 import { estimateCost } from "@moonc/core";
 import {
   DefaultChatTransport,
+  type ChatTransport,
   lastAssistantMessageIsCompleteWithApprovalResponses,
   lastAssistantMessageIsCompleteWithToolCalls,
   type FileUIPart,
@@ -219,10 +220,9 @@ export function ChatView({
   useEffect(() => {
     latest.current = request;
   });
-  const [transport] = useState(
-    // eslint-disable-next-line react-hooks/refs -- the ref is read when a request is sent, not during render
-    () =>
-      new DefaultChatTransport({
+  // eslint-disable-next-line react-hooks/refs -- the ref is read when a request is sent, not during render
+  const [transport] = useState<ChatTransport<UIMessage>>(() => {
+    const net = new DefaultChatTransport({
         api: "/api/chat",
         // The outgoing messages include the one just sent, which Auto and memory need to look at.
         prepareSendMessagesRequest: ({
@@ -244,8 +244,16 @@ export function ChatView({
             },
           };
         },
-      }),
-  );
+      });
+    // Models on your home PC answer through its remote link instead of the server.
+    return {
+      sendMessages: (o) => {
+        const conn = (latest.current().body as { connection?: { providerId?: string }; modelId?: string } | undefined);
+        return conn?.connection?.providerId === "home-pc" ? Promise.resolve(homeChatStream(conn.modelId ?? "", o.messages, o.abortSignal)) : net.sendMessages(o);
+      },
+      reconnectToStream: (o) => net.reconnectToStream(o),
+    };
+  });
 
   const {
     messages,

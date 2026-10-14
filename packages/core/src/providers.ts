@@ -22,16 +22,18 @@ export interface ProviderDef {
   local?: boolean;
   /** Images/video/audio only (Creative Studio), no chat models. */
   media?: boolean;
+  /** Added by the app itself (never offered in "add a key"). */
+  hidden?: boolean;
 }
 
 // Tests point OpenRouter at a local fake; never set in production.
 export const OPENROUTER = (typeof process !== "undefined" && process.env.MOONC_TEST_OPENROUTER) || "https://openrouter.ai";
 
 export const PROVIDERS: ProviderDef[] = [
-  { id: "openrouter", name: "OpenRouter", kind: "compat", baseURL: `${OPENROUTER}/api/v1`, keyUrl: "https://openrouter.ai/settings/keys" },
   { id: "anthropic", name: "Anthropic", kind: "anthropic", keyUrl: "https://console.anthropic.com/settings/keys" },
   { id: "openai", name: "OpenAI", kind: "openai", keyUrl: "https://platform.openai.com/api-keys" },
   { id: "google", name: "Google Gemini", kind: "google", keyUrl: "https://aistudio.google.com/app/apikey" },
+  { id: "openrouter", name: "OpenRouter", kind: "compat", baseURL: `${OPENROUTER}/api/v1`, keyUrl: "https://openrouter.ai/settings/keys" },
   { id: "xai", name: "xAI (Grok)", kind: "compat", baseURL: "https://api.x.ai/v1", keyUrl: "https://console.x.ai" },
   { id: "mistral", name: "Mistral", kind: "compat", baseURL: "https://api.mistral.ai/v1", keyUrl: "https://console.mistral.ai/api-keys" },
   { id: "deepseek", name: "DeepSeek", kind: "compat", baseURL: "https://api.deepseek.com", keyUrl: "https://platform.deepseek.com/api_keys" },
@@ -43,6 +45,8 @@ export const PROVIDERS: ProviderDef[] = [
   { id: "bedrock", name: "AWS Bedrock", kind: "bedrock", keyUrl: "https://console.aws.amazon.com/bedrock/home#/api-keys" },
   { id: "ollama", name: "Ollama (on this computer)", kind: "compat", baseURL: "http://127.0.0.1:11434/v1", keyUrl: "", local: true },
   { id: "custom", name: "Custom (OpenAI-compatible URL)", kind: "compat", keyUrl: "" },
+  // Local models on your home PC, reached through its remote connection (see apps/web/src/lib/home-pc.ts).
+  { id: "home-pc", name: "Your home PC", kind: "compat", keyUrl: "", hidden: true },
   { id: "fal", name: "fal (images, video, audio)", kind: "media", media: true, keyUrl: "https://fal.ai/dashboard/keys" },
   { id: "replicate", name: "Replicate (images, video)", kind: "media", media: true, keyUrl: "https://replicate.com/account/api-tokens" },
   { id: "elevenlabs", name: "ElevenLabs (voices)", kind: "media", media: true, keyUrl: "https://elevenlabs.io/app/settings/api-keys" },

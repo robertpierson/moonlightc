@@ -89,11 +89,14 @@ export interface MooncBridge {
     setOpenAtLogin(on: boolean): Promise<void>;
   };
   device: { info(): Promise<{ id: string; name: string; os: string; version: string }> };
+  clipboard: { readKey(): Promise<string | null> };
   /** API keys already set up on this computer (standard environment variables). */
   keys: { scan(): Promise<{ provider: string; source: string; value: string; masked: string }[]> };
   /** Remote control of this PC from your other devices (every call is checked against what the person allowed). */
   remote: {
     connect(client: { id: string; name: string }, tiers: string[]): Promise<{ allowed: boolean; tiers?: string[] }>;
+    trusted(): Promise<boolean>;
+    setTrusted(on: boolean): Promise<boolean>;
     end(clientId?: string, reason?: string): Promise<void>;
     allowed(clientId: string, tier: string): Promise<boolean>;
     frame(clientId: string): Promise<{ image: string; width: number; height: number }>;

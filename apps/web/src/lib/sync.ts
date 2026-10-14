@@ -1,3 +1,4 @@
+import { PROVIDERS } from "@moonc/core";
 import type { UIMessage } from "ai";
 import type { Chat, SavedConnection, State } from "./store";
 
@@ -121,8 +122,10 @@ export async function syncOnce(backend: SyncBackend, get: () => State, set: (fn:
   }
 
   // Connections: add ones made on other devices (with their keys); upload new local ones.
-  const remoteConns = await backend.listConnections();
-  const localConns = get().connections;
+  // Models on this PC (Ollama) or reached through the home PC only work on the device that has them: never synced.
+  const syncable = (c: { providerId: string }) => c.providerId !== "home-pc" && !PROVIDERS.find((p) => p.id === c.providerId)?.local;
+  const remoteConns = (await backend.listConnections()).filter((r) => syncable({ providerId: r.provider_id }));
+  const localConns = get().connections.filter(syncable);
   const added: SavedConnection[] = [];
   for (const r of remoteConns) {
     if (localConns.some((c) => c.id === r.id)) continue;
@@ -139,7 +142,7 @@ export async function syncOnce(backend: SyncBackend, get: () => State, set: (fn:
   if (added.length || goneElsewhere.length) set((s) => ({ ...s, connections: [...s.connections.filter((c) => !goneElsewhere.includes(c.id)), ...added] }));
   for (const c of localConns) if (!goneElsewhere.includes(c.id) && !remoteConns.some((r) => r.id === c.id)) await backend.pushConnection(connectionRow(c), c.apiKey);
   for (const id of meta.connections) if (!get().connections.some((c) => c.id === id) && remoteConns.some((r) => r.id === id)) await backend.deleteConnection(id);
-  next.connections = get().connections.map((c) => c.id);
+  next.connections = get().connections.filter(syncable).map((c) => c.id);
 
   // Chats: pull newer ones, then push local changes and deletions.
   const pulled = await backend.pullChats(meta.lastPull);

@@ -114,6 +114,17 @@ export const allowed = (clientId, tier) => {
   }
 };
 
+// "Trust my devices": skip the Allow prompt for this account's own devices (they already need two-step sign-in).
+// Only the person at this PC can turn it on (it's not reachable from the remote channel).
+export const trusted = () => {
+  try {
+    return JSON.parse(fs.readFileSync(file("remote-trust.json"), "utf8")).on === true;
+  } catch {
+    return false;
+  }
+};
+export const setTrusted = (on) => (fs.writeFileSync(file("remote-trust.json"), JSON.stringify({ on: !!on }), { mode: 0o600 }), audit(on ? "trust.on" : "trust.off", {}), trusted());
+
 // Automated tests of unpackaged builds can't click native dialogs; installed apps always ask a person.
 const autoApprove = () => !app.isPackaged && process.env.MOONC_E2E_AUTO_APPROVE === "1";
 
@@ -124,7 +135,8 @@ export async function connect(parent, client, wanted) {
   const tiers = [...new Set((Array.isArray(wanted) ? wanted : []).filter((t) => t in TIERS))];
   if (!id || !tiers.length) throw new Error("Nothing to allow.");
   const remembered = grants().find((g) => g.clientId === id);
-  let ok = !!remembered && tiers.every((t) => remembered.tiers.includes(t));
+  let ok = (!!remembered && tiers.every((t) => remembered.tiers.includes(t))) || trusted();
+  if (ok && !remembered) audit("approve.trusted", { clientId: id, name, tiers });
   if (!ok) {
     const r = autoApprove()
       ? { response: 0, checkboxChecked: false }
@@ -156,7 +168,10 @@ export async function connect(parent, client, wanted) {
 
 export async function frame(clientId) {
   need(clientId, "view");
-  const f = await captureJpeg(1024, 55);
+  // Realtime messages have a size cap; busy screens get a smaller, softer frame instead of not arriving at all.
+  let f = await captureJpeg(1024, 55);
+  if (f.image.length > 160_000) f = await captureJpeg(900, 40);
+  if (f.image.length > 160_000) f = await captureJpeg(720, 30);
   scale = f.scale;
   return { image: f.image, width: f.width, height: f.height };
 }
