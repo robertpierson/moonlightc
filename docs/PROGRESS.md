@@ -42,11 +42,11 @@ STATUS: BUILDING
 - [x] R23 Plugins & mods catalog: featured row, then everything, searchable
 - [x] R24 Settings > Usage: your plans first (what you pay), tokens, value at list prices
 - [x] R25 Desktop: scan this PC for existing API keys (environment) and add them with one click
-- [ ] R26 Rebuild + install desktop app
+- [x] R26 Rebuild + install desktop app (0.5.0 installed silently on owner PC)
 - [x] R27 Settings: Discord-style "unsaved changes — Reset / Save" bar; leaving with unsaved changes is blocked
 - [x] R29 Fix: finishing onboarding looped back to step 1 (email link pointed at onboarding); already-onboarded people skip it
 - [x] R28 Home PC: from any signed-in device, the AI works on your home PC's folders and code projects (with your approval)
-- [ ] R30 Final pass: verify sign-in, create account, key checks and every feature; web app, desktop app and Chrome extension all on the same version
+- [x] R30 Final pass: verify sign-in, create account, key checks and every feature; web app, desktop app and Chrome extension all on the same version
 
 ## Phase 0 tasks
 - [x] Check prerequisites (node 22, pnpm 11, git, gh logged in as robertpierson; Vercel + Supabase via MCP)
@@ -142,7 +142,7 @@ STATUS: BUILDING
 - Vercel previews are SSO-protected; tests send x-vercel-protection-bypass (secret in .env.local and GitHub secret VERCEL_AUTOMATION_BYPASS_SECRET).
 - Vercel MCP returns 403/404 for this team; use Vercel CLI (logged in as robertpierson196-1427). In Git Bash prefix `vercel api` with MSYS_NO_PATHCONV=1.
 - No Docker, so no local Supabase stack; test against the hosted project.
-- Desktop e2e "computer use … real input" fails while someone is moving the mouse on this PC (robotjs reads the live cursor). Re-run when the PC is idle.
+- Owner asked (2026-10-13): never move the mouse/keyboard or show windows on their PC. Locally run desktop e2e with `--grep-invert "computer use|remote control"`; those run in CI. Install desktop updates with /S and don't launch.
 
 ## Notes (last 10)
 - 2026-10-13: R25 key scan (env vars + Windows user env, masked, add only picked) and R28 home PC (Settings > Remote control > Make this my home PC; Cowork on another device connects, AI gets pc_list/read/write/run tools, writes + commands need Allow on that device, PC still enforces tiers + home folder, audit). Fixed: background defaults (Ollama auto-detect) made Settings look unsaved and blocked leaving; unsaved changes blocked quitting the desktop app (now asks). All versions 0.5.0. 77 unit, 113 web e2e, 11 PGlite, 18 desktop e2e.
