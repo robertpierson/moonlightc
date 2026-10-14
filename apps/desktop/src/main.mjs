@@ -47,7 +47,47 @@ const portFree = (port) =>
 
 // Chats and settings live in the browser storage of http://127.0.0.1:<port>, so the port must stay the same from one
 // launch to the next. Reuse the saved one; pick (and save) a new one only if it's taken.
+/** A server left running by a crash or forced close keeps our port (and with it this PC's sign-in and data). End it. */
+async function endLeftoverServer() {
+  const file = path.join(app.getPath("userData"), "server.pid");
+  let port;
+  try {
+    port = JSON.parse(fs.readFileSync(path.join(app.getPath("userData"), "port.json"), "utf8")).port;
+  } catch {
+    return;
+  }
+  // Only if our port really is answering as MoonlightC (never touch an unrelated process that reused the ID).
+  const ours = await fetch(`http://127.0.0.1:${port}/manifest.webmanifest`, { signal: AbortSignal.timeout(1500) })
+    .then((r) => r.json())
+    .then((m) => m?.name === "MoonlightC")
+    .catch(() => false);
+  if (!ours) return;
+  let pid;
+  try {
+    pid = Number(fs.readFileSync(file, "utf8"));
+  } catch {
+    return;
+  }
+  try {
+    process.kill(pid, 0);
+  } catch {
+    return; // already gone
+  }
+  try {
+    process.kill(pid);
+  } catch {}
+  for (let i = 0; i < 40; i++) {
+    try {
+      process.kill(pid, 0);
+    } catch {
+      return;
+    }
+    await new Promise((r) => setTimeout(r, 100));
+  }
+}
+
 async function stablePort() {
+  await endLeftoverServer();
   const file = path.join(app.getPath("userData"), "port.json");
   let saved;
   try {
@@ -74,6 +114,7 @@ async function startServer() {
     windowsHide: true,
   });
   server.stderr.on("data", (d) => console.error("[server]", String(d).trim()));
+  fs.writeFileSync(path.join(app.getPath("userData"), "server.pid"), String(server.pid));
   const url = `http://127.0.0.1:${port}`;
   for (let i = 0; i < 100; i++) {
     const ok = await fetch(url + "/manifest.webmanifest").then((r) => r.ok).catch(() => false);
@@ -366,6 +407,8 @@ app.on("before-quit", () => {
   computer.stop("app closed");
   terminals.killAll();
   server?.kill();
+  // Save page storage (chats, settings) and cookies (sign-in) before the process ends.
+  session.defaultSession.flushStorageData();
   session.defaultSession.cookies.flushStore().catch(() => {});
 });
 app.on("will-quit", () => globalShortcut.unregisterAll());

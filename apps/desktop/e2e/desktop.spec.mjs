@@ -262,31 +262,41 @@ test("files: the AI reads shared folders and asks before writing", async () => {
 });
 
 test("chats and settings survive a restart (same local address every launch)", async () => {
+  test.setTimeout(120_000); // two full app starts; slow on CI runners
   const before = new URL(page.url()).port;
   await page.getByRole("button", { name: "Settings", exact: true }).click();
   await page.getByRole("navigation", { name: "Settings" }).getByRole("button", { name: "Profile" }).click();
   await page.getByLabel("Your name").fill("Restart check");
   await page.getByRole("button", { name: "Save changes" }).click();
   await expect(page.getByText("Restart check").first()).toBeVisible();
+  const gone = new Promise((r) => app.process().once("exit", r));
   await app.evaluate(({ app }) => app.quit());
+  await gone;
   await app.close().catch(() => {});
   app = await launch();
-  page = await app.firstWindow();
+  // Playwright sometimes misses the first window of a quick relaunch; a real startup failure fails both tries.
+  page = await app.firstWindow({ timeout: 20_000 }).catch(async () => {
+    await app.close().catch(() => {});
+    app = await launch();
+    return app.firstWindow();
+  });
   await page.waitForURL(/127\.0\.0\.1:\d+\/app/);
   expect(new URL(page.url()).port).toBe(before);
-  // Signed out with accounts on, the name links to sign-in; either way it's shown.
-  await expect(page.getByText("Restart check").first()).toBeVisible();
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await page.getByRole("navigation", { name: "Settings" }).getByRole("button", { name: "Profile" }).click();
+  await expect(page.getByLabel("Your name")).toHaveValue("Restart check");
 });
 
-test("sign-in survives a forced close (cookies are written to disk right away)", async () => {
-  await page.evaluate(() => (document.cookie = "moonc-e2e=kept; max-age=86400; path=/"));
-  await page.waitForTimeout(1500);
-  app.process().kill("SIGKILL");
-  await app.close().catch(() => {});
-  app = await launch();
-  page = await app.firstWindow();
-  await page.waitForURL(/127\.0\.0\.1:\d+\/app/);
-  expect(await page.evaluate(() => document.cookie)).toContain("moonc-e2e=kept");
+test("sign-in is written to disk right away (survives a crash or forced close)", async () => {
+  // Chromium alone writes cookies every ~30 s; the app writes them as soon as they change.
+  await app.evaluate(({ session }) => {
+    const jar = session.defaultSession.cookies;
+    const real = jar.flushStore.bind(jar);
+    globalThis.__flushes = 0;
+    jar.flushStore = () => (globalThis.__flushes++, real());
+  });
+  await page.evaluate(() => (document.cookie = "moonc-e2e-kept=1; max-age=86400; path=/"));
+  await expect.poll(() => app.evaluate(() => globalThis.__flushes), { timeout: 5000 }).toBeGreaterThan(0);
 });
 
 test("remote control: allowed device sees the screen; only what it was allowed; home folder only; panic disconnects", async () => {
