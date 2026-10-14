@@ -1,5 +1,6 @@
 import { estimateCost, type ModelInfo } from "@moonc/core";
 import type { UIMessage } from "ai";
+import type { Subscription } from "./subscriptions";
 
 // Usage on this device, added up from the token counts each AI reply carries.
 
@@ -42,3 +43,30 @@ export function summarizeUsage(chats: { messages: UIMessage[] }[], models: Model
 }
 
 export const money = (n: number) => (n === 0 ? "$0" : n < 0.01 ? `$${n.toFixed(4)}` : `$${n.toFixed(2)}`);
+
+// ---------- Plans and "what it would cost" ----------
+
+const AI_SERVICE = /chatgpt|openai|claude|anthropic|gemini|google one|copilot|perplexity|cursor|midjourney|openrouter|mistral|grok|super ?grok|poe\b|character\.?ai|runway|elevenlabs|suno|windsurf|\bv0\b|lovable|replit|bolt|deepseek|notebooklm/i;
+export const isAiPlan = (s: Pick<Subscription, "service">) => AI_SERVICE.test(s.service);
+
+/** What a typical top model charges per million tokens (in, out); used for models without a listed price. */
+export const REFERENCE_PRICE = { input: 3, output: 15 };
+
+/** Tokens this month and what they'd cost at list prices (falling back to the reference price). */
+export function monthValue(chats: { messages: UIMessage[] }[], models: ModelInfo[], now = Date.now()) {
+  const day = new Date(now).getDate();
+  const s = summarizeUsage(chats, models, now, day);
+  let listValue = 0;
+  let estimated = false;
+  for (const r of s.byModel) {
+    if (r.cost !== undefined) listValue += r.cost;
+    else {
+      listValue += (r.input * REFERENCE_PRICE.input + r.output * REFERENCE_PRICE.output) / 1e6;
+      estimated = true;
+    }
+  }
+  return { tokens: s.total.tokens, spent: s.total.cost, listValue, estimated, byModel: s.byModel };
+}
+
+/** "10 billion", "3.4 million", "950". */
+export const bigNumber = (n: number) => new Intl.NumberFormat("en", { notation: "compact", compactDisplay: "long", maximumFractionDigits: 1 }).format(n);

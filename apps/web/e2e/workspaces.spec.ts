@@ -88,6 +88,13 @@ test("Settings > Usage adds up tokens per model; Cowork shows what it can use", 
   await nav(page, "Usage");
   await expect(page.getByRole("region", { name: "By model" })).toContainText("mock-fast");
   await expect(page.getByRole("region", { name: "Limits and credits" })).toContainText("127.0.0.1");
+  const plans = page.getByRole("region", { name: "Your plans" });
+  await expect(plans).toContainText("tokens");
+  await page.getByLabel("Plan name").fill("Claude Pro");
+  await page.getByLabel("Monthly price in US dollars").fill("20");
+  await page.getByRole("button", { name: "Add plan" }).click();
+  await expect(plans).toContainText("Claude Pro");
+  await expect(plans).toContainText("$20.00 in plans");
 
   await nav(page, "Chat");
   await openMenu(page);

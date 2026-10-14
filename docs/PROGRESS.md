@@ -40,7 +40,7 @@ STATUS: BUILDING
 - [x] R21 Toggle buttons show selected immediately (even while hovered)
 - [x] R22 Code: a project is a group of chats; chats saved (same model as Chat and Cowork)
 - [x] R23 Plugins & mods catalog: featured row, then everything, searchable
-- [ ] R24 Settings > Usage: your plans first (what you pay), tokens, value at list prices
+- [x] R24 Settings > Usage: your plans first (what you pay), tokens, value at list prices
 - [ ] R25 Desktop: scan this PC for existing API keys (environment) and add them with one click
 - [ ] R26 Rebuild + install desktop app
 - [x] R27 Settings: Discord-style "unsaved changes — Reset / Save" bar; leaving with unsaved changes is blocked

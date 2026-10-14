@@ -4,7 +4,11 @@ import { getProvider } from "@moonc/core";
 import { ExternalLink, Loader2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useStore, type SavedConnection } from "@/lib/store";
-import { money, summarizeUsage } from "@/lib/usage";
+import { bigNumber, isAiPlan, money, monthValue, REFERENCE_PRICE, summarizeUsage } from "@/lib/usage";
+import { monthly, money as currency } from "@/lib/subscriptions";
+import { update } from "@/lib/store";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 type OpenRouterUsage = { label?: string; used: number; limit: number | null; limitRemaining: number | null; freeTier: boolean; credits: { total: number; used: number } | null };
 
@@ -44,6 +48,7 @@ export function UsagePanel() {
   const max = Math.max(1, ...s.daily.map((d) => d.tokens));
   return (
     <div className="grid gap-8">
+      <Plans />
       <section aria-label="Last 30 days" className="grid gap-3">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[
@@ -123,5 +128,66 @@ export function UsagePanel() {
         })}
       </section>
     </div>
+  );
+}
+
+/** Top of Usage: what you pay for AI, how many tokens you used this month, and what that would cost at list prices. */
+function Plans() {
+  const chats = useStore((s) => s.chats);
+  const connections = useStore((s) => s.connections);
+  const subs = useStore((s) => s.subscriptions?.items) ?? [];
+  const plans = subs.filter(isAiPlan);
+  const v = useMemo(() => monthValue(chats, connections.flatMap((c) => c.models)), [chats, connections]);
+  const planTotal = plans.filter((p) => p.currency === "USD").reduce((t, p) => t + monthly(p), 0);
+  const [name, setName] = useState("");
+  const [price, setPrice] = useState("");
+  const add = (e: React.FormEvent) => {
+    e.preventDefault();
+    const amount = Number(price);
+    if (!name.trim() || !(amount >= 0)) return;
+    update((s) => ({ ...s, subscriptions: { remindDays: 3, ...s.subscriptions, items: [...(s.subscriptions?.items ?? []), { service: name.trim().slice(0, 60), amount, currency: "USD", period: "monthly" }] } }));
+    setName("");
+    setPrice("");
+  };
+  return (
+    <section aria-label="Your plans" className="grid gap-4">
+      <div className="grid gap-3 sm:grid-cols-3">
+        {[
+          ["You pay for AI", `${currency(planTotal + v.spent, "USD")} this month`, `${plans.length ? `${currency(planTotal, "USD")} in plans` : "No plans added"} + ${money(v.spent)} on API keys`],
+          ["Tokens this month", `${bigNumber(v.tokens)} tokens`, `${v.tokens.toLocaleString()} exactly`],
+          ["Worth at list prices", money(v.listValue), v.estimated ? `Models without a listed price counted at $${REFERENCE_PRICE.input}/$${REFERENCE_PRICE.output} per million tokens in/out` : "What these tokens cost at the companies' API prices"],
+        ].map(([k, big, small]) => (
+          <div key={k} className="grid gap-1 rounded-xl border p-4">
+            <div className="text-xs text-muted-foreground">{k}</div>
+            <div className="text-2xl font-semibold">{big}</div>
+            <div className="text-xs text-muted-foreground">{small}</div>
+          </div>
+        ))}
+      </div>
+      <div className="grid gap-2">
+        <h3 className="font-medium">Your AI plans</h3>
+        {plans.length ? (
+          <ul className="divide-y rounded-xl border">
+            {plans.map((p, i) => (
+              <li key={`${p.service}-${i}`} className="flex items-center gap-2 p-3 text-sm">
+                <span className="flex-1 font-medium">{p.service}</span>
+                <span>
+                  {currency(p.amount, p.currency)} / {p.period === "monthly" ? "month" : p.period === "yearly" ? "year" : "week"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-muted-foreground">Add the AI plans you pay for (ChatGPT Plus, Claude Pro…) to see your full AI bill. Plans found in Subscriptions show up here too.</p>
+        )}
+        <form onSubmit={add} className="flex flex-wrap gap-2">
+          <Input aria-label="Plan name" placeholder="Plan, for example Claude Pro" value={name} onChange={(e) => setName(e.target.value)} className="w-56" />
+          <Input aria-label="Monthly price in US dollars" placeholder="$ per month" inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} className="w-32" />
+          <Button type="submit" variant="outline" disabled={!name.trim() || !price}>
+            Add plan
+          </Button>
+        </form>
+      </div>
+    </section>
   );
 }
