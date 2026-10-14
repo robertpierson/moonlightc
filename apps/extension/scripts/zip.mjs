@@ -12,7 +12,7 @@ const FILES = ["manifest.json", "background.js", "bridge.js", "page.js", "popup.
 const manifest = JSON.parse(fs.readFileSync(path.join(root, "manifest.json"), "utf8"));
 manifest.content_scripts[0].matches = manifest.content_scripts[0].matches.filter((m) => m.startsWith("https://"));
 
-const entries = FILES.map((name) => ({ name: `moonlightc-extension/${name}`, data: name === "manifest.json" ? Buffer.from(JSON.stringify(manifest, null, 2)) : fs.readFileSync(path.join(root, name)) }));
+const entries = FILES.map((name) => ({ name, data: name === "manifest.json" ? Buffer.from(JSON.stringify(manifest, null, 2)) : fs.readFileSync(path.join(root, name)) }));
 
 // Minimal zip writer (deflate), enough for Chrome and every unzip tool.
 const parts = [];

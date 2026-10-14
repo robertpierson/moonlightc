@@ -47,14 +47,11 @@ test("Chat and Code have their own sidebars; only recent chats show; chats move 
   await openMenu(page);
   await expect(page.getByRole("navigation", { name: "Code projects" }).locator("visible=true")).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Sections" }).locator("visible=true").getByRole("button", { name: "Studio" })).toHaveCount(0);
-  await page.getByRole("button", { name: "New folder" }).locator("visible=true").click();
-  await page.getByLabel("Folder name").locator("visible=true").fill("Client work");
-  await page.keyboard.press("Enter");
-  await page.getByRole("button", { name: "New project in Client work" }).locator("visible=true").click();
+  await page.getByRole("navigation", { name: "Code projects" }).locator("visible=true").getByRole("button", { name: "New project" }).click();
   await page.getByLabel("Name").fill("Menu site");
   await page.getByRole("button", { name: "Create project" }).click();
   await openMenu(page);
-  await expect(page.getByRole("region", { name: "Folder Client work" }).locator("visible=true")).toContainText("Menu site");
+  await expect(page.getByRole("list", { name: "Chats in Menu site" }).locator("visible=true")).toContainText("No chats yet");
 });
 
 test("code permission modes: Ask before changes waits for Apply; Bypass asks to confirm first", async ({ page }) => {
@@ -97,4 +94,31 @@ test("Settings > Usage adds up tokens per model; Cowork shows what it can use", 
   await page.getByRole("group", { name: "Mode" }).locator("visible=true").getByRole("button", { name: "Cowork" }).click();
   await expect(page.getByRole("region", { name: "What Cowork can use" })).toContainText("needs the desktop app");
   await expect(page.getByRole("button", { name: "Use this PC" })).toHaveCount(0);
+});
+
+test("code projects hold several chats, saved and reopened", async ({ page }) => {
+  test.setTimeout(90_000);
+  await page.goto("/app");
+  await connect(page);
+  await nav(page, "Code");
+  await page.getByRole("button", { name: "New code project" }).click();
+  await page.getByLabel("Name").fill("Tips");
+  await page.getByRole("button", { name: "Create project" }).click();
+  await page.getByLabel("Describe a change").fill("hello code");
+  await page.getByRole("button", { name: "Send to code assistant" }).click();
+  await expect(page.getByText("Echo from mock-fast: hello code")).toBeVisible();
+  await openMenu(page);
+  const chats = page.getByRole("list", { name: "Chats in Tips" }).locator("visible=true");
+  await expect(chats).toContainText("hello code");
+  // A second chat in the same project starts empty; the first one comes back when opened.
+  await page.getByRole("button", { name: "New chat in Tips" }).locator("visible=true").click();
+  await expect(page.getByText("Echo from mock-fast: hello code")).toHaveCount(0);
+  await openMenu(page);
+  await chats.getByRole("button", { name: "hello code" }).click();
+  await expect(page.getByText("Echo from mock-fast: hello code")).toBeVisible();
+  await page.reload();
+  await nav(page, "Code");
+  await openMenu(page);
+  await page.getByRole("list", { name: "Chats in Tips" }).locator("visible=true").getByRole("button", { name: "hello code" }).click();
+  await expect(page.getByText("Echo from mock-fast: hello code")).toBeVisible();
 });

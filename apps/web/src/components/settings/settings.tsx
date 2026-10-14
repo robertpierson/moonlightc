@@ -343,7 +343,7 @@ function BrowserExtension() {
             Turn on <strong>Developer mode</strong> (top right).
           </li>
           <li>
-            Click <strong>Load unpacked</strong> and pick the <strong>moonlightc-extension</strong> folder you unzipped.
+            Click <strong>Load unpacked</strong> and pick the <strong>moonlightc-chrome-extension</strong> folder you unzipped (the one with manifest.json in it).
           </li>
           <li>Come back here and reload this page.</li>
         </ol>

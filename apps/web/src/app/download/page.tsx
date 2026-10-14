@@ -120,7 +120,7 @@ export default async function DownloadPage() {
           <ol className="mt-4 grid max-w-[60ch] list-decimal gap-1 pl-5 text-[var(--mist)]">
             <li>Unzip the file (right-click it, then Extract all).</li>
             <li>In Chrome or Edge, go to chrome://extensions and turn on Developer mode (top right).</li>
-            <li>Click Load unpacked and pick the moonlightc-extension folder.</li>
+            <li>Click Load unpacked and pick the moonlightc-chrome-extension folder you unzipped (the one with manifest.json in it).</li>
             <li>On any tab, click the MoonlightC icon and choose Share this tab.</li>
           </ol>
         </section>

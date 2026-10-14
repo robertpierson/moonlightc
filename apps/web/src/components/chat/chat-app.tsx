@@ -57,9 +57,6 @@ import { AllChats, Sidebar } from "./sidebar";
 
 const VIEW_TITLES: Record<View, string> = { chat: "Chat", remote: "Your computer", chats: "All chats", cowork: "Cowork", code: "Code", subscriptions: "Subscriptions", library: "Projects", studio: "Studio", terminal: "Terminal", projects: "Local projects", automations: "Automations", settings: "Settings" };
 
-// The Code sidebar looks like an editor's file panel: near-black in both light and dark mode.
-const CODE_SIDEBAR = "dark bg-[oklch(0.1_0.015_268)] text-foreground";
-
 function distroDefaultMode() {
   const s = getState();
   return [...DISTROS, ...(s.customDistros ?? [])].find((d) => d.id === s.distroId)?.defaultModeId;
@@ -118,6 +115,7 @@ function Inner() {
   const [view, setView] = useState<View>("chat");
   const [workspace, setWorkspace] = useState<Workspace>("chat");
   const [codeProjectId, setCodeProjectId] = useState<string>();
+  const [codeChatId, setCodeChatId] = useState<string>();
   const [libraryProject, setLibraryProject] = useState<string>();
   const [remoteDevice, setRemoteDevice] = useState<string>();
   const [section, setSection] = useState<SettingsSection>("general");
@@ -234,9 +232,11 @@ function Inner() {
       </div>
       {workspace === "code" ? (
         <CodeSidebar
-          activeId={codeProjectId}
-          onSelect={(id) => {
+          projectId={codeProjectId}
+          chatId={codeChatId}
+          onSelect={(id, chatId) => {
             setCodeProjectId(id);
+            setCodeChatId(chatId);
             go("code");
           }}
         />
@@ -296,9 +296,9 @@ function Inner() {
         </div>
       )}
       <div className={`flex h-dvh min-h-0 ${look.sidebarSide === "right" ? "flex-row-reverse" : ""}`}>
-        {!quick && <aside className={`hidden w-72 shrink-0 md:block ${workspace === "code" ? CODE_SIDEBAR : "bg-sidebar"} ${look.sidebarSide === "right" ? "border-l" : "border-r"}`}>{sidebar}</aside>}
+        {!quick && <aside className={`hidden w-72 shrink-0 md:block bg-sidebar ${look.sidebarSide === "right" ? "border-l" : "border-r"}`}>{sidebar}</aside>}
         <Sheet open={navOpen} onOpenChange={setNavOpen}>
-          <SheetContent side="left" className={`w-72 p-0 ${workspace === "code" ? CODE_SIDEBAR : "bg-sidebar"}`}>
+          <SheetContent side="left" className={`w-72 p-0 bg-sidebar`}>
             <SheetTitle className="sr-only">Chats</SheetTitle>
             {sidebar}
           </SheetContent>
@@ -316,7 +316,13 @@ function Inner() {
           )}
           {view === "settings" && <Settings section={section} onSection={setSection} availableViews={availableViews()} onClose={() => go(workspace)} onChat={() => go("chat")} />}
           {view === "remote" && remoteDevice && <RemoteView key={remoteDevice} deviceId={remoteDevice} onSetup={() => openSettings("account")} />}
-          {view === "code" && <CodeWorkspace projectId={codeProjectId} onSelect={setCodeProjectId} onConnectGitHub={() => openSettings("connectors")} onOpenConnectors={() => openSettings("connectors")} />}
+          {view === "code" && <CodeWorkspace
+              projectId={codeProjectId}
+              chatId={codeChatId}
+              onSelect={(id, chatId) => {
+                setCodeProjectId(id);
+                setCodeChatId(chatId);
+              }} onConnectGitHub={() => openSettings("connectors")} onOpenConnectors={() => openSettings("connectors")} />}
           {view === "chats" && (
             <AllChats
               workspace={workspace === "cowork" ? "cowork" : "chat"}

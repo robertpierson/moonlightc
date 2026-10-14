@@ -11,6 +11,13 @@ export interface CodeChange {
   after: Record<string, string | null>;
 }
 
+export interface CodeChat {
+  id: string;
+  title: string;
+  messages: import("ai").UIMessage[];
+  updatedAt: number;
+}
+
 export interface CodeProject {
   id: string;
   name: string;
@@ -20,6 +27,8 @@ export interface CodeProject {
   repo?: string; // GitHub "owner/name" after the first push
   updatedAt: number;
   folder?: string;
+  /** Conversations with the code assistant in this project (a project is a group of chats). */
+  chats?: CodeChat[];
   connectorIds?: string[];
   pluginIds?: string[];
 }

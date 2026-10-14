@@ -28,7 +28,10 @@ const language = (p: string) =>
   ({ js: "javascript", jsx: "javascript", ts: "typescript", tsx: "typescript", css: "css", html: "html", json: "json", md: "markdown" })[p.split(".").pop() ?? ""] ?? "plaintext";
 
 
-function AiPanel({ project, onChange }: { project: CodeProject; onChange: (p: CodeProject) => void }) {
+function AiPanel({ project, chatId, onChange, onChat }: { project: CodeProject; chatId?: string; onChange: (p: CodeProject) => void; onChat: (id: string) => void }) {
+  // Each project holds several chats; this panel shows one (or a new one, saved after its first message).
+  const [id] = useState(() => chatId ?? crypto.randomUUID());
+  const [initial] = useState(() => project.chats?.find((c) => c.id === id)?.messages ?? []);
   const lastModel = useStore((s) => s.lastModel);
   const [model, setModel] = useState<ModelRef | undefined>(lastModel);
   const [input, setInput] = useState("");
@@ -62,7 +65,8 @@ function AiPanel({ project, onChange }: { project: CodeProject; onChange: (p: Co
   // eslint-disable-next-line react-hooks/refs -- read when a request is sent, not during render
   const [transport] = useState(() => new DefaultChatTransport({ api: "/api/chat", body }));
   const { messages, sendMessage, status, stop, error, addToolOutput, addToolApprovalResponse } = useChat({
-    id: `code-${project.id}`,
+    id: `code-${id}`,
+    messages: initial,
     transport,
     sendAutomaticallyWhen: (o) => lastAssistantMessageIsCompleteWithToolCalls(o) || lastAssistantMessageIsCompleteWithApprovalResponses(o),
     onToolCall: async ({ toolCall }): Promise<void> => {
@@ -95,6 +99,21 @@ function AiPanel({ project, onChange }: { project: CodeProject; onChange: (p: Co
     },
   });
   const busy = status === "streaming" || status === "submitted";
+  // Save the chat into its project whenever a reply finishes.
+  useEffect(() => {
+    if (busy || !messages.length) return;
+    const cur = getProject(projectRef.current.id) ?? projectRef.current;
+    const first = messages.find((m) => m.role === "user");
+    const text = first?.parts.map((p) => (p.type === "text" ? p.text : "")).join(" ").trim() ?? "";
+    const old = cur.chats?.find((c) => c.id === id);
+    if (old && old.messages.length === messages.length && old.messages.at(-1)?.id === messages.at(-1)?.id) return;
+    const chat = { id, title: old?.title || text.slice(0, 60) || "New chat", messages, updatedAt: Date.now() };
+    const next = { ...cur, chats: [chat, ...(cur.chats ?? []).filter((c) => c.id !== id)] };
+    projectRef.current = next;
+    saveProject(next);
+    if (!old) onChat(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- save when a turn settles
+  }, [busy, messages]);
   const bottom = useRef<HTMLDivElement>(null);
   useEffect(() => {
     bottom.current?.scrollIntoView({ block: "end" });
@@ -217,7 +236,19 @@ function Preview({ project }: { project: CodeProject }) {
   );
 }
 
-export function CodeWorkspace({ projectId, onSelect, onConnectGitHub, onOpenConnectors }: { projectId?: string; onSelect: (id: string) => void; onConnectGitHub: () => void; onOpenConnectors: () => void }) {
+export function CodeWorkspace({
+  projectId,
+  chatId,
+  onSelect,
+  onConnectGitHub,
+  onOpenConnectors,
+}: {
+  projectId?: string;
+  chatId?: string;
+  onSelect: (id: string, chatId?: string) => void;
+  onConnectGitHub: () => void;
+  onOpenConnectors: () => void;
+}) {
   const projects = useCodeProjects();
   const project = projects.find((p) => p.id === projectId) ?? projects[0];
   const [tools, setTools] = useState(false);
@@ -316,7 +347,13 @@ export function CodeWorkspace({ projectId, onSelect, onConnectGitHub, onOpenConn
 
       <div className="grid min-h-0 flex-1 lg:grid-cols-[minmax(18rem,22rem)_1fr]">
         <div className="flex min-h-[22rem] flex-col border-b lg:min-h-0 lg:border-r lg:border-b-0">
-          <AiPanel key={project.id} project={project} onChange={update} />
+          <AiPanel
+            key={`${project.id}:${chatId ?? (project.chats ?? []).reduce<{ id?: string; t: number }>((m, c) => (c.updatedAt > m.t ? { id: c.id, t: c.updatedAt } : m), { t: 0 }).id ?? "new"}`}
+            project={project}
+            chatId={chatId ?? [...(project.chats ?? [])].sort((a, b) => b.updatedAt - a.updatedAt)[0]?.id}
+            onChange={update}
+            onChat={(id) => onSelect(project.id, id)}
+          />
         </div>
         <div className="flex min-h-[28rem] flex-col">
           <div role="tablist" aria-label="Workspace" className="flex items-center gap-1 border-b p-1">
