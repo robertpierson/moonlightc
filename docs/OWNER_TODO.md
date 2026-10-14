@@ -2,12 +2,20 @@
 
 Do them in order. When done, tell Claude "done, continue".
 
-## Try this yourself: home PC (work on your PC from your phone)
-1. On this PC, open MoonlightC > Settings > **Account** and set up **two-step sign-in** (needed for anything that reaches your PC).
-2. Settings > **Remote control**: turn on **Let my other devices control this PC**, then turn on **Make this my home PC**.
-3. On your phone, open https://moonlightc.vercel.app/app, sign in with the same account, switch to **Cowork**.
-4. At the top it says **Home PC: (your PC's name)**. Tap **Connect**, then click **Allow** on the PC (tick "remember" so you only do this once).
+## Do this now: sign MoonlightC on your PC back in (2 minutes)
+An update signed the desktop app out (fixed now, it won't happen again). Your home PC setting is kept.
+1. On your PC, click the MoonlightC moon icon in the taskbar tray (bottom right, next to the clock; click the ^ arrow if you don't see it).
+2. Click **Sign in to sync** (bottom left) and sign in with your email like before.
+3. When it asks for the 6-digit two-step code, type the code from your authenticator app.
+4. You can close the window afterwards: MoonlightC keeps running in the tray, which is what your phone connects to.
+
+## Then: work on your PC from your phone
+1. On your phone, open https://moonlightc.vercel.app/app (signed in with the same account) and switch to **Cowork**.
+2. At the top it says **Home PC: robertspc**. Tap **Connect**.
+3. It asks for your **6-digit two-step code** on the phone (this was the missing step before). Type it and tap **Unlock**.
+4. On the PC, click **Allow** (tick "remember" so you only do this once).
 5. Ask: "list the folders in my home folder" or "in MoonC run git status". Before it changes a file or runs a command, your phone shows **Allow / Deny**.
+6. Remote control (seeing the screen) is under **Your computers** in the Cowork sidebar and asks for the same code once.
 
 ## Try this yourself: newest bits
 1. Settings > **Models & API keys** > **Scan this PC for API keys** (desktop app): keys already on your PC show up masked; tick and **Check and add selected**.
