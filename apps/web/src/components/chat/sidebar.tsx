@@ -20,7 +20,7 @@ import { InstallApp } from "@/components/site/install-app";
 import { textOf } from "./message";
 
 /** How many recent chats the sidebar shows; the rest live on the All chats page. */
-export const RECENT_LIMIT = 15;
+export const RECENT_LIMIT = 5;
 
 function exportMarkdown(c: Chat) {
   const md = `# ${c.title}\n\n` + c.messages.map((m) => `## ${m.role === "user" ? "You" : "Assistant"}\n\n${textOf(m)}`).join("\n\n");
@@ -232,7 +232,7 @@ export function Sidebar({
               )}
               {chats.length > RECENT_LIMIT && (
                 <Button variant="ghost" size="sm" className="mt-1 w-full justify-start text-muted-foreground" onClick={onAllChats}>
-                  <History /> All {label}s ({chats.length})
+                  <History /> See more ({chats.length - RECENT_LIMIT})
                 </Button>
               )}
               {trashCount > 0 && (

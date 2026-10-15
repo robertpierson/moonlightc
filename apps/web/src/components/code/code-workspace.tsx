@@ -19,6 +19,7 @@ import { Message } from "@/components/chat/message";
 import { ProjectToolsDialog } from "@/components/library/project-tools";
 import { applyChange, codeInstructions, pushToGitHub, revertChange, zipProject, type CodeProject } from "@/lib/code";
 import { previewDocument } from "@/lib/preview";
+import { routeLocal } from "@/lib/local-transport";
 import { deleteProject, getProject, saveProject, useCodeProjects } from "@/lib/code-store";
 import { desktop } from "@/lib/desktop";
 import { findModel, getState, useStore, type ModelRef } from "@/lib/store";
@@ -66,7 +67,7 @@ function AiPanel({ project, chatId, onChange, onChat }: { project: CodeProject; 
   // "Ask first": each change waits here until the person applies or rejects it.
   const [pending, setPending] = useState<{ summary: string; paths: string[]; decide: (ok: boolean) => void }>();
   // eslint-disable-next-line react-hooks/refs -- read when a request is sent, not during render
-  const [transport] = useState(() => new DefaultChatTransport({ api: "/api/chat", body }));
+  const [transport] = useState(() => routeLocal(new DefaultChatTransport({ api: "/api/chat", body }), body));
   const { messages, sendMessage, status, stop, error, addToolOutput, addToolApprovalResponse } = useChat({
     id: `code-${id}`,
     messages: initial,

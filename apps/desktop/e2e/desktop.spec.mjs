@@ -413,17 +413,19 @@ test("screen video: only right after an allowed device asks, and it streams live
   expect(r.again).toBe("string"); // a permission is used once
 });
 
-test("your Claude Code: chat with the CLI signed in on this PC (if installed)", async () => {
+test("your Claude Code is a model in Chat (if installed)", async () => {
   test.setTimeout(120_000);
   const status = await page.evaluate(() => window.moonc.claude.status());
   test.skip(!status.installed, "Claude Code isn't installed on this machine");
-  await page.getByRole("group", { name: "Mode" }).getByRole("button", { name: "Code" }).click();
-  await page.getByRole("navigation", { name: "Sections" }).getByRole("button", { name: "Claude Code" }).click();
-  await page.getByLabel("Message Claude Code").fill("What is 4242 plus 1? Reply with the number only.");
-  await page.getByRole("button", { name: "Send to Claude Code" }).click();
-  // Either Claude Code answers, or (signed out) it says how to sign in again.
-  await expect(page.getByRole("region", { name: "Claude Code" })).toContainText(/4243|sign in again|usage credits/i, { timeout: 90_000 });
-  await expect(page.getByRole("button", { name: "Send to Claude Code" })).toBeVisible({ timeout: 30_000 });
+  await page.reload();
+  await page.getByRole("button", { name: "Chat", exact: true }).click();
+  await page.getByRole("button", { name: "New chat" }).first().click();
+  await page.getByRole("combobox", { name: "Choose model" }).click();
+  await page.getByRole("option", { name: /Sonnet 5\.5/ }).click();
+  await page.getByLabel("Message", { exact: true }).fill("What is 4242 plus 1? Reply with the number only.");
+  await page.getByRole("button", { name: "Send message" }).click();
+  // Either Claude Code answers, or (signed out / no credits) it says what to do.
+  await expect(page.getByText(/4243|sign in again|usage credits/i).first()).toBeVisible({ timeout: 90_000 });
 });
 
 test("terminal: Ctrl+V pastes (e.g. a sign-in code)", async () => {

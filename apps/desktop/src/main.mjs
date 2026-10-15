@@ -327,7 +327,7 @@ handle("claude:status", () =>
   ),
 );
 handle("claude:run", (e, id, prompt, sessionId, model) => {
-  const args = ["--print", "--output-format", "stream-json", "--verbose", ...(["sonnet", "opus", "haiku"].includes(model) ? ["--model", model] : []), ...(typeof sessionId === "string" && /^[\w-]{1,80}$/.test(sessionId) ? ["--resume", sessionId] : [])];
+  const args = ["--print", "--output-format", "stream-json", "--verbose", ...(typeof model === "string" && /^(sonnet|opus|haiku|claude-[a-z0-9-]{3,60})$/.test(model) ? ["--model", model] : []), ...(typeof sessionId === "string" && /^[\w-]{1,80}$/.test(sessionId) ? ["--resume", sessionId] : [])];
   // The message goes in on stdin, never on the command line.
   // A clean environment: settings from another Claude Code session (if MoonlightC was started from one) break its login.
   const inherited = !!(process.env.CLAUDECODE || process.env.CLAUDE_CODE_SESSION_ID);

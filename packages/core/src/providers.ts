@@ -47,6 +47,8 @@ export const PROVIDERS: ProviderDef[] = [
   { id: "custom", name: "Custom (OpenAI-compatible URL)", kind: "compat", keyUrl: "" },
   // Local models on your home PC, reached through its remote connection (see apps/web/src/lib/home-pc.ts).
   { id: "home-pc", name: "Your home PC", kind: "compat", keyUrl: "", hidden: true },
+  // The Claude Code CLI signed in on this PC (desktop app; see apps/web/src/lib/claude-code.ts).
+  { id: "claude-code", name: "Claude Code", kind: "compat", keyUrl: "", hidden: true, local: true },
   { id: "fal", name: "fal (images, video, audio)", kind: "media", media: true, keyUrl: "https://fal.ai/dashboard/keys" },
   { id: "replicate", name: "Replicate (images, video)", kind: "media", media: true, keyUrl: "https://replicate.com/account/api-tokens" },
   { id: "elevenlabs", name: "ElevenLabs (voices)", kind: "media", media: true, keyUrl: "https://elevenlabs.io/app/settings/api-keys" },

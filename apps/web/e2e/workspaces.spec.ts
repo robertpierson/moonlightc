@@ -25,9 +25,9 @@ test("Chat and Code have their own sidebars; only recent chats show; chats move 
   await openMenu(page);
   const sidebar = page.getByRole("navigation", { name: "Chats" }).locator("visible=true");
   const recent = sidebar.getByRole("region", { name: "Recent" });
-  await expect(recent.getByRole("listitem")).toHaveCount(15);
+  await expect(recent.getByRole("listitem")).toHaveCount(5);
   await expect(recent).toContainText("Old chat 20");
-  await expect(recent).not.toContainText("Old chat 5");
+  await expect(recent).not.toContainText("Old chat 15");
   await expect(page.getByRole("navigation", { name: "Sections" }).locator("visible=true").getByRole("button", { name: "Studio" })).toBeVisible();
 
   // Move a chat into the project from its menu, then see it inside the project folder.
@@ -37,8 +37,8 @@ test("Chat and Code have their own sidebars; only recent chats show; chats move 
   await sidebar.getByRole("button", { name: "Expand Bakery" }).click();
   await expect(sidebar.getByRole("region", { name: "Your projects" })).toContainText("Old chat 20");
 
-  // Older chats live on the All chats page.
-  await sidebar.getByRole("button", { name: /All chats \(20\)/ }).click();
+  // Older chats live behind "See more".
+  await sidebar.getByRole("button", { name: /See more \(15\)/ }).click();
   await expect(page.getByRole("heading", { name: "All chats" })).toBeVisible();
   await expect(page.getByRole("main")).toContainText("Old chat 1");
 

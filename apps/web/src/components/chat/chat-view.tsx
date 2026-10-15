@@ -1,7 +1,8 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { HOME_TOOLS, homeChatStream, homePcClient, homeToolNeedsOk, runHomeTool } from "@/lib/home-pc";
+import { HOME_TOOLS, homePcClient, homeToolNeedsOk, runHomeTool } from "@/lib/home-pc";
+import { routeLocal } from "@/lib/local-transport";
 import { activePlugins, activeServers, mcpPayload } from "@/lib/project-tools";
 import { getProvider } from "@moonc/core";
 import { track } from "@/lib/analytics";
@@ -253,14 +254,8 @@ export function ChatView({
           };
         },
       });
-    // Models on your home PC answer through its remote link instead of the server.
-    return {
-      sendMessages: (o) => {
-        const conn = (latest.current().body as { connection?: { providerId?: string }; modelId?: string } | undefined);
-        return conn?.connection?.providerId === "home-pc" ? Promise.resolve(homeChatStream(conn.modelId ?? "", o.messages, o.abortSignal)) : net.sendMessages(o);
-      },
-      reconnectToStream: (o) => net.reconnectToStream(o),
-    };
+    // Models on your home PC, or Claude Code on this PC, answer without the server.
+    return routeLocal(net, () => latest.current().body);
   });
 
   const {
@@ -413,7 +408,11 @@ export function ChatView({
   useEffect(() => {
     if (streaming || messages.length === 0 || mode.private) return;
     const first = messages.find((m) => m.role === "user");
-    const saved = getState().chats.find((c) => c.id === chat.id) ?? chat;
+    const stored = getState().chats.find((c) => c.id === chat.id);
+    const saved = stored ?? chat;
+    // Just opening a chat changes nothing, so it keeps its place in the list; only new messages move it up.
+    const tail = (m?: UIMessage) => m && JSON.stringify([m.id, m.parts]);
+    if (stored && stored.messages.length === messages.length && tail(stored.messages.at(-1)) === tail(messages.at(-1))) return;
     saveChat({
       ...saved,
       title: saved.title || (first ? textOf(first).slice(0, 60) : "New chat"),

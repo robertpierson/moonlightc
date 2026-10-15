@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock, Code2, Cpu, Sparkles, Files, FolderGit2, FolderOpen, MessageSquare, Palette, Receipt, Settings as SettingsIcon, SquareTerminal } from "lucide-react";
+import { Clock, Code2, Cpu, Files, FolderGit2, FolderOpen, MessageSquare, Palette, Receipt, Settings as SettingsIcon, SquareTerminal } from "lucide-react";
 import type { ViewId } from "@/lib/customize";
 import { desktop } from "@/lib/desktop";
 import Link from "next/link";
@@ -8,12 +8,12 @@ import { useStore } from "@/lib/store";
 import { accountsEnabled, useUser } from "@/lib/supabase/client";
 import { Avatar } from "@/components/settings/avatar";
 
-export type View = "chat" | "remote" | "chats" | "library" | "studio" | "subscriptions" | "automations" | "cowork" | "code" | "terminal" | "projects" | "models" | "claude" | "settings";
+export type View = "chat" | "remote" | "chats" | "library" | "studio" | "subscriptions" | "automations" | "cowork" | "code" | "terminal" | "projects" | "models" | "settings";
 export type Workspace = "chat" | "cowork" | "code";
 
 /** Which of the three modes a screen belongs to (Settings keeps whichever mode you came from). */
 export function workspaceOf(v: View, previous: Workspace): Workspace {
-  if (v === "code" || v === "terminal" || v === "projects" || v === "claude") return "code";
+  if (v === "code" || v === "terminal" || v === "projects") return "code";
   if (v === "cowork" || v === "remote") return "cowork";
   if (v === "settings") return previous;
   return "chat";
@@ -28,7 +28,6 @@ const CHAT_ITEMS: Item[] = [
   { id: "automations", label: "Automations", icon: <Clock />, desktopOnly: true },
 ];
 const CODE_ITEMS: Item[] = [
-  { id: "claude", label: "Claude Code", icon: <Sparkles />, desktopOnly: true },
   { id: "terminal", label: "Terminal", icon: <SquareTerminal />, desktopOnly: true },
   { id: "projects", label: "Local projects", icon: <FolderGit2 />, desktopOnly: true },
 ];

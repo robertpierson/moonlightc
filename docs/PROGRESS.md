@@ -63,7 +63,8 @@ STATUS: BUILDING
 - [x] R44 Remote screen (with sound on Windows, on/off + volume): live WebRTC video (Supabase channel for signaling, public STUN), picture fallback drawn flicker-free, zoom 100-300%, wheel and keyboard pass-through, clicks as screen fractions; screen capture only within 10 s of an allowed device asking
 - [x] R45 Code tab: tabs on narrow screens, assistant + panel (hideable) on wide ones, project actions in a More menu, wrapping assistant header; rename/delete single code chats
 - [x] R46 Code preview built in (public/preview-runtime.js: React + sucrase + tiny module loader, sandboxed srcdoc iframe; rebuild with scripts/build-preview-runtime.mjs); Sandpack removed (outside service was blocked on the owner's network)
-- [x] R47 Trash button in the sidebar; Claude Code panel (desktop, Code sidebar): runs the owner's installed `claude --print --output-format stream-json` over IPC (not HTTP), clean env, stdin prompt
+- [x] R47 Trash button in the sidebar; Claude Code (desktop): the owner's installed `claude --print --output-format stream-json` is a model (Opus/Sonnet/Haiku 5.5) in Chat, Cowork and Code via lib/local-transport.ts; IPC only, clean env, stdin prompt, one CLI session per chat
+- [x] R48 Sidebar shows 5 recent chats + See more; opening a chat no longer moves it to the top
 
 ## Phase 0 tasks
 - [x] Check prerequisites (node 22, pnpm 11, git, gh logged in as robertpierson; Vercel + Supabase via MCP)

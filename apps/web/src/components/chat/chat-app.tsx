@@ -14,7 +14,6 @@ import dynamic from "next/dynamic";
 const ArtifactPanel = dynamic(() => import("./artifact-panel").then((m) => m.ArtifactPanel), { loading: () => <div className="flex-1" /> });
 const RemoteView = dynamic(() => import("@/components/remote/remote-view").then((m) => m.RemoteView), { ssr: false, loading: () => <div className="flex-1" /> });
 const Settings = dynamic(() => import("@/components/settings/settings").then((m) => m.Settings), { loading: () => <div className="flex-1" /> });
-const ClaudeCode = dynamic(() => import("@/components/desktop/claude-code").then((m) => m.ClaudeCode), { ssr: false, loading: () => <div className="flex-1" /> });
 const LocalModels = dynamic(() => import("@/components/desktop/local-models").then((m) => m.LocalModels), { loading: () => <div className="flex-1" /> });
 const Automations = dynamic(() => import("@/components/desktop/automations").then((m) => m.Automations), { loading: () => <div className="flex-1" /> });
 const CodeWorkspace = dynamic(() => import("@/components/code/code-workspace").then((m) => m.CodeWorkspace), { ssr: false, loading: () => <div className="flex-1" /> });
@@ -55,12 +54,13 @@ import { ChatView } from "./chat-view";
 import { KeysDialog } from "./keys-dialog";
 import { ThinkingSelect } from "@/components/chat/thinking-select";
 import { summarize } from "@/lib/summarize";
+import { syncClaudeCode } from "@/lib/claude-code";
 import { ModelPicker } from "./model-picker";
 import { ModeSelect, ModesDialog, useModes } from "./modes";
 import { CommandPalette } from "./command-palette";
 import { AllChats, Sidebar } from "./sidebar";
 
-const VIEW_TITLES: Record<View, string> = { chat: "Chat", remote: "Your computer", chats: "All chats", cowork: "Cowork", code: "Code", subscriptions: "Subscriptions", library: "Projects", studio: "Studio", terminal: "Terminal", projects: "Local projects", models: "Model library", claude: "Claude Code", automations: "Automations", settings: "Settings" };
+const VIEW_TITLES: Record<View, string> = { chat: "Chat", remote: "Your computer", chats: "All chats", cowork: "Cowork", code: "Code", subscriptions: "Subscriptions", library: "Projects", studio: "Studio", terminal: "Terminal", projects: "Local projects", models: "Model library", automations: "Automations", settings: "Settings" };
 
 function distroDefaultMode() {
   const s = getState();
@@ -103,6 +103,10 @@ function Inner() {
   const [navOpen, setNavOpen] = useState(false);
   // ?keys=1 (from onboarding) opens the key form straight away.
   const [keysOpen, setKeysOpen] = useState(() => new URLSearchParams(location.search).has("keys"));
+  // Desktop: Claude Code on this PC shows up as models (Chat, Cowork and Code).
+  useEffect(() => {
+    syncClaudeCode().catch(() => {});
+  }, []);
   // Desktop: offer AI keys already set up on this PC (shown masked; nothing is added until you pick them).
   useEffect(() => {
     const b = desktop();
@@ -399,7 +403,6 @@ ${summary}
             />
           )}
           {view === "subscriptions" && <Subscriptions onConnectGoogle={() => openSettings("connectors")} />}
-          {view === "claude" && <ClaudeCode />}
           {view === "models" && (
             <div className="min-h-0 flex-1 overflow-y-auto">
               <div className="mx-auto max-w-5xl px-4 py-6">
