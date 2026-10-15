@@ -152,7 +152,7 @@ test("automations run on a schedule or on demand and keep a history", async () =
     await page.reload();
     await page.getByRole("button", { name: "Automations" }).click();
     await page.getByRole("button", { name: "New automation" }).click();
-    await page.getByLabel("Name").fill("Brief");
+    await page.getByLabel("Name", { exact: true }).fill("Brief");
     await page.getByLabel("What should the AI do?").fill("summarize my day");
     await page.getByRole("button", { name: "Save automation" }).click();
     await expect(page.getByText("Every day at 08:00")).toBeVisible();
