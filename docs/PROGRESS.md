@@ -144,6 +144,7 @@ STATUS: BUILDING
 - [x] Describe an app -> AI edits files via write_files/delete_files (browser-executed), live Sandpack preview, Monaco editor, diff + undo per change, zip download, push to a new private GitHub repo + Deploy on Vercel link, Save to folder (desktop). Projects in IndexedDB.
 
 ## Owner steps completed
+- 2026-10-14: Owner confirmed remote control from Chromebook works end to end (0.6.0).
 (none yet)
 
 ## Known issues
