@@ -110,3 +110,7 @@ Why: the models only exist on the PC; the server can't reach them.
 What: the PC streams its screen over a direct WebRTC connection; the existing private Realtime channel carries the offer/answer; public STUN (Google, Cloudflare) only tells each side its address. If the network blocks it, JPEG pictures over Realtime (drawn after decoding, so no flicker). The desktop app grants one screen capture only within 10 s of a connected device with "see the screen" asking; ending the session (panic key, timeout) stops the stream.
 Why: polling JPEG screenshots over Realtime gave a few frames a second and flickered.
 Alternatives: a TURN relay (works on stricter networks, costs money; add if picture fallback is common).
+
+## Staff panel access = admin account + two-step code, no shared password (2026-10-15)
+What: Settings > Staff and /admin show only for profiles.is_admin; the people/errors/live functions also require aal2.
+Why: a password in the code would be public on GitHub; the owner's account with two-step sign-in is stronger. Keystrokes and message content are never recorded (privacy, law, and the app's own promise).

@@ -1,6 +1,6 @@
 "use client";
 
-import { Brain, Cpu, MonitorSmartphone, Download, FolderOpen, Gauge, Globe, KeyRound, Laptop, Moon, Palette, Plug, Puzzle, Shield, SlidersHorizontal, Sparkles, Sun, KeySquare, Trash2, Upload, UserRound, Wand2, X } from "lucide-react";
+import { Brain, ChartBar, Cpu, MonitorSmartphone, Download, FolderOpen, Gauge, Globe, KeyRound, Laptop, Moon, Palette, Plug, Puzzle, Shield, SlidersHorizontal, Sparkles, Sun, KeySquare, Trash2, Upload, UserRound, Wand2, X } from "lucide-react";
 import { SaveBar } from "./save-bar";
 import { beginEditing, endEditing } from "@/lib/store";
 import { RemoteSettings } from "@/components/remote/remote-settings";
@@ -15,7 +15,8 @@ import { ClaudePlugins } from "./claude-plugins";
 import { UsagePanel } from "./usage";
 import { MemoryManager } from "@/components/library/library";
 import { AccountPanel } from "@/components/account/account";
-import { accountsEnabled } from "@/lib/supabase/client";
+import { accountsEnabled, supabase, useUser } from "@/lib/supabase/client";
+import { TwoStepGate } from "@/components/account/two-step-gate";
 import { Avatar } from "./avatar";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -30,9 +31,9 @@ const Customize = dynamic(() => import("@/components/customize/customize").then(
 const ModsView = dynamic(() => import("@/components/mods/mods-view").then((m) => m.ModsView), { loading: () => <div className="flex-1" /> });
 const LocalModels = dynamic(() => import("@/components/desktop/local-models").then((m) => m.LocalModels), { loading: () => <div className="flex-1" /> });
 
-export type SettingsSection = "profile" | "account" | "general" | "usage" | "memory" | "models" | "auto" | "modes" | "connectors" | "plugins" | "files" | "remote" | "browser" | "local" | "appearance" | "privacy";
+export type SettingsSection = "profile" | "account" | "general" | "usage" | "memory" | "models" | "auto" | "modes" | "connectors" | "plugins" | "files" | "remote" | "browser" | "local" | "appearance" | "privacy" | "staff";
 
-const SECTIONS: { id: SettingsSection; label: string; icon: React.ReactNode; desktopOnly?: boolean; webOnly?: boolean; needsAccounts?: boolean }[] = [
+const SECTIONS: { id: SettingsSection; label: string; icon: React.ReactNode; desktopOnly?: boolean; webOnly?: boolean; needsAccounts?: boolean; adminOnly?: boolean }[] = [
   { id: "profile", label: "Profile", icon: <UserRound /> },
   { id: "account", label: "Account", icon: <KeySquare />, needsAccounts: true },
   { id: "general", label: "General", icon: <SlidersHorizontal /> },
@@ -49,11 +50,24 @@ const SECTIONS: { id: SettingsSection; label: string; icon: React.ReactNode; des
   { id: "local", label: "Local models", icon: <Cpu />, desktopOnly: true },
   { id: "appearance", label: "Appearance", icon: <Palette /> },
   { id: "privacy", label: "Privacy & data", icon: <Shield /> },
+  { id: "staff", label: "Staff", icon: <ChartBar />, needsAccounts: true, adminOnly: true },
 ];
 
 export function Settings({ section, onSection, availableViews, onClose, onChat }: { section: SettingsSection; onSection: (s: SettingsSection) => void; availableViews: ViewId[]; onClose: () => void; onChat: () => void }) {
   const isDesktop = !!desktop();
-  const sections = SECTIONS.filter((s) => (isDesktop ? !s.webOnly : !s.desktopOnly) && (accountsEnabled || !s.needsAccounts));
+  // Staff tools show only for admins (the database checks again on every request).
+  const user = useUser();
+  const [admin, setAdmin] = useState(false);
+  useEffect(() => {
+    if (!user) return;
+    supabase()
+      .from("profiles")
+      .select("is_admin")
+      .eq("id", user.id)
+      .maybeSingle()
+      .then(({ data }) => setAdmin(!!data?.is_admin));
+  }, [user]);
+  const sections = SECTIONS.filter((s) => (isDesktop ? !s.webOnly : !s.desktopOnly) && (accountsEnabled || !s.needsAccounts) && (admin || !s.adminOnly));
   // Edits made here wait for Save (or Reset) in the bar at the bottom.
   useEffect(() => {
     beginEditing();
@@ -127,6 +141,16 @@ export function Settings({ section, onSection, availableViews, onClose, onChat }
         {section === "local" && <LocalModels onChat={onChat} />}
         {section === "appearance" && <Customize availableViews={availableViews} />}
         {section === "privacy" && <Privacy />}
+        {section === "staff" && admin && (
+          <TwoStepGate what="The staff panel" onSetup={() => onSection("account")}>
+            <div className="grid justify-items-start gap-3 rounded-xl border p-4 text-sm">
+              <p>Sign-ups, who&apos;s using MoonlightC right now, every person and their recent activity, errors to troubleshoot, downloads and retention. No one else can open it.</p>
+              <Button asChild>
+                <a href="/admin">Open staff panel</a>
+              </Button>
+            </div>
+          </TwoStepGate>
+        )}
         <SaveBar />
       </div>
     </div>

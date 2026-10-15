@@ -6,7 +6,7 @@ import { YourComputers } from "@/components/remote/your-computers";
 import { RemoteHost } from "@/components/remote/remote-host";
 import { SyncRunner } from "@/components/account/sync-runner";
 import { accountsEnabled } from "@/lib/supabase/client";
-import { track, trackSessionStart } from "@/lib/analytics";
+import { track, trackSessionStart, watchErrors } from "@/lib/analytics";
 import { ConsentPrompt } from "@/components/account/consent";
 import dynamic from "next/dynamic";
 
@@ -241,6 +241,7 @@ ${summary}
         (e: Error) => toast.error(e.message),
       );
     trackSessionStart();
+    watchErrors();
     const query = new URLSearchParams(location.search);
     if (query.has("keys")) history.replaceState(null, "", location.pathname);
     if (isOpenRouterReturn(query)) {

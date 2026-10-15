@@ -78,6 +78,7 @@ import {
   type ModelRef,
 } from "@/lib/store";
 import { summarize } from "@/lib/summarize";
+import { reportError } from "@/lib/analytics";
 import { Message, textOf, type Usage } from "./message";
 import { MicButton } from "./mic-button";
 
@@ -393,6 +394,7 @@ export function ChatView({
   });
   // A model this key can't use: say so next to it in the model menu, so it isn't picked again by mistake.
   useEffect(() => {
+    if (error) reportError(`Chat: ${friendly(error.message)}`);
     const m = error?.message.match(MODEL_PROBLEM);
     if (!m || !model || isAuto(model)) return;
     const note = /plan/.test(m[0]) ? "Not on your plan" : /credit/.test(m[0]) ? "Out of credit" : "Not available";

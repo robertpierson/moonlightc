@@ -3,8 +3,9 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 import { accountsEnabled, serverSupabase } from "@/lib/supabase/server";
+import { Staff } from "./staff";
 
-export const metadata: Metadata = { title: "Admin · MoonlightC", robots: { index: false } };
+export const metadata: Metadata = { title: "Staff · MoonlightC", robots: { index: false } };
 
 type Overview = {
   users: number;
@@ -25,18 +26,20 @@ type Overview = {
   tools: Record<string, number>;
 };
 
-export default function AdminPage() {
+export default async function AdminPage({ searchParams }: { searchParams: Promise<{ q?: string; user?: string }> }) {
   if (!accountsEnabled) notFound();
+  const { q = "", user } = await searchParams;
   return (
     <main className="mx-auto grid max-w-6xl gap-8 px-4 py-8">
       <header className="flex items-center gap-4">
-        <h1 className="text-2xl font-semibold tracking-tight">MoonlightC admin</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">MoonlightC staff panel</h1>
         <Link href="/app" className="ml-auto text-sm text-link underline underline-offset-4">
           Back to the app
         </Link>
       </header>
       <Suspense fallback={<p className="text-muted-foreground">Loading numbers…</p>}>
         <Numbers />
+        <Staff q={q.slice(0, 100)} user={user && /^[0-9a-f-]{36}$/.test(user) ? user : undefined} />
       </Suspense>
     </main>
   );

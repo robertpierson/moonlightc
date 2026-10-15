@@ -65,6 +65,7 @@ STATUS: BUILDING
 - [x] R46 Code preview built in (public/preview-runtime.js: React + sucrase + tiny module loader, sandboxed srcdoc iframe; rebuild with scripts/build-preview-runtime.mjs); Sandpack removed (outside service was blocked on the owner's network)
 - [x] R47 Trash button in the sidebar; Claude Code (desktop): the owner's installed `claude --print --output-format stream-json` is a model (Opus/Sonnet/Haiku 5.5) in Chat, Cowork and Code via lib/local-transport.ts; IPC only, clean env, stdin prompt, one CLI session per chat
 - [x] R48 Sidebar shows 5 recent chats + See more; opening a chat no longer moves it to the top
+- [x] R49 Staff panel (/admin, Settings > Staff for admins): right now (active people, PCs online, events/errors per hour), people list with search and per-person activity/devices/providers, errors grouped (app.error events: message, path, version only). staff_* SQL functions need admin + aal2. No keystroke logging or message content (declined).
 
 ## Phase 0 tasks
 - [x] Check prerequisites (node 22, pnpm 11, git, gh logged in as robertpierson; Vercel + Supabase via MCP)

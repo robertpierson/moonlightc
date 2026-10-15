@@ -9,7 +9,7 @@ import { before, test } from "node:test";
 const STUBS = `
 create role anon nologin; create role authenticated nologin; create role service_role nologin bypassrls;
 create schema auth;
-create table auth.users (id uuid primary key, email text, raw_user_meta_data jsonb default '{}', raw_app_meta_data jsonb default '{}');
+create table auth.users (id uuid primary key, email text, last_sign_in_at timestamptz, raw_user_meta_data jsonb default '{}', raw_app_meta_data jsonb default '{}');
 create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
 grant usage on schema auth to anon, authenticated, service_role;
 grant execute on function auth.uid() to anon, authenticated, service_role;
@@ -179,4 +179,32 @@ test("remote-control channels: only the device owner with two-step sign-in", asy
   const O = "00000000-0000-0000-0000-0000000000a1";
   assert.equal(await canUse(O, "aal2"), false);
   assert.equal((await as(O, "select count(*)::int n from public.devices")).rows[0].n, 0);
+});
+
+test("staff panel: admins with two-step sign-in only; no message content", async () => {
+  const staff = async (user, aal, sql) => {
+    await db.exec(`reset role; select set_config('request.jwt.claim.sub', '${user}', false); select set_config('request.jwt.claims', '{"aal":"${aal}"}', false); set role authenticated;`);
+    try {
+      return { rows: (await db.query(sql)).rows };
+    } catch (e) {
+      return { error: String(e.message) };
+    } finally {
+      await db.exec("reset role; select set_config('request.jwt.claims', '', false);");
+    }
+  };
+  // Earlier tests delete A and B, so this one brings its own people.
+  const S = "00000000-0000-0000-0000-0000000000c1";
+  const N = "00000000-0000-0000-0000-0000000000c2";
+  await db.query("insert into auth.users (id, email) values ($1, 'staff@example.com'), ($2, 'someone@example.com')", [S, N]);
+  await as(null, "update public.profiles set is_admin = true where id = $1", [S]);
+  const A = S;
+  const B = N;
+  assert.match((await staff(B, "aal2", "select public.staff_users() r")).error ?? "", /not allowed/);
+  assert.match((await staff(A, "aal1", "select public.staff_users() r")).error ?? "", /not allowed/);
+  const ok = await staff(A, "aal2", "select public.staff_users() r");
+  if (ok.error) throw new Error(ok.error);
+  assert.equal(ok.rows[0].r.length >= 2, true);
+  assert.equal("content" in ok.rows[0].r[0], false);
+  for (const f of ["public.staff_live()", "public.staff_errors(7)", `public.staff_user('${B}')`]) assert.ok((await staff(A, "aal2", `select ${f} r`)).rows, f);
+  await as(null, "update public.profiles set is_admin = false");
 });
