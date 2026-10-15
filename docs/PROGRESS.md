@@ -156,7 +156,7 @@ STATUS: BUILDING
 (none yet)
 
 ## Known issues
-- Owner's Claude Code CLI login on the PC is expired (OAuth); the Claude Code panel says how to sign in again.
+- Claude Code CLI default model (Fable) needs usage credits on the owner's plan; the panel defaults to Sonnet.
 - Screenshot/Lighthouse servers: use PORT=3100 so Playwright's reuseExistingServer never picks up a stale build on 3000.
 - Vercel previews are SSO-protected; tests send x-vercel-protection-bypass (secret in .env.local and GitHub secret VERCEL_AUTOMATION_BYPASS_SECRET).
 - Vercel MCP returns 403/404 for this team; use Vercel CLI (logged in as robertpierson196-1427). In Git Bash prefix `vercel api` with MSYS_NO_PATHCONV=1.

@@ -15,6 +15,14 @@ export function ClaudeCode() {
   const [lines, setLines] = useState<Line[]>([]);
   const [input, setInput] = useState("");
   const [run, setRun] = useState<string>();
+  // Sonnet by default: it's included in Claude plans (the CLI's own default can need extra usage credits).
+  const [model, setModel] = useState(() => {
+    try {
+      return localStorage.getItem("moonc:claude-code-model") ?? "sonnet";
+    } catch {
+      return "sonnet";
+    }
+  });
   const session = useRef<string | undefined>(undefined);
   const bottom = useRef<HTMLDivElement>(null);
 
@@ -39,7 +47,9 @@ export function ClaudeCode() {
           role: "note",
           text: /authenticat|log ?in|expired/i.test(e.result ?? "")
             ? "Claude Code needs you to sign in again: open Terminal (in this sidebar), type claude, press Enter, then type /login and follow the steps."
-            : e.result || "Claude Code stopped.",
+            : /usage credits/i.test(e.result ?? "")
+              ? "That model needs extra usage credits on your Claude plan. Pick Sonnet or Haiku above."
+              : e.result || "Claude Code stopped.",
         });
       if (e.type === "stderr" && e.text) add({ role: "note", text: e.text });
       // A "result" ends the reply (helper processes can keep the CLI open a little longer).
@@ -58,7 +68,7 @@ export function ClaudeCode() {
     setLines((x) => [...x, { role: "you", text }]);
     setInput("");
     setRun(id);
-    b.claude.run(id, text, session.current);
+    b.claude.run(id, text, session.current, model);
   };
 
   if (!status) return <Loader2 className="m-6 size-5 animate-spin" aria-label="Looking for Claude Code" />;
@@ -68,6 +78,24 @@ export function ClaudeCode() {
     <section aria-label="Claude Code" className="flex min-h-0 flex-1 flex-col">
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto grid max-w-3xl gap-3 px-4 py-6 text-sm">
+          <label className="flex items-center gap-2 justify-self-start text-xs text-muted-foreground">
+            Model
+            <select
+              aria-label="Claude Code model"
+              value={model}
+              onChange={(e) => {
+                setModel(e.target.value);
+                try {
+                  localStorage.setItem("moonc:claude-code-model", e.target.value);
+                } catch {}
+              }}
+              className="rounded-md border bg-background px-2 py-1 text-foreground"
+            >
+              <option value="sonnet">Sonnet</option>
+              <option value="opus">Opus</option>
+              <option value="haiku">Haiku</option>
+            </select>
+          </label>
           <p className="text-xs text-muted-foreground">
             Claude Code {status.version} on this PC, with your own Claude login. It works in your home folder; it asks before changing files, so file edits and commands are skipped here.
           </p>

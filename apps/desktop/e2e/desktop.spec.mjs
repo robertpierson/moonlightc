@@ -422,7 +422,7 @@ test("your Claude Code: chat with the CLI signed in on this PC (if installed)", 
   await page.getByLabel("Message Claude Code").fill("What is 4242 plus 1? Reply with the number only.");
   await page.getByRole("button", { name: "Send to Claude Code" }).click();
   // Either Claude Code answers, or (signed out) it says how to sign in again.
-  await expect(page.getByRole("region", { name: "Claude Code" })).toContainText(/4243|sign in again/i, { timeout: 90_000 });
+  await expect(page.getByRole("region", { name: "Claude Code" })).toContainText(/4243|sign in again|usage credits/i, { timeout: 90_000 });
   await expect(page.getByRole("button", { name: "Send to Claude Code" })).toBeVisible({ timeout: 30_000 });
 });
 

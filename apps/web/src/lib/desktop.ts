@@ -92,7 +92,7 @@ export interface MooncBridge {
   clipboard: { readKey(): Promise<string | null>; readText(): Promise<string> };
   claude: {
     status(): Promise<{ installed: boolean; version?: string }>;
-    run(id: string, prompt: string, sessionId?: string): Promise<boolean>;
+    run(id: string, prompt: string, sessionId?: string, model?: string): Promise<boolean>;
     stop(id: string): Promise<boolean>;
     onEvent(cb: (id: string, line: string) => void): () => void;
   };
