@@ -25,7 +25,7 @@ export function PermissionMode() {
       <Select value={mode} onValueChange={(v) => (v === "bypass" ? setConfirm(true) : set(v as Mode))}>
         <SelectTrigger size="sm" aria-label="Permission mode" className={`h-8 w-auto gap-1 ${mode === "bypass" ? "border-destructive text-destructive" : ""}`}>
           {mode === "bypass" && <ShieldAlert className="size-4" />}
-          <SelectValue />
+          <SelectValue>{MODES.find((m) => m.id === mode)?.label}</SelectValue>
         </SelectTrigger>
         <SelectContent align="end">
           {MODES.map((m) => (

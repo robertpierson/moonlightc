@@ -106,7 +106,7 @@ export function codeInstructions(project: CodeProject) {
     });
   const stack =
     project.template === "react"
-      ? "a React app that runs in the browser (Sandpack). The entry is /index.js and the root component /App.js. Add npm packages by editing /package.json dependencies."
+      ? "a React app that runs in the browser preview. The entry is /index.js and the root component /App.js. The preview has React and react-dom only (no other npm packages): use plain CSS files (import \"./styles.css\") and your own components."
       : "a static web page: /index.html with plain CSS and JavaScript files.";
   return [
     `You are building ${stack}`,

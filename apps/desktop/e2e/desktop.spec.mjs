@@ -112,7 +112,7 @@ test("gate: Claude Code opens in the built-in terminal (if installed)", async ()
   test.skip(!tools.find((t) => t.id === "claude")?.installed, "Claude Code isn't installed on this machine");
   await page.getByRole("group", { name: "Mode" }).getByRole("button", { name: "Code" }).click();
   await page.getByRole("button", { name: "Terminal" }).click();
-  await page.getByRole("button", { name: "Claude Code" }).click();
+  await page.getByRole("main").getByRole("button", { name: "Claude Code" }).click();
   await expect(page.getByRole("tab", { name: "Claude Code" })).toBeVisible();
   // Claude Code draws its own UI; seeing any of its output proves it launched inside our terminal.
   await expect(page.getByTestId("terminal").last()).toContainText(/Claude|claude|trust|Welcome/, { timeout: 30000 });
@@ -411,6 +411,19 @@ test("screen video: only right after an allowed device asks, and it streams live
   expect(r.before).toBe("string"); // refused before any device asked
   expect(r.size).toBeGreaterThan(0); // live frames arrived
   expect(r.again).toBe("string"); // a permission is used once
+});
+
+test("your Claude Code: chat with the CLI signed in on this PC (if installed)", async () => {
+  test.setTimeout(120_000);
+  const status = await page.evaluate(() => window.moonc.claude.status());
+  test.skip(!status.installed, "Claude Code isn't installed on this machine");
+  await page.getByRole("group", { name: "Mode" }).getByRole("button", { name: "Code" }).click();
+  await page.getByRole("navigation", { name: "Sections" }).getByRole("button", { name: "Claude Code" }).click();
+  await page.getByLabel("Message Claude Code").fill("What is 4242 plus 1? Reply with the number only.");
+  await page.getByRole("button", { name: "Send to Claude Code" }).click();
+  // Either Claude Code answers, or (signed out) it says how to sign in again.
+  await expect(page.getByRole("region", { name: "Claude Code" })).toContainText(/4243|sign in again/i, { timeout: 90_000 });
+  await expect(page.getByRole("button", { name: "Send to Claude Code" })).toBeVisible({ timeout: 30_000 });
 });
 
 test("finds API keys already set up on this PC (shown masked, added only when picked)", async () => {

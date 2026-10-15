@@ -35,4 +35,8 @@ test("chats get a short AI title; copy, continue in a new chat, trash and restor
   await page.getByRole("button", { name: "Options for Baking with butter" }).locator("visible=true").click();
   await page.getByRole("menuitem", { name: "Move to Trash" }).click();
   await expect(page.getByRole("button", { name: "Options for Baking with butter" }).locator("visible=true")).toHaveCount(0);
+  // The Trash is one click away in the sidebar; restoring brings the chat back.
+  await page.getByRole("button", { name: "Trash (1)" }).click();
+  await page.getByRole("region", { name: "Trash" }).getByRole("button", { name: "Restore Baking with butter" }).click();
+  await expect(page.getByRole("button", { name: "Options for Baking with butter" }).first()).toBeVisible();
 });

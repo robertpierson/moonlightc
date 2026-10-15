@@ -1,5 +1,5 @@
 import { app, BrowserWindow, clipboard, desktopCapturer, dialog, globalShortcut, ipcMain, Menu, nativeImage, Notification, safeStorage, session, shell, Tray } from "electron";
-import { spawn } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import fs from "node:fs";
 import net from "node:net";
 import path from "node:path";
@@ -317,6 +317,42 @@ handle("remote:state", () => remote.state());
 handle("remote:grants", () => remote.grants());
 handle("remote:revoke", (_e, clientId) => remote.revoke(String(clientId)));
 handle("remote:audit", () => remote.readAudit());
+
+// Your own Claude Code on this PC (the CLI you installed and signed in to). Reachable only from this app's window.
+const CLAUDE = process.platform === "win32" ? "claude.cmd" : "claude";
+const claudeRuns = new Map();
+handle("claude:status", () =>
+  new Promise((done) =>
+    execFile(CLAUDE, ["--version"], { shell: process.platform === "win32", timeout: 20_000, windowsHide: true }, (err, out) => done(err ? { installed: false } : { installed: true, version: String(out).trim() })),
+  ),
+);
+handle("claude:run", (e, id, prompt, sessionId) => {
+  const args = ["--print", "--output-format", "stream-json", "--verbose", ...(typeof sessionId === "string" && /^[\w-]{1,80}$/.test(sessionId) ? ["--resume", sessionId] : [])];
+  // The message goes in on stdin, never on the command line.
+  // A clean environment: settings from another Claude Code session (if MoonlightC was started from one) break its login.
+  const inherited = !!(process.env.CLAUDECODE || process.env.CLAUDE_CODE_SESSION_ID);
+  const env = Object.fromEntries(Object.entries(process.env).filter(([k]) => !/^(CLAUDE_|CLAUDECODE$)/.test(k) && !(inherited && k === "ANTHROPIC_BASE_URL")));
+  const child = spawn(CLAUDE, args, { cwd: app.getPath("home"), env, shell: process.platform === "win32", windowsHide: true });
+  claudeRuns.set(id, child);
+  let rest = "";
+  child.stdout.on("data", (d) => {
+    const lines = (rest + d).split(/\r?\n/);
+    rest = lines.pop() ?? "";
+    for (const l of lines) if (l.trim()) e.sender.send("claude:event", id, l);
+  });
+  child.stderr.on("data", (d) => e.sender.send("claude:event", id, JSON.stringify({ type: "stderr", text: String(d).slice(0, 2000) })));
+  child.on("close", (code) => {
+    if (rest.trim()) e.sender.send("claude:event", id, rest);
+    e.sender.send("claude:event", id, JSON.stringify({ type: "exit", code }));
+    claudeRuns.delete(id);
+  });
+  child.stdin.end(String(prompt ?? "").slice(0, 100_000));
+  return true;
+});
+handle("claude:stop", (_e, id) => {
+  claudeRuns.get(id)?.kill();
+  return true;
+});
 // Quick connect: hand back the clipboard only when it looks like an API key (one token, no spaces).
 handle("clipboard:key", async () => {
   const t = String((await clipboard.readText()) ?? "").trim();
@@ -439,6 +475,8 @@ app.on("before-quit", () => {
   computer.stop("app closed");
   terminals.killAll();
   server?.kill();
+  // Write chats and settings (page storage) to disk before the process ends.
+  session.defaultSession.flushStorageData();
 });
 app.on("will-quit", () => globalShortcut.unregisterAll());
 app.on("window-all-closed", () => {});

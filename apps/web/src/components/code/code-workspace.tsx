@@ -1,22 +1,24 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { SandpackPreview, SandpackProvider, useSandpack } from "@codesandbox/sandpack-react";
 import { NewProject } from "./new-project";
 import { DefaultChatTransport, lastAssistantMessageIsCompleteWithApprovalResponses, lastAssistantMessageIsCompleteWithToolCalls } from "ai";
 import { findSkill, skillsInstructions } from "@/lib/claude-plugins";
 import { activePlugins, activeServers, mcpPayload } from "@/lib/project-tools";
 import { PermissionMode } from "./permission-mode";
-import { ArrowUp, Download, ExternalLink, FileCode2, FolderDown, Loader2, Plug, Plus, Square, Trash2, Undo2, Upload } from "lucide-react";
+import { ArrowUp, Download, ExternalLink, FileCode2, FolderDown, Loader2, MoreHorizontal, PanelRightClose, PanelRightOpen, Plug, Plus, RotateCw, Square, Trash2, Undo2, Upload } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ModelPicker } from "@/components/chat/model-picker";
+import { ThinkingSelect } from "@/components/chat/thinking-select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Message } from "@/components/chat/message";
 import { ProjectToolsDialog } from "@/components/library/project-tools";
 import { applyChange, codeInstructions, pushToGitHub, revertChange, zipProject, type CodeProject } from "@/lib/code";
+import { previewDocument } from "@/lib/preview";
 import { deleteProject, getProject, saveProject, useCodeProjects } from "@/lib/code-store";
 import { desktop } from "@/lib/desktop";
 import { findModel, getState, useStore, type ModelRef } from "@/lib/store";
@@ -54,6 +56,7 @@ function AiPanel({ project, chatId, onChange, onChat }: { project: CodeProject; 
     return {
       connection: { apiKey, providerId, baseURL },
       modelId: found.model.id,
+      thinking: getState().thinking,
       instructions: [codeInstructions(p), skills].filter(Boolean).join("\n\n"),
       code: perm === "plan" ? "plan" : true,
       skills: !!skills || undefined,
@@ -121,8 +124,9 @@ function AiPanel({ project, chatId, onChange, onChat }: { project: CodeProject; 
 
   return (
     <section aria-label="Code assistant" className="flex min-h-0 flex-1 flex-col">
-      <div className="flex items-center gap-1 border-b px-1 py-1">
-        <ModelPicker value={model} onChange={setModel} />
+      <div className="flex flex-wrap items-center gap-1 border-b px-1 py-1">
+        <ModelPicker compact value={model} onChange={setModel} />
+        <ThinkingSelect model={model} />
         <span className="flex-1" />
         <PermissionMode />
       </div>
@@ -212,27 +216,23 @@ function AiPanel({ project, chatId, onChange, onChat }: { project: CodeProject; 
   );
 }
 
-/** Pushes edits (from the AI or the editor) into the running preview without restarting it. */
-function SyncFiles({ files }: { files: Record<string, string> }) {
-  const { sandpack } = useSandpack();
-  useEffect(() => {
-    const t = setTimeout(() => {
-      for (const [path, code] of Object.entries(files)) if (sandpack.files[path]?.code !== code) sandpack.updateFile(path, code);
-      for (const path of Object.keys(sandpack.files)) if (!(path in files) && !path.startsWith("/node_modules")) sandpack.deleteFile(path);
-    }, 300);
-    return () => clearTimeout(t);
-  }, [files, sandpack]);
-  return null;
-}
-
 function Preview({ project }: { project: CodeProject }) {
-  // Sandpack bundles and runs the project in a sandboxed iframe on another origin.
-  const [initial] = useState(() => Object.fromEntries(Object.entries(project.files).map(([k, v]) => [k, { code: v }])));
+  // Rebuilt shortly after the files change; runs in a sandbox with no access to MoonlightC.
+  const [doc, setDoc] = useState("");
+  const [reload, setReload] = useState(0);
+  useEffect(() => {
+    const t = setTimeout(() => setDoc(previewDocument(project, location.origin)), 400);
+    return () => clearTimeout(t);
+  }, [project]);
   return (
-    <SandpackProvider template={project.template === "react" ? "react" : "static"} files={initial} options={{ recompileMode: "delayed", recompileDelay: 600, initMode: "immediate" }} style={{ height: "100%" }}>
-      <SyncFiles files={project.files} />
-      <SandpackPreview showOpenInCodeSandbox={false} showRefreshButton style={{ height: "100%" }} />
-    </SandpackProvider>
+    <div className="flex h-full flex-col">
+      <div className="flex shrink-0 justify-end border-b p-1">
+        <Button size="xs" variant="ghost" onClick={() => setReload((n) => n + 1)}>
+          <RotateCw /> Reload
+        </Button>
+      </div>
+      <iframe key={reload} title="Preview" sandbox="allow-scripts allow-forms allow-modals allow-popups" srcDoc={doc} className="min-h-0 w-full flex-1 bg-white" />
+    </div>
   );
 }
 
@@ -253,7 +253,11 @@ export function CodeWorkspace({
   const project = projects.find((p) => p.id === projectId) ?? projects[0];
   const [tools, setTools] = useState(false);
   const [file, setFile] = useState<string>();
-  const [tab, setTab] = useState<"code" | "changes" | "preview">("preview");
+  // Phones start on the assistant; wider screens show it beside the preview.
+  const [tab, setTab] = useState<"assistant" | "code" | "changes" | "preview">(() => (matchMedia("(min-width: 768px)").matches ? "preview" : "assistant"));
+  // Wider screens: the assistant always shows; the preview/code panel beside it can be hidden.
+  const [side, setSide] = useState(true);
+  const view = tab === "assistant" ? "preview" : tab;
   const [creating, setCreating] = useState(false);
   const [pushing, setPushing] = useState(false);
   const githubToken = useStore((s) => s.mcpServers?.find((m) => m.preset === "github")?.token);
@@ -293,21 +297,6 @@ export function CodeWorkspace({
           <Plug /> Connectors & skills{(project.connectorIds?.length ?? 0) + (project.pluginIds?.length ?? 0) ? ` (${(project.connectorIds?.length ?? 0) + (project.pluginIds?.length ?? 0)})` : ""}
         </Button>
         <span className="flex-1" />
-        <Button size="sm" variant="outline" onClick={download}>
-          <Download /> Download .zip
-        </Button>
-        {desktop() && (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={async () => {
-              const where = await desktop()!.files.saveProject(project.name, project.files);
-              if (where) toast.success(`Saved to ${where}`);
-            }}
-          >
-            <FolderDown /> Save to folder
-          </Button>
-        )}
         {githubToken ? (
           <Button
             size="sm"
@@ -333,20 +322,65 @@ export function CodeWorkspace({
             <Upload /> Connect GitHub to publish
           </Button>
         )}
-        {project.repo && (
-          <Button size="sm" variant="ghost" asChild>
-            <a href={`https://vercel.com/new/clone?repository-url=${encodeURIComponent(`https://github.com/${project.repo}`)}`} target="_blank" rel="noreferrer">
-              Deploy on Vercel <ExternalLink />
-            </a>
-          </Button>
-        )}
-        <Button size="icon-sm" variant="ghost" aria-label={`Delete ${project.name}`} onClick={() => confirm(`Delete the project "${project.name}" from this device?`) && deleteProject(project.id)}>
-          <Trash2 />
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button size="icon-sm" variant="ghost" aria-label="More project actions">
+              <MoreHorizontal />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onSelect={download}>
+              <Download /> Download .zip
+            </DropdownMenuItem>
+            {desktop() && (
+              <DropdownMenuItem
+                onSelect={async () => {
+                  const where = await desktop()!.files.saveProject(project.name, project.files);
+                  if (where) toast.success(`Saved to ${where}`);
+                }}
+              >
+                <FolderDown /> Save to folder
+              </DropdownMenuItem>
+            )}
+            {project.repo && (
+              <DropdownMenuItem asChild>
+                <a href={`https://vercel.com/new/clone?repository-url=${encodeURIComponent(`https://github.com/${project.repo}`)}`} target="_blank" rel="noreferrer">
+                  <ExternalLink /> Deploy on Vercel
+                </a>
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem variant="destructive" onSelect={() => confirm(`Delete the project "${project.name}" from this device?`) && deleteProject(project.id)}>
+              <Trash2 /> Delete {project.name}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
-      <div className="grid min-h-0 flex-1 lg:grid-cols-[minmax(18rem,22rem)_1fr]">
-        <div className="flex min-h-[22rem] flex-col border-b lg:min-h-0 lg:border-r lg:border-b-0">
+      {/* One panel at a time on narrow screens; assistant beside the preview on wider ones. */}
+      <div role="tablist" aria-label="Workspace" className="flex items-center gap-1 border-b p-1">
+        {(["assistant", "preview", "code", "changes"] as const).map((t) => (
+          <Button
+            key={t}
+            role="tab"
+            aria-selected={tab === t}
+            size="sm"
+            variant="ghost"
+            className={t === "assistant" ? "md:hidden" : ""}
+            onClick={() => {
+              setTab(t);
+              setSide(true);
+            }}
+          >
+            {t === "assistant" ? "Assistant" : t === "preview" ? "Preview" : t === "code" ? "Code" : `Changes${project.history.length ? ` (${project.history.length})` : ""}`}
+          </Button>
+        ))}
+        <span className="flex-1" />
+        <Button size="sm" variant="ghost" className="hidden md:inline-flex" aria-pressed={!side} onClick={() => setSide((v) => !v)}>
+          {side ? <PanelRightClose /> : <PanelRightOpen />} {side ? "Hide panel" : "Show panel"}
+        </Button>
+      </div>
+      <div className={`grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,1fr)] ${side ? "md:grid-cols-[minmax(20rem,26rem)_minmax(0,1fr)]" : ""}`}>
+        <div className={`${tab === "assistant" ? "flex" : "hidden"} min-h-0 flex-col md:flex ${side ? "md:border-r" : ""}`}>
           <AiPanel
             key={`${project.id}:${chatId ?? (project.chats ?? []).reduce<{ id?: string; t: number }>((m, c) => (c.updatedAt > m.t ? { id: c.id, t: c.updatedAt } : m), { t: 0 }).id ?? "new"}`}
             project={project}
@@ -355,22 +389,15 @@ export function CodeWorkspace({
             onChat={(id) => onSelect(project.id, id)}
           />
         </div>
-        <div className="flex min-h-[28rem] flex-col">
-          <div role="tablist" aria-label="Workspace" className="flex items-center gap-1 border-b p-1">
-            {(["preview", "code", "changes"] as const).map((t) => (
-              <Button key={t} role="tab" aria-selected={tab === t} size="sm" variant={tab === t ? "secondary" : "ghost"} onClick={() => setTab(t)}>
-                {t === "preview" ? "Preview" : t === "code" ? "Code" : `Changes${project.history.length ? ` (${project.history.length})` : ""}`}
-              </Button>
-            ))}
-          </div>
-          {tab === "preview" && (
+        <div className={`${tab === "assistant" ? "hidden" : "flex"} min-h-0 flex-col ${side ? "md:flex" : "md:hidden"}`}>
+          {view === "preview" && (
             <div className="min-h-0 flex-1" data-testid="code-preview">
               <Preview key={`${project.id}:${project.history.length}`} project={project} />
             </div>
           )}
-          {tab !== "preview" && (
-            <div className="grid min-h-0 flex-1 md:grid-cols-[12rem_1fr]">
-              <ul aria-label="Files" className="max-h-40 overflow-y-auto border-b p-1 text-sm md:max-h-none md:border-r md:border-b-0">
+          {view !== "preview" && (
+            <div className="grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] lg:grid-cols-[11rem_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)]">
+              <ul aria-label="Files" className="max-h-32 overflow-y-auto border-b p-1 text-sm lg:max-h-none lg:border-r lg:border-b-0">
                 {Object.keys(project.files)
                   .sort()
                   .map((p) => (
@@ -381,8 +408,8 @@ export function CodeWorkspace({
                     </li>
                   ))}
               </ul>
-              <div className="flex min-h-[20rem] flex-col">
-                {tab === "code" && current && (
+              <div className="flex min-h-0 flex-col">
+                {view === "code" && current && (
                   <Editor
                     path={current}
                     language={language(current)}
@@ -392,7 +419,7 @@ export function CodeWorkspace({
                     onChange={(v) => update({ ...project, files: { ...project.files, [current]: v ?? "" }, updatedAt: Date.now() })}
                   />
                 )}
-                {tab === "changes" &&
+                {view === "changes" &&
                   (lastChange ? (
                     <>
                       <div className="flex flex-wrap items-center gap-2 border-b p-2 text-sm">

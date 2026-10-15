@@ -24,7 +24,8 @@ test("describe an app: the AI writes files, it runs live, changes can be seen an
   await page.getByRole("button", { name: "Send to code assistant" }).click();
   await expect(page.getByText("Made a tip calculator")).toBeVisible({ timeout: 20000 });
 
-  // Live preview (Sandpack bundles in a sandboxed iframe).
+  // Live preview, built in the app (no outside service), in a sandboxed iframe.
+  await page.getByRole("tab", { name: "Preview" }).click();
   const preview = page.getByTestId("code-preview").frameLocator("iframe").first();
   await expect(preview.getByRole("heading", { name: "Tip calculator" })).toBeVisible({ timeout: 45000 });
 
@@ -35,6 +36,7 @@ test("describe an app: the AI writes files, it runs live, changes can be seen an
   await expect(page.getByText("Undo: Made a tip calculator")).toBeVisible();
 
   const download = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Download .zip" }).click();
+  await page.getByRole("button", { name: "More project actions" }).click();
+  await page.getByRole("menuitem", { name: "Download .zip" }).click();
   expect((await download).suggestedFilename()).toBe("Tips.zip");
 });

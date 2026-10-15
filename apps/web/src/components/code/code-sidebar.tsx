@@ -76,15 +76,56 @@ export function CodeSidebar({ projectId, chatId, onSelect }: { projectId?: strin
         {open && (
           <ul className="ml-5 border-l pl-1" aria-label={`Chats in ${p.name}`}>
             {chats.map((c) => (
-              <li key={c.id}>
-                <button
-                  onClick={() => onSelect(p.id, c.id)}
-                  aria-current={c.id === chatId ? "page" : undefined}
-                  className="flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-left text-sm hover:bg-accent aria-[current=page]:bg-accent"
-                >
-                  <MessageSquare className="size-3.5 shrink-0 text-muted-foreground" />
-                  <span className="truncate">{c.title || "New chat"}</span>
-                </button>
+              <li key={c.id} className="group relative min-w-0">
+                {renaming === c.id ? (
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const v = new FormData(e.currentTarget).get("title")?.toString().trim();
+                      if (v) saveProject({ ...p, chats: (p.chats ?? []).map((x) => (x.id === c.id ? { ...x, title: v } : x)) });
+                      setRenaming(undefined);
+                    }}
+                  >
+                    <Input name="title" aria-label="Chat name" autoFocus defaultValue={c.title} onBlur={(e) => e.currentTarget.form?.requestSubmit()} />
+                  </form>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => onSelect(p.id, c.id)}
+                      aria-current={c.id === chatId ? "page" : undefined}
+                      className="flex w-full min-w-0 items-center gap-1.5 rounded-md px-2 py-1.5 pr-8 text-left text-sm hover:bg-accent aria-[current=page]:bg-accent"
+                    >
+                      <MessageSquare className="size-3.5 shrink-0 text-muted-foreground" />
+                      <span className="min-w-0 truncate">{c.title || "New chat"}</span>
+                    </button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon-xs"
+                          aria-label={`Options for chat ${c.title || "New chat"}`}
+                          className="absolute top-1/2 right-1 -translate-y-1/2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100 data-[state=open]:opacity-100"
+                        >
+                          <MoreHorizontal />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onSelect={() => setRenaming(c.id)}>
+                          <Pencil /> Rename
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          variant="destructive"
+                          onSelect={() => {
+                            saveProject({ ...p, chats: (p.chats ?? []).filter((x) => x.id !== c.id) });
+                            if (c.id === chatId) onSelect(p.id);
+                          }}
+                        >
+                          <Trash2 /> Delete chat
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </>
+                )}
               </li>
             ))}
             {!chats.length && <li className="px-2 py-1 text-xs text-muted-foreground">No chats yet</li>}

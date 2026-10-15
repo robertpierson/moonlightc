@@ -123,11 +123,18 @@ test("code projects hold several chats, saved and reopened", async ({ page }) =>
   await page.getByRole("button", { name: "New chat in Tips" }).locator("visible=true").click();
   await expect(page.getByText("Echo from mock-fast: hello code")).toHaveCount(0);
   await openMenu(page);
-  await chats.getByRole("button", { name: "hello code" }).click();
+  await chats.getByRole("button", { name: "hello code", exact: true }).click();
   await expect(page.getByText("Echo from mock-fast: hello code")).toBeVisible();
   await page.reload();
   await nav(page, "Code");
   await openMenu(page);
-  await page.getByRole("list", { name: "Chats in Tips" }).locator("visible=true").getByRole("button", { name: "hello code" }).click();
+  await page.getByRole("list", { name: "Chats in Tips" }).locator("visible=true").getByRole("button", { name: "hello code", exact: true }).click();
   await expect(page.getByText("Echo from mock-fast: hello code")).toBeVisible();
+  // One chat can be deleted without deleting the project.
+  await openMenu(page);
+  const list = page.getByRole("list", { name: "Chats in Tips" }).locator("visible=true");
+  await list.getByRole("button", { name: "Options for chat hello code" }).click();
+  await page.getByRole("menuitem", { name: "Delete chat" }).click();
+  await expect(list).not.toContainText("hello code");
+  await expect(page.getByRole("button", { name: "Options for Tips" }).locator("visible=true")).toBeVisible();
 });

@@ -54,6 +54,16 @@ contextBridge.exposeInMainWorld("moonc", {
   device: { info: () => invoke("device:info") },
   keys: { scan: () => invoke("keys:scan") },
   clipboard: { readKey: () => invoke("clipboard:key") },
+  claude: {
+    status: () => invoke("claude:status"),
+    run: (id, prompt, sessionId) => invoke("claude:run", id, prompt, sessionId),
+    stop: (id) => invoke("claude:stop", id),
+    onEvent: (cb) => {
+      const f = (_e, id, line) => cb(id, line);
+      ipcRenderer.on("claude:event", f);
+      return () => ipcRenderer.removeListener("claude:event", f);
+    },
+  },
   remote: {
     connect: (client, tiers) => invoke("remote:connect", client, tiers),
     trusted: () => invoke("remote:trusted"),

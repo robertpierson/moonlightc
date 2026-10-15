@@ -90,6 +90,12 @@ export interface MooncBridge {
   };
   device: { info(): Promise<{ id: string; name: string; os: string; version: string }> };
   clipboard: { readKey(): Promise<string | null> };
+  claude: {
+    status(): Promise<{ installed: boolean; version?: string }>;
+    run(id: string, prompt: string, sessionId?: string): Promise<boolean>;
+    stop(id: string): Promise<boolean>;
+    onEvent(cb: (id: string, line: string) => void): () => void;
+  };
   /** API keys already set up on this computer (standard environment variables). */
   keys: { scan(): Promise<{ provider: string; source: string; value: string; masked: string }[]> };
   /** Remote control of this PC from your other devices (every call is checked against what the person allowed). */

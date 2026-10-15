@@ -157,6 +157,7 @@ export function Sidebar({
   onOpenProject: (id: string) => void;
   workspace?: "chat" | "cowork";
 }) {
+  const trashCount = useStore((s) => s.trash?.length ?? 0);
   const allChats = useStore((s) => s.chats);
   const projects = useStore((s) => s.projects) ?? [];
   const chats = useMemo(() => allChats.filter((c) => (workspace === "cowork" ? c.workspace === "cowork" : c.workspace !== "cowork")), [allChats, workspace]);
@@ -234,6 +235,19 @@ export function Sidebar({
                   <History /> All {label}s ({chats.length})
                 </Button>
               )}
+              {trashCount > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mt-1 w-full justify-start text-muted-foreground"
+                  onClick={() => {
+                    onAllChats();
+                    setTimeout(() => document.getElementById("trash")?.scrollIntoView({ block: "start" }), 100);
+                  }}
+                >
+                  <Trash2 /> Trash ({trashCount})
+                </Button>
+              )}
             </section>
           </>
         )}
@@ -278,7 +292,7 @@ function Trash() {
   const trash = useStore((s) => s.trash) ?? [];
   if (!trash.length) return null;
   return (
-    <section aria-label="Trash" className="grid gap-2 border-t pt-4">
+    <section id="trash" aria-label="Trash" className="grid scroll-mt-4 gap-2 border-t pt-4">
       <div className="flex items-center gap-2">
         <h3 className="flex-1 font-medium">Trash</h3>
         <Button size="sm" variant="ghost" onClick={() => deleteForever()}>
