@@ -38,15 +38,15 @@ window.__mooncRun = function run(files, entry) {
   function load(path) {
     if (cache[path]) return cache[path].exports;
     const src = files[path];
-    const module = { exports: {} };
-    cache[path] = module;
+    const mod = { exports: {} };
+    cache[path] = mod;
     if (path.endsWith(".css")) {
       const style = document.createElement("style");
       style.textContent = src;
       document.head.appendChild(style);
-      return module.exports;
+      return mod.exports;
     }
-    if (path.endsWith(".json")) return (module.exports = JSON.parse(src));
+    if (path.endsWith(".json")) return (mod.exports = JSON.parse(src));
     const code = transform(src, { transforms: ["jsx", "typescript", "imports"], jsxRuntime: "automatic", production: true, filePath: path }).code;
     const require = (spec) => {
       if (BUILTIN[spec]) return BUILTIN[spec];
@@ -56,8 +56,8 @@ window.__mooncRun = function run(files, entry) {
       if (!hit) throw new Error(`Can't find "${spec}" (imported from ${path}).`);
       return load(hit);
     };
-    new Function("require", "module", "exports", "React", code + "\n//# sourceURL=" + path)(require, module, module.exports, React);
-    return module.exports;
+    new Function("require", "module", "exports", "React", code + "\n//# sourceURL=" + path)(require, mod, mod.exports, React);
+    return mod.exports;
   }
   try {
     load(entry);
