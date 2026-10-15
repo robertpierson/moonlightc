@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
+test.skip(!!process.env.BASE_URL, "needs the local mock provider");
+
 async function connectMock(page: Page) {
   await page.goto("/app");
   await page.getByRole("button", { name: "Connect a model" }).click();
