@@ -43,6 +43,7 @@ function windowsUserVars() {
 }
 
 // Keys whose format gives away the company, whatever the variable is called.
+/** @type {[RegExp, string][]} */
 const PREFIXES = [
   [/^sk-ant-/, "anthropic"],
   [/^sk-or-/, "openrouter"],
