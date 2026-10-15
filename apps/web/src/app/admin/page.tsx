@@ -26,9 +26,8 @@ type Overview = {
   tools: Record<string, number>;
 };
 
-export default async function AdminPage({ searchParams }: { searchParams: Promise<{ q?: string; user?: string }> }) {
+export default function AdminPage({ searchParams }: { searchParams: Promise<{ q?: string; user?: string }> }) {
   if (!accountsEnabled) notFound();
-  const { q = "", user } = await searchParams;
   return (
     <main className="mx-auto grid max-w-6xl gap-8 px-4 py-8">
       <header className="flex items-center gap-4">
@@ -39,7 +38,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       </header>
       <Suspense fallback={<p className="text-muted-foreground">Loading numbers…</p>}>
         <Numbers />
-        <Staff q={q.slice(0, 100)} user={user && /^[0-9a-f-]{36}$/.test(user) ? user : undefined} />
+        <StaffFor params={searchParams} />
       </Suspense>
     </main>
   );
@@ -123,4 +122,9 @@ function Bars({ title, data, keepOrder }: { title: string; data: Record<string, 
       )}
     </section>
   );
+}
+
+async function StaffFor({ params }: { params: Promise<{ q?: string; user?: string }> }) {
+  const { q = "", user } = await params;
+  return <Staff q={q.slice(0, 100)} user={user && /^[0-9a-f-]{36}$/.test(user) ? user : undefined} />;
 }
