@@ -60,6 +60,7 @@ STATUS: BUILDING
 - [x] R41 Model menu in the message box; each company shows its main models (from the live list) + "Show all"; thinking level per company
 - [x] R42 Models that fail with "not on your plan" / "not recognized" / "out of credit" are labeled; "Choose another model" button
 - [x] R43 AI-written chat titles; Copy chat; Continue in a new chat (summary); Trash (30 days, restore, empty); no sideways scrolling in sidebars
+- [x] R44 Remote screen: live WebRTC video (Supabase channel for signaling, public STUN), picture fallback drawn flicker-free, zoom 100-300%, wheel and keyboard pass-through, clicks as screen fractions; screen capture only within 10 s of an allowed device asking
 
 ## Phase 0 tasks
 - [x] Check prerequisites (node 22, pnpm 11, git, gh logged in as robertpierson; Vercel + Supabase via MCP)
@@ -160,6 +161,7 @@ STATUS: BUILDING
 - Owner asked (2026-10-13): never move the mouse/keyboard or show windows on their PC. Locally run desktop e2e with `--grep-invert "computer use|remote control"`; those run in CI. Update desktop: `MoonlightC.exe --quit`, then installer `/S`, then `MoonlightC.exe --hidden`.
 
 ## Notes (last 10)
+- 2026-10-14: R44. Declined: mirroring Claude Code chats into MoonlightC (Anthropic doesn't allow apps to offer claude.ai login usage); remote control + zoom covers using Claude on the PC. All apps 0.6.2.
 - 2026-10-14: R40-R43. Claude subscriptions can't be used by apps; Claude Code (installed on the owner's PC) runs in the Code tab terminal with their plan. MoonlightV is not touched (CLAUDE.md). All apps 0.6.1.
 - 2026-10-14: R31-R38 (see checklist). Local Ollama connections no longer sync to other devices. Desktop input tests need the installed app quit first (it holds the panic hotkey). All apps 0.6.0.
 - 2026-10-14: Fix: desktop lost its sign-in when force-closed for an update (Electron writes cookies on a timer). Updates now use `MoonlightC.exe --quit` (clean exit), installer `/S`, `MoonlightC.exe --hidden` (tray only; also start-with-Windows). A crashed app's leftover server is ended on start (only if it answers as MoonlightC) so the port and data stay. Tried flushing cookies on every change: it made quick relaunches hang on CI (bisected), so removed. All apps 0.5.4.
@@ -169,4 +171,3 @@ STATUS: BUILDING
 - 2026-10-13: Supabase live. Accounts on (email + magic link; Google/GitHub need owner OAuth apps). Sync engine (chats, settings, keys via Vault) with two-device test; delete account + download counts via DB functions (no secret key). Vercel env set; desktop build bakes the public URL/key. 10 PGlite, 69 unit, 109 web e2e.
 - 2026-10-13: Chat | Cowork | Code modes with their own sidebars (editor-style Code sidebar), recents capped at 15 + All chats, Claude-style chat Projects (move chats in, connectors + skills per project), code folders, code permission modes (ask/auto/plan/bypass), Cowork (files, screen, browser with permissions), Settings > Usage (tokens, est. cost, OpenRouter credits) and Memory. 109 web e2e, 14 desktop e2e, 67 unit.
 - 2026-10-13: Sign in with OpenRouter (PKCE, web + desktop deep link). Phase 1 prep, hidden until Supabase: onboarding (7 steps, 13+), Settings > Account (link/unlink, TOTP two-step, export, delete), /admin (retention, onboarding answers, downloads, local vs cloud), /api/track with EU consent, privacy text. 8 PGlite tests, 66 unit, 102 web e2e.
-- 2026-10-13: Desktop 0.2.0 built and installed on the owner's PC (silent NSIS). Fixed data loss: desktop now keeps port 47821 (saved in userData/port.json) so localStorage survives restarts. 14 desktop e2e.

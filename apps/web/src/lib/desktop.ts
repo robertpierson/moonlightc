@@ -96,6 +96,7 @@ export interface MooncBridge {
   remote: {
     connect(client: { id: string; name: string }, tiers: string[]): Promise<{ allowed: boolean; tiers?: string[] }>;
     trusted(): Promise<boolean>;
+    allowStream(clientId: string): Promise<boolean>;
     setTrusted(on: boolean): Promise<boolean>;
     end(clientId?: string, reason?: string): Promise<void>;
     allowed(clientId: string, tier: string): Promise<boolean>;

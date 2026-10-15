@@ -373,6 +373,44 @@ test("the model library is in the sidebar again", async () => {
   await expect(page.getByRole("heading", { name: "Local models" })).toBeVisible();
 });
 
+test("screen video: only right after an allowed device asks, and it streams live frames", async () => {
+  const r = await page.evaluate(async () => {
+    const b = window.moonc.remote;
+    const tryStream = () => navigator.mediaDevices.getDisplayMedia({ video: true, audio: false }).then((s) => s, (e) => String(e));
+    const before = await tryStream();
+    await b.connect({ id: "viewer-test", name: "Test viewer" }, ["view"]);
+    await b.allowStream("viewer-test");
+    const stream = await tryStream();
+    if (typeof stream === "string") return { before: typeof before, stream };
+    // Loop the stream through a real peer connection and check frames arrive on the other end.
+    const a = new RTCPeerConnection();
+    const z = new RTCPeerConnection();
+    a.onicecandidate = (e) => e.candidate && z.addIceCandidate(e.candidate);
+    z.onicecandidate = (e) => e.candidate && a.addIceCandidate(e.candidate);
+    stream.getTracks().forEach((t) => a.addTrack(t, stream));
+    const got = new Promise((res) => (z.ontrack = (e) => res(e.streams[0])));
+    await a.setLocalDescription(await a.createOffer());
+    await z.setRemoteDescription(a.localDescription);
+    await z.setLocalDescription(await z.createAnswer());
+    await a.setRemoteDescription(z.localDescription);
+    const v = document.createElement("video");
+    v.muted = true;
+    v.srcObject = await got;
+    await v.play();
+    await new Promise((res) => setTimeout(res, 1500));
+    const size = v.videoWidth;
+    stream.getTracks().forEach((t) => t.stop());
+    a.close();
+    z.close();
+    const again = await tryStream();
+    await b.end("viewer-test", "test done");
+    return { before: typeof before, size, again: typeof again };
+  });
+  expect(r.before).toBe("string"); // refused before any device asked
+  expect(r.size).toBeGreaterThan(0); // live frames arrived
+  expect(r.again).toBe("string"); // a permission is used once
+});
+
 test("finds API keys already set up on this PC (shown masked, added only when picked)", async () => {
   const found = await page.evaluate(() => window.moonc.keys.scan());
   const k = found.find((x) => x.source === "MISTRAL_API_KEY");

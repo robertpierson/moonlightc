@@ -1,4 +1,4 @@
-import { app, BrowserWindow, clipboard, dialog, globalShortcut, ipcMain, Menu, nativeImage, Notification, safeStorage, shell, Tray } from "electron";
+import { app, BrowserWindow, clipboard, desktopCapturer, dialog, globalShortcut, ipcMain, Menu, nativeImage, Notification, safeStorage, session, shell, Tray } from "electron";
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import net from "node:net";
@@ -291,6 +291,7 @@ handle("remote:connect", (_e, client, tiers) => remote.connect(win, client, tier
 handle("remote:end", (_e, clientId, reason) => remote.end(clientId ?? undefined, reason ? String(reason).slice(0, 80) : undefined));
 handle("remote:allowed", (_e, clientId, tier) => remote.allowed(String(clientId), String(tier)));
 handle("remote:frame", (_e, clientId) => remote.frame(String(clientId)));
+handle("remote:allowStream", (_e, clientId) => remote.allowStream(String(clientId)));
 handle("remote:input", (_e, clientId, a) => remote.input(String(clientId), a));
 handle("remote:list", (_e, clientId, dir) => remote.list(String(clientId), dir));
 handle("remote:read", (_e, clientId, p) => remote.read(String(clientId), p));
@@ -406,6 +407,14 @@ app.whenReady().then(async () => {
     app.quit();
     return;
   }
+  // Screen video for remote control: only right after a connected device with "see the screen" asked (see remote.mjs).
+  session.defaultSession.setDisplayMediaRequestHandler((_req, cb) => {
+    if (!remote.takeStreamGrant()) return cb({});
+    desktopCapturer.getSources({ types: ["screen"] }).then(
+      ([screen]) => cb(screen ? { video: screen } : {}),
+      () => cb({}),
+    );
+  });
   createWindow();
   if (!testRun) createTray();
   if (pendingLink) win.webContents.once("did-finish-load", () => setTimeout(() => win.webContents.send("deep-link", pendingLink), 1500));

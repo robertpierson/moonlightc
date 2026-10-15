@@ -105,3 +105,8 @@ Why: Anthropic, OpenAI and Google offer no OAuth flow that issues API keys to th
 ## Home PC models in Chat via a client-side transport (2026-10-14)
 What: a hidden "home-pc" connection lists the PC's Ollama models while connected; chat-view routes those requests over the remote link instead of /api/chat. Local and home-PC connections are never synced.
 Why: the models only exist on the PC; the server can't reach them.
+
+## Remote screen as WebRTC video (2026-10-14)
+What: the PC streams its screen over a direct WebRTC connection; the existing private Realtime channel carries the offer/answer; public STUN (Google, Cloudflare) only tells each side its address. If the network blocks it, JPEG pictures over Realtime (drawn after decoding, so no flicker). The desktop app grants one screen capture only within 10 s of a connected device with "see the screen" asking; ending the session (panic key, timeout) stops the stream.
+Why: polling JPEG screenshots over Realtime gave a few frames a second and flickered.
+Alternatives: a TURN relay (works on stricter networks, costs money; add if picture fallback is common).

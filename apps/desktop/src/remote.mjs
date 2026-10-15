@@ -7,7 +7,7 @@ import { exec as runShell } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { captureJpeg, runAction } from "./computer.mjs";
+import { captureJpeg, runAction, screenPixels } from "./computer.mjs";
 
 const IDLE_MS = 15 * 60_000;
 const MAX_FILE = 10 * 1024 * 1024;
@@ -179,10 +179,35 @@ export async function frame(clientId) {
 export async function input(clientId, a) {
   need(clientId, "control");
   if (!a || !INPUTS.has(a.action)) throw new Error("Unknown action.");
+  // Positions can come as fractions of the screen (0-1), which works at any size the other device shows it.
+  const frac = (v) => typeof v === "number" && v >= 0 && v <= 1;
+  if (frac(a.nx) && frac(a.ny)) {
+    const s = screenPixels();
+    a = { ...a, x: Math.round(a.nx * (s.width - 1)), y: Math.round(a.ny * (s.height - 1)) };
+    audit("input", { clientId, action: a.action, x: a.x, y: a.y, keys: a.keys, chars: a.text ? String(a.text).length : undefined });
+    if (a.action === "scroll") await runAction({ action: "move", x: a.x, y: a.y }, 1);
+    await runAction(a, 1);
+    return { ok: true };
+  }
   audit("input", { clientId, action: a.action, x: a.x, y: a.y, keys: a.keys, chars: a.text ? String(a.text).length : undefined });
   await runAction(a, scale);
   return { ok: true };
 }
+
+// Live video of the screen: the app may open one screen stream within a few seconds of a device with "see the
+// screen" asking for it. Nothing else can start a capture.
+let streamGrant = 0;
+export function allowStream(clientId) {
+  need(clientId, "view");
+  streamGrant = Date.now();
+  audit("stream", { clientId });
+  return true;
+}
+export const takeStreamGrant = () => {
+  const ok = Date.now() - streamGrant < 10_000 && [...sessions.values()].some((s) => s.tiers.includes("view"));
+  streamGrant = 0;
+  return ok;
+};
 
 // Files: only inside the home folder (links included, resolved before checking).
 function inHome(p) {

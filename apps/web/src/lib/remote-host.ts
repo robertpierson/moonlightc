@@ -1,7 +1,7 @@
 "use client";
 
 import type { MooncBridge } from "./desktop";
-import type { Req } from "./remote";
+import { gathered, ICE, type Req } from "./remote";
 
 const OLLAMA = "http://127.0.0.1:11434";
 
@@ -38,6 +38,15 @@ export function createHostHandler(
       throw new Error("That terminal isn't yours.");
     return id;
   };
+  // Live screen video, one per connected device (only for devices allowed to see the screen).
+  const rtc = new Map<string, { pc: RTCPeerConnection; stream: MediaStream }>();
+  const closeRtc = (id: string) => {
+    const r = rtc.get(id);
+    if (!r) return;
+    r.stream.getTracks().forEach((t) => t.stop());
+    r.pc.close();
+    rtc.delete(id);
+  };
   const need = async (req: Req, tier: string) => {
     if (!(await b.remote.allowed(req.from, tier)))
       throw new Error(
@@ -55,7 +64,27 @@ export function createHostHandler(
           { id: req.from, name: req.fromName },
           Array.isArray(p.tiers) ? (p.tiers as string[]) : [],
         );
+      case "rtc.offer": {
+        await need(req, "view");
+        closeRtc(req.from);
+        await b.remote.allowStream(req.from);
+        const stream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: false });
+        const pc = new RTCPeerConnection({ iceServers: ICE });
+        rtc.set(req.from, { pc, stream });
+        stream.getTracks().forEach((t) => pc.addTrack(t, stream));
+        pc.addEventListener("connectionstatechange", () => {
+          if (pc.connectionState === "failed" || pc.connectionState === "closed") closeRtc(req.from);
+        });
+        await pc.setRemoteDescription({ type: "offer", sdp: String(p.sdp ?? "") });
+        await pc.setLocalDescription(await pc.createAnswer());
+        await gathered(pc);
+        return { sdp: pc.localDescription?.sdp };
+      }
+      case "rtc.stop":
+        closeRtc(req.from);
+        return { ok: true };
       case "disconnect":
+        closeRtc(req.from);
         for (const [id, t] of terms) if (t.owner === req.from) closeTerm(id);
         return b.remote.end(req.from, "disconnected from the other device");
       case "frame":
@@ -166,9 +195,11 @@ export function createHostHandler(
   /** When sessions end on the PC (panic key, timeout, revoke), close their terminals too. */
   const sessionsChanged = (alive: string[]) => {
     for (const [id, t] of terms) if (!alive.includes(t.owner)) closeTerm(id);
+    for (const id of [...rtc.keys()]) if (!alive.includes(id)) closeRtc(id);
   };
   const closeAll = () => {
     for (const id of [...terms.keys()]) closeTerm(id);
+    for (const id of [...rtc.keys()]) closeRtc(id);
   };
   return { handle, sessionsChanged, closeAll };
 }

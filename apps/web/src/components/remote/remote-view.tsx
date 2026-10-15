@@ -2,13 +2,13 @@
 
 import "@xterm/xterm/css/xterm.css";
 import type { RealtimeChannel } from "@supabase/supabase-js";
-import { ArrowDown, ArrowLeft, ArrowUp, Download, FileIcon, Folder, Loader2, Maximize, Minimize, Monitor, Power, Upload } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, Download, FileIcon, Folder, Loader2, Maximize, Minimize, Monitor, Power, Upload, ZoomIn, ZoomOut } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { TwoStepGate } from "@/components/account/two-step-gate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { isOnline, joinChannel, RemoteClient, subscribed, TIER_LABELS, type Tier } from "@/lib/remote";
+import { gathered, ICE, isOnline, joinChannel, RemoteClient, subscribed, TIER_LABELS, type Tier } from "@/lib/remote";
 import { supabase } from "@/lib/supabase/client";
 import { useDevices } from "./your-computers";
 
@@ -140,8 +140,17 @@ export function RemoteView({ deviceId, onSetup }: { deviceId: string; onSetup: (
   );
 }
 
+type Live = "connecting" | "video" | "pictures";
+const ZOOMS = [1, 1.5, 2, 3];
+const KEYS: Record<string, string> = { Enter: "enter", Backspace: "backspace", Tab: "tab", Escape: "escape", Delete: "delete", ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right", Home: "home", End: "end", PageUp: "pageup", PageDown: "pagedown" };
+
 function Screen({ client, control }: { client: RemoteClient; control: boolean }) {
-  const [frame, setFrame] = useState<{ image: string; width: number; height: number }>();
+  const [live, setLive] = useState<Live>("connecting");
+  const [ready, setReady] = useState(false);
+  const [text, setText] = useState("");
+  const [zoom, setZoom] = useState(1);
+  const video = useRef<HTMLVideoElement>(null);
+  const canvas = useRef<HTMLCanvasElement>(null);
   // Fullscreen: the browser's own where it works, otherwise the screen fills the window.
   const box = useRef<HTMLDivElement>(null);
   const [full, setFull] = useState(false);
@@ -159,56 +168,142 @@ function Screen({ client, control }: { client: RemoteClient; control: boolean })
       box.current?.requestFullscreen?.().catch(() => {});
     }
   };
-  const [text, setText] = useState("");
-  const img = useRef<HTMLImageElement>(null);
+
+  // Live video straight from the PC (smooth). If the network won't allow it, pictures instead.
   useEffect(() => {
-    let live = true;
+    let pc: RTCPeerConnection | undefined;
+    let done = false;
+    const timeout = (ms: number) => new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout")), ms));
     (async () => {
-      while (live) {
-        try {
-          const f = await client.call<{ image: string; width: number; height: number }>("frame");
-          if (live) setFrame(f);
-        } catch (e) {
-          if (live) toast.error(e instanceof Error ? e.message : String(e));
-          await new Promise((r) => setTimeout(r, 2000));
-        }
-        await new Promise((r) => setTimeout(r, 400));
+      try {
+        pc = new RTCPeerConnection({ iceServers: ICE });
+        pc.addTransceiver("video", { direction: "recvonly" });
+        const track = new Promise<MediaStream>((resolve) => pc!.addEventListener("track", (e) => resolve(e.streams[0] ?? new MediaStream([e.track]))));
+        await pc.setLocalDescription(await pc.createOffer());
+        await gathered(pc);
+        const r = await client.call<{ sdp: string }>("rtc.offer", { sdp: pc.localDescription?.sdp }, 30_000);
+        await pc.setRemoteDescription({ type: "answer", sdp: r.sdp });
+        const v = video.current!;
+        v.srcObject = await Promise.race([track, timeout(10_000)]);
+        await Promise.race([new Promise((resolve) => v.addEventListener("loadeddata", resolve, { once: true })), timeout(10_000)]);
+        if (done) return;
+        setLive("video");
+        setReady(true);
+        pc.addEventListener("connectionstatechange", () => {
+          if (!done && pc?.connectionState === "failed") setLive("pictures");
+        });
+      } catch {
+        pc?.close();
+        client.call("rtc.stop").catch(() => {});
+        if (!done) setLive("pictures");
       }
     })();
     return () => {
-      live = false;
+      done = true;
+      pc?.close();
+      client.call("rtc.stop").catch(() => {});
     };
   }, [client]);
+
+  // Pictures: each one is drawn only once it's fully loaded, so the screen never blanks between them.
+  useEffect(() => {
+    if (live !== "pictures") return;
+    let on = true;
+    (async () => {
+      while (on) {
+        try {
+          const f = await client.call<{ image: string; width: number; height: number }>("frame");
+          const img = new Image();
+          img.src = `data:image/jpeg;base64,${f.image}`;
+          await img.decode();
+          const c = canvas.current;
+          if (!on || !c) break;
+          if (c.width !== f.width || c.height !== f.height) {
+            c.width = f.width;
+            c.height = f.height;
+          }
+          c.getContext("2d")?.drawImage(img, 0, 0);
+          setReady(true);
+        } catch (e) {
+          if (on) toast.error(e instanceof Error ? e.message : String(e));
+          await new Promise((r) => setTimeout(r, 2000));
+        }
+      }
+    })();
+    return () => {
+      on = false;
+    };
+  }, [live, client]);
+
   const input = (a: Record<string, unknown>) => client.call("input", a).catch((e: Error) => toast.error(e.message));
+  // Where on the PC's screen, as fractions (works at any zoom or size).
   const at = (e: React.MouseEvent) => {
-    const r = img.current!.getBoundingClientRect();
-    return { x: Math.round(((e.clientX - r.left) / r.width) * (frame?.width ?? 1)), y: Math.round(((e.clientY - r.top) / r.height) * (frame?.height ?? 1)) };
+    const r = e.currentTarget.getBoundingClientRect();
+    const clamp = (n: number) => Math.min(1, Math.max(0, n));
+    return { nx: clamp((e.clientX - r.left) / r.width), ny: clamp((e.clientY - r.top) / r.height) };
   };
+  const lastWheel = useRef(0);
+  const look = `rounded-lg border bg-black outline-none focus-visible:ring-2 focus-visible:ring-ring ${control ? "cursor-crosshair" : ""}`;
+  const surface = {
+    tabIndex: control ? 0 : -1,
+    "aria-label": "Your computer's screen",
+    style: { width: `${zoom * 100}%`, maxWidth: "none", height: "auto" },
+    onClick: (e: React.MouseEvent<HTMLElement>) => {
+      if (!control) return;
+      e.currentTarget.focus();
+      input({ action: "click", ...at(e) });
+    },
+    onDoubleClick: (e: React.MouseEvent) => {
+      if (control) input({ action: "double_click", ...at(e) });
+    },
+    onContextMenu: (e: React.MouseEvent) => {
+      if (!control) return;
+      e.preventDefault();
+      input({ action: "right_click", ...at(e) });
+    },
+    onWheel: (e: React.WheelEvent) => {
+      if (!control || Date.now() - lastWheel.current < 120) return;
+      lastWheel.current = Date.now();
+      input({ action: "scroll", amount: e.deltaY > 0 ? -3 : 3, ...at(e) });
+    },
+    // Typing while the screen is selected goes straight to the PC.
+    onKeyDown: (e: React.KeyboardEvent) => {
+      if (!control) return;
+      const mods = [e.ctrlKey && "control", e.altKey && "alt", e.shiftKey && e.key.length > 1 && "shift"].filter(Boolean) as string[];
+      if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) input({ action: "type", text: e.key });
+      else if (KEYS[e.key] || (e.key.length === 1 && (e.ctrlKey || e.altKey))) input({ action: "key", keys: [...mods, KEYS[e.key] ?? e.key.toLowerCase()].join("+") });
+      else return;
+      e.preventDefault();
+    },
+  };
+
   return (
-    <div ref={box} className={full ? "fixed inset-0 z-50 grid content-center gap-2 overflow-auto bg-black p-2" : "grid gap-2"}>
-      <Button size="sm" variant="secondary" className="justify-self-end" onClick={toggleFull} aria-pressed={full}>
-        {full ? <Minimize /> : <Maximize />} {full ? "Exit full screen" : "Full screen"}
-      </Button>
-      {frame ? (
-        // eslint-disable-next-line @next/next/no-img-element -- a live screenshot from your computer
-        <img
-          ref={img}
-          src={`data:image/jpeg;base64,${frame.image}`}
-          alt="Your computer's screen"
-          className={`rounded-lg border ${full ? "mx-auto max-h-[calc(100dvh-7rem)] w-auto max-w-full" : "w-full"} ${control ? "cursor-crosshair" : ""}`}
-          onClick={(e) => control && input({ action: "click", ...at(e) })}
-          onDoubleClick={(e) => control && input({ action: "double_click", ...at(e) })}
-          onContextMenu={(e) => {
-            if (!control) return;
-            e.preventDefault();
-            input({ action: "right_click", ...at(e) });
-          }}
-        />
-      ) : (
-        <div className="grid aspect-video place-items-center rounded-lg border text-sm text-muted-foreground">
-          <Loader2 className="animate-spin" />
-        </div>
-      )}
+    <div ref={box} className={full ? "fixed inset-0 z-50 flex flex-col gap-2 bg-black p-2" : "grid gap-2"}>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs text-muted-foreground" role="status">
+          {live === "video" ? "Live video" : live === "pictures" ? "Pictures (this network blocks live video)" : "Connecting…"}
+        </span>
+        <span className="flex-1" />
+        <Button size="icon-sm" variant="secondary" aria-label="Zoom out" disabled={zoom === ZOOMS[0]} onClick={() => setZoom(ZOOMS[Math.max(0, ZOOMS.indexOf(zoom) - 1)])}>
+          <ZoomOut />
+        </Button>
+        <span className="w-10 text-center text-xs tabular-nums text-muted-foreground">{zoom * 100}%</span>
+        <Button size="icon-sm" variant="secondary" aria-label="Zoom in" disabled={zoom === ZOOMS.at(-1)} onClick={() => setZoom(ZOOMS[Math.min(ZOOMS.length - 1, ZOOMS.indexOf(zoom) + 1)])}>
+          <ZoomIn />
+        </Button>
+        <Button size="sm" variant="secondary" onClick={toggleFull} aria-pressed={full}>
+          {full ? <Minimize /> : <Maximize />} {full ? "Exit full screen" : "Full screen"}
+        </Button>
+      </div>
+      <div className={`overflow-auto rounded-lg ${full ? "min-h-0 flex-1" : "max-h-[75dvh]"}`}>
+        <video ref={video} autoPlay playsInline muted {...surface} className={`${look} ${live === "video" ? "block" : "hidden"}`} />
+        <canvas ref={canvas} {...surface} className={`${look} ${live === "pictures" && ready ? "block" : "hidden"}`} />
+        {!ready && (
+          <div className="grid aspect-video place-items-center rounded-lg border text-sm text-muted-foreground">
+            <Loader2 className="animate-spin" />
+          </div>
+        )}
+      </div>
       {control && (
         <div className="flex flex-wrap items-center gap-2">
           <form

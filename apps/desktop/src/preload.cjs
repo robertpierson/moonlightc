@@ -61,6 +61,7 @@ contextBridge.exposeInMainWorld("moonc", {
     end: (clientId, reason) => invoke("remote:end", clientId, reason),
     allowed: (clientId, tier) => invoke("remote:allowed", clientId, tier),
     frame: (clientId) => invoke("remote:frame", clientId),
+    allowStream: (clientId) => invoke("remote:allowStream", clientId),
     input: (clientId, a) => invoke("remote:input", clientId, a),
     list: (clientId, dir) => invoke("remote:list", clientId, dir),
     read: (clientId, p) => invoke("remote:read", clientId, p),

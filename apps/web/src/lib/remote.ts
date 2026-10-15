@@ -94,3 +94,20 @@ export class RemoteClient {
     return () => this.onChat.delete(reqId);
   }
 }
+
+/** Public servers that only tell each side its own internet address, so the two can stream video directly. */
+export const ICE: RTCIceServer[] = [{ urls: ["stun:stun.l.google.com:19302", "stun:stun.cloudflare.com:3478"] }];
+
+/** Wait until the connection knows all its possible network paths (so one message carries everything). */
+export function gathered(pc: RTCPeerConnection, ms = 4000) {
+  return new Promise<void>((resolve) => {
+    if (pc.iceGatheringState === "complete") return resolve();
+    const t = setTimeout(resolve, ms);
+    pc.addEventListener("icegatheringstatechange", () => {
+      if (pc.iceGatheringState === "complete") {
+        clearTimeout(t);
+        resolve();
+      }
+    });
+  });
+}
