@@ -55,7 +55,7 @@ STATUS: BUILDING
 - [x] R36 Key scan: fixed registry path bug; scans .env files and key formats; desktop offers found keys once
 - [x] R37 Quick connect gallery: opens the company's key page and picks up the copied key (no pasting)
 - [x] R38 Website: glossy navy palette, moon shading in navy
-- [ ] R39 GitHub sign-in: code ready (button shows when enabled); needs owner's GitHub OAuth app (OWNER_TODO)
+- [x] R39 GitHub sign-in: enabled by owner 2026-10-14; live button verified to reach GitHub with the right callback
 
 ## Phase 0 tasks
 - [x] Check prerequisites (node 22, pnpm 11, git, gh logged in as robertpierson; Vercel + Supabase via MCP)

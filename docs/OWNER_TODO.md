@@ -9,14 +9,6 @@ An update signed the desktop app out (fixed now, it won't happen again). Your ho
 3. When it asks for the 6-digit two-step code, type the code from your authenticator app.
 4. You can close the window afterwards: MoonlightC keeps running in the tray, which is what your phone connects to.
 
-## Add "Sign in with GitHub" (5 minutes; the button appears by itself once this is done)
-1. Open https://github.com/settings/applications/new
-2. Application name: **MoonlightC**. Homepage URL: **https://moonlightc.vercel.app**
-3. Authorization callback URL: **https://znkusjdspjssmwohrbzl.supabase.co/auth/v1/callback** then click **Register application**.
-4. On the next page, copy the **Client ID**. Click **Generate a new client secret** and copy it too (it's shown once).
-5. Open https://supabase.com/dashboard/project/znkusjdspjssmwohrbzl/auth/providers , click **GitHub**, switch it **on**, paste the Client ID and Client Secret, click **Save**.
-6. Tell Claude "github done" and it will test the sign-in.
-
 ## Then: work on your PC from your phone
 1. On your phone, open https://moonlightc.vercel.app/app (signed in with the same account) and switch to **Cowork**.
 2. At the top it says **Home PC: robertspc**. Tap **Connect**.
