@@ -2,7 +2,7 @@
 
 import "@xterm/xterm/css/xterm.css";
 import type { RealtimeChannel } from "@supabase/supabase-js";
-import { ArrowDown, ArrowLeft, ArrowUp, Download, FileIcon, Folder, Loader2, Maximize, Minimize, Monitor, Power, Upload, ZoomIn, ZoomOut } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, Download, FileIcon, Folder, Loader2, Maximize, Minimize, Monitor, Power, Upload, Volume2, VolumeX, ZoomIn, ZoomOut } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { TwoStepGate } from "@/components/account/two-step-gate";
@@ -149,7 +149,18 @@ function Screen({ client, control }: { client: RemoteClient; control: boolean })
   const [ready, setReady] = useState(false);
   const [text, setText] = useState("");
   const [zoom, setZoom] = useState(1);
+  // The PC's sound comes with the video; it starts muted (browsers only play sound after you choose to).
+  const [sound, setSound] = useState(false);
+  const [volume, setVolume] = useState(0.8);
+  const [hasAudio, setHasAudio] = useState(false);
   const video = useRef<HTMLVideoElement>(null);
+  useEffect(() => {
+    const v = video.current;
+    if (!v) return;
+    v.muted = !sound;
+    v.volume = volume;
+    if (sound) v.play().catch(() => {});
+  }, [sound, volume]);
   const canvas = useRef<HTMLCanvasElement>(null);
   // Fullscreen: the browser's own where it works, otherwise the screen fills the window.
   const box = useRef<HTMLDivElement>(null);
@@ -178,6 +189,8 @@ function Screen({ client, control }: { client: RemoteClient; control: boolean })
       try {
         pc = new RTCPeerConnection({ iceServers: ICE });
         pc.addTransceiver("video", { direction: "recvonly" });
+        pc.addTransceiver("audio", { direction: "recvonly" });
+        pc.addEventListener("track", (e) => e.track.kind === "audio" && setHasAudio(true));
         const track = new Promise<MediaStream>((resolve) => pc!.addEventListener("track", (e) => resolve(e.streams[0] ?? new MediaStream([e.track]))));
         await pc.setLocalDescription(await pc.createOffer());
         await gathered(pc);
@@ -284,6 +297,24 @@ function Screen({ client, control }: { client: RemoteClient; control: boolean })
           {live === "video" ? "Live video" : live === "pictures" ? "Pictures (this network blocks live video)" : "Connecting…"}
         </span>
         <span className="flex-1" />
+        {live === "video" && hasAudio && (
+          <>
+            <Button size="icon-sm" variant="secondary" aria-label={sound ? "Turn sound off" : "Turn sound on"} aria-pressed={sound} onClick={() => setSound((v) => !v)}>
+              {sound ? <Volume2 /> : <VolumeX />}
+            </Button>
+            <input
+              type="range"
+              aria-label="Volume"
+              min={0}
+              max={1}
+              step={0.05}
+              value={volume}
+              disabled={!sound}
+              onChange={(e) => setVolume(Number(e.target.value))}
+              className="w-20 accent-primary disabled:opacity-40 sm:w-28"
+            />
+          </>
+        )}
         <Button size="icon-sm" variant="secondary" aria-label="Zoom out" disabled={zoom === ZOOMS[0]} onClick={() => setZoom(ZOOMS[Math.max(0, ZOOMS.indexOf(zoom) - 1)])}>
           <ZoomOut />
         </Button>

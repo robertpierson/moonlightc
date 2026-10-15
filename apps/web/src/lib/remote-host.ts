@@ -67,8 +67,12 @@ export function createHostHandler(
       case "rtc.offer": {
         await need(req, "view");
         closeRtc(req.from);
+        // With the PC's sound where the system allows it; video only otherwise.
         await b.remote.allowStream(req.from);
-        const stream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: false });
+        const stream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: true }).catch(async () => {
+          await b.remote.allowStream(req.from);
+          return navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: false });
+        });
         const pc = new RTCPeerConnection({ iceServers: ICE });
         rtc.set(req.from, { pc, stream });
         stream.getTracks().forEach((t) => pc.addTrack(t, stream));

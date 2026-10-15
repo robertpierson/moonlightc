@@ -11,7 +11,7 @@ import { captureJpeg, runAction, screenPixels } from "./computer.mjs";
 
 const IDLE_MS = 15 * 60_000;
 const MAX_FILE = 10 * 1024 * 1024;
-export const TIERS = { view: "See the screen", control: "Use the mouse and keyboard", files: "Browse, download and upload files in your home folder", terminal: "Run commands in a terminal", chat: "Chat with the AI models on this PC" };
+export const TIERS = { view: "See the screen and hear its sound", control: "Use the mouse and keyboard", files: "Browse, download and upload files in your home folder", terminal: "Run commands in a terminal", chat: "Chat with the AI models on this PC" };
 const INPUTS = new Set(["click", "double_click", "right_click", "move", "type", "key", "scroll"]);
 
 const sessions = new Map(); // clientId -> { name, tiers, startedAt, timer }

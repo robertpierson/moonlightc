@@ -8,7 +8,7 @@ import { supabase } from "./supabase/client";
 // as separate events addressed to that device.
 
 export type Tier = "view" | "control" | "files" | "terminal" | "chat";
-export const TIER_LABELS: Record<Tier, string> = { view: "See the screen", control: "Use the mouse and keyboard", files: "Files in the home folder", terminal: "Terminal", chat: "Chat with its AI models" };
+export const TIER_LABELS: Record<Tier, string> = { view: "See the screen and hear its sound", control: "Use the mouse and keyboard", files: "Files in the home folder", terminal: "Terminal", chat: "Chat with its AI models" };
 
 export type Req = { id: string; from: string; fromName: string; method: string; params?: Record<string, unknown> };
 export type Res = { id: string; to: string; ok: boolean; result?: unknown; error?: string };

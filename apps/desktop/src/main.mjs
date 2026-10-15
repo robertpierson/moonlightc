@@ -291,7 +291,23 @@ handle("remote:connect", (_e, client, tiers) => remote.connect(win, client, tier
 handle("remote:end", (_e, clientId, reason) => remote.end(clientId ?? undefined, reason ? String(reason).slice(0, 80) : undefined));
 handle("remote:allowed", (_e, clientId, tier) => remote.allowed(String(clientId), String(tier)));
 handle("remote:frame", (_e, clientId) => remote.frame(String(clientId)));
-handle("remote:allowStream", (_e, clientId) => remote.allowStream(String(clientId)));
+// Screen video (and, on Windows, its sound) for remote control: only right after a connected device with
+// "see the screen" asked (see remote.mjs). Set up on first use; touching the session at startup slows relaunches.
+let displayHandler = false;
+handle("remote:allowStream", (_e, clientId) => {
+  const ok = remote.allowStream(String(clientId));
+  if (!displayHandler) {
+    displayHandler = true;
+    session.defaultSession.setDisplayMediaRequestHandler((req, cb) => {
+      if (!remote.takeStreamGrant()) return cb({});
+      desktopCapturer.getSources({ types: ["screen"] }).then(
+        ([screen]) => cb(screen ? { video: screen, ...(req.audioRequested && process.platform === "win32" ? { audio: "loopback" } : {}) } : {}),
+        () => cb({}),
+      );
+    });
+  }
+  return ok;
+});
 handle("remote:input", (_e, clientId, a) => remote.input(String(clientId), a));
 handle("remote:list", (_e, clientId, dir) => remote.list(String(clientId), dir));
 handle("remote:read", (_e, clientId, p) => remote.read(String(clientId), p));
@@ -407,14 +423,6 @@ app.whenReady().then(async () => {
     app.quit();
     return;
   }
-  // Screen video for remote control: only right after a connected device with "see the screen" asked (see remote.mjs).
-  session.defaultSession.setDisplayMediaRequestHandler((_req, cb) => {
-    if (!remote.takeStreamGrant()) return cb({});
-    desktopCapturer.getSources({ types: ["screen"] }).then(
-      ([screen]) => cb(screen ? { video: screen } : {}),
-      () => cb({}),
-    );
-  });
   createWindow();
   if (!testRun) createTray();
   if (pendingLink) win.webContents.once("did-finish-load", () => setTimeout(() => win.webContents.send("deep-link", pendingLink), 1500));

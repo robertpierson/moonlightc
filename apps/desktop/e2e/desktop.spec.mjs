@@ -380,8 +380,9 @@ test("screen video: only right after an allowed device asks, and it streams live
     const before = await tryStream();
     await b.connect({ id: "viewer-test", name: "Test viewer" }, ["view"]);
     await b.allowStream("viewer-test");
-    const stream = await tryStream();
+    const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true }).then((s) => s, (e) => String(e));
     if (typeof stream === "string") return { before: typeof before, stream };
+    const audio = stream.getAudioTracks().length;
     // Loop the stream through a real peer connection and check frames arrive on the other end.
     const a = new RTCPeerConnection();
     const z = new RTCPeerConnection();
@@ -404,8 +405,9 @@ test("screen video: only right after an allowed device asks, and it streams live
     z.close();
     const again = await tryStream();
     await b.end("viewer-test", "test done");
-    return { before: typeof before, size, again: typeof again };
+    return { before: typeof before, size, again: typeof again, audio };
   });
+  console.log("screen sound tracks:", r.audio);
   expect(r.before).toBe("string"); // refused before any device asked
   expect(r.size).toBeGreaterThan(0); // live frames arrived
   expect(r.again).toBe("string"); // a permission is used once

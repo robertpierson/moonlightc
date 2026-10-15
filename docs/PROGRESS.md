@@ -60,7 +60,7 @@ STATUS: BUILDING
 - [x] R41 Model menu in the message box; each company shows its main models (from the live list) + "Show all"; thinking level per company
 - [x] R42 Models that fail with "not on your plan" / "not recognized" / "out of credit" are labeled; "Choose another model" button
 - [x] R43 AI-written chat titles; Copy chat; Continue in a new chat (summary); Trash (30 days, restore, empty); no sideways scrolling in sidebars
-- [x] R44 Remote screen: live WebRTC video (Supabase channel for signaling, public STUN), picture fallback drawn flicker-free, zoom 100-300%, wheel and keyboard pass-through, clicks as screen fractions; screen capture only within 10 s of an allowed device asking
+- [x] R44 Remote screen (with sound on Windows, on/off + volume): live WebRTC video (Supabase channel for signaling, public STUN), picture fallback drawn flicker-free, zoom 100-300%, wheel and keyboard pass-through, clicks as screen fractions; screen capture only within 10 s of an allowed device asking
 
 ## Phase 0 tasks
 - [x] Check prerequisites (node 22, pnpm 11, git, gh logged in as robertpierson; Vercel + Supabase via MCP)
@@ -161,7 +161,7 @@ STATUS: BUILDING
 - Owner asked (2026-10-13): never move the mouse/keyboard or show windows on their PC. Locally run desktop e2e with `--grep-invert "computer use|remote control"`; those run in CI. Update desktop: `MoonlightC.exe --quit`, then installer `/S`, then `MoonlightC.exe --hidden`.
 
 ## Notes (last 10)
-- 2026-10-14: R44. Declined: mirroring Claude Code chats into MoonlightC (Anthropic doesn't allow apps to offer claude.ai login usage); remote control + zoom covers using Claude on the PC. All apps 0.6.2.
+- 2026-10-14: R44. Declined: mirroring Claude Code chats into MoonlightC (Anthropic doesn't allow apps to offer claude.ai login usage); remote control + zoom covers using Claude on the PC. All apps 0.6.3. Display-media handler is set up on first use (touching the session at startup hangs quick relaunches on CI).
 - 2026-10-14: R40-R43. Claude subscriptions can't be used by apps; Claude Code (installed on the owner's PC) runs in the Code tab terminal with their plan. MoonlightV is not touched (CLAUDE.md). All apps 0.6.1.
 - 2026-10-14: R31-R38 (see checklist). Local Ollama connections no longer sync to other devices. Desktop input tests need the installed app quit first (it holds the panic hotkey). All apps 0.6.0.
 - 2026-10-14: Fix: desktop lost its sign-in when force-closed for an update (Electron writes cookies on a timer). Updates now use `MoonlightC.exe --quit` (clean exit), installer `/S`, `MoonlightC.exe --hidden` (tray only; also start-with-Windows). A crashed app's leftover server is ended on start (only if it answers as MoonlightC) so the port and data stay. Tried flushing cookies on every change: it made quick relaunches hang on CI (bisected), so removed. All apps 0.5.4.
