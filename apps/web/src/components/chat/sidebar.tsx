@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight, Download, FolderInput, FolderOpen, History, MoreHorizontal, Pencil, Pin, PinOff, Plus, Search, Trash2 } from "lucide-react";
+import { ChevronRight, Copy, Download, FolderInput, FolderOpen, History, MessageSquarePlus, MoreHorizontal, Pencil, Pin, PinOff, Plus, Search, Trash2, Undo2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { deleteChat, patchChat, useStore, type Chat } from "@/lib/store";
+import { deleteForever, patchChat, restoreChat, trashChat, useStore, type Chat } from "@/lib/store";
+import { chatText } from "@/lib/summarize";
 import { InstallApp } from "@/components/site/install-app";
 import { textOf } from "./message";
 
@@ -42,15 +43,15 @@ export function ChatList({ chats, activeId, onSelect, onDeleted, showProject }: 
   const projects = useStore((s) => s.projects) ?? [];
   const [renaming, setRenaming] = useState<string>();
   return (
-    <ul className="grid gap-0.5">
+    <ul className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-0.5">
       {chats.map((c) => (
-        <li key={c.id} className="group relative">
+        <li key={c.id} className="group relative min-w-0">
           {renaming === c.id ? (
             <form
               onSubmit={(e) => {
                 e.preventDefault();
                 const v = new FormData(e.currentTarget).get("title")?.toString().trim();
-                if (v) patchChat(c.id, { title: v });
+                if (v) patchChat(c.id, { title: v, titled: true });
                 setRenaming(undefined);
               }}
             >
@@ -64,7 +65,7 @@ export function ChatList({ chats, activeId, onSelect, onDeleted, showProject }: 
                 className="flex w-full items-center gap-1.5 rounded-md px-2.5 py-2 pr-9 text-left text-sm hover:bg-accent aria-[current=page]:bg-accent"
               >
                 {c.pinned && <Pin className="size-3 shrink-0 text-muted-foreground" />}
-                <span className="truncate">{c.title || "New chat"}</span>
+                <span className="min-w-0 truncate">{c.title || "New chat"}</span>
                 {showProject && c.projectId && <span className="ml-auto shrink-0 text-xs text-muted-foreground">{projects.find((p) => p.id === c.projectId)?.name}</span>}
               </button>
               <DropdownMenu>
@@ -100,18 +101,33 @@ export function ChatList({ chats, activeId, onSelect, onDeleted, showProject }: 
                       </DropdownMenuSubContent>
                     </DropdownMenuSub>
                   )}
+                  <DropdownMenuItem
+                    onSelect={() =>
+                      navigator.clipboard.writeText(`${c.title}
+
+${chatText(c)}`).then(
+                        () => toast.success("Chat copied."),
+                        () => toast.error("Couldn't copy. Allow clipboard access and try again."),
+                      )
+                    }
+                  >
+                    <Copy /> Copy chat
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => dispatchEvent(new CustomEvent("moonc:continue", { detail: c.id }))}>
+                    <MessageSquarePlus /> Continue in a new chat
+                  </DropdownMenuItem>
                   <DropdownMenuItem onSelect={() => exportMarkdown(c)}>
                     <Download /> Export as Markdown
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     variant="destructive"
                     onSelect={() => {
-                      deleteChat(c.id);
+                      trashChat(c.id);
                       onDeleted(c.id);
-                      toast("Chat deleted.");
+                      toast("Moved to Trash.", { action: { label: "Undo", onClick: () => restoreChat(c.id) } });
                     }}
                   >
-                    <Trash2 /> Delete
+                    <Trash2 /> Move to Trash
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -161,7 +177,7 @@ export function Sidebar({
         <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input aria-label={`Search ${label}s`} placeholder={`Search ${label}s`} value={q} onChange={(e) => setQ(e.target.value)} className="pl-8" />
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
         {q.trim() ? (
           found.length ? (
             <ChatList chats={found.slice(0, 100)} activeId={activeId} onSelect={onSelect} onDeleted={deleted} showProject />
@@ -234,7 +250,7 @@ export function AllChats({ activeId, onSelect, onNew, workspace = "chat" }: { ac
   const [limit, setLimit] = useState(100);
   const list = useMemo(() => allChats.filter((c) => (workspace === "cowork" ? c.workspace === "cowork" : c.workspace !== "cowork") && matches(c, q)).sort(byRecent), [allChats, q, workspace]);
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto">
+    <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
       <div className="mx-auto grid max-w-3xl gap-4 px-4 py-6">
         <h2 className="text-lg font-semibold">All {workspace === "cowork" ? "tasks" : "chats"}</h2>
         <div className="relative">
@@ -251,7 +267,38 @@ export function AllChats({ activeId, onSelect, onNew, workspace = "chat" }: { ac
             Show more ({list.length - limit} more)
           </Button>
         )}
+        <Trash />
       </div>
     </div>
+  );
+}
+
+/** Chats moved to the Trash: restore them, or delete them for good. Emptied after 30 days. */
+function Trash() {
+  const trash = useStore((s) => s.trash) ?? [];
+  if (!trash.length) return null;
+  return (
+    <section aria-label="Trash" className="grid gap-2 border-t pt-4">
+      <div className="flex items-center gap-2">
+        <h3 className="flex-1 font-medium">Trash</h3>
+        <Button size="sm" variant="ghost" onClick={() => deleteForever()}>
+          Empty Trash
+        </Button>
+      </div>
+      <p className="text-xs text-muted-foreground">Chats here are deleted for good after 30 days.</p>
+      <ul className="grid gap-1">
+        {trash.map((c) => (
+          <li key={c.id} className="flex min-w-0 items-center gap-2 rounded-md px-2.5 py-1.5 text-sm hover:bg-accent">
+            <span className="min-w-0 flex-1 truncate">{c.title || "New chat"}</span>
+            <Button size="icon-sm" variant="ghost" aria-label={`Restore ${c.title}`} onClick={() => restoreChat(c.id)}>
+              <Undo2 />
+            </Button>
+            <Button size="icon-sm" variant="ghost" aria-label={`Delete ${c.title} for good`} onClick={() => deleteForever(c.id)}>
+              <Trash2 />
+            </Button>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

@@ -139,6 +139,8 @@ export interface Chat {
   messages: UIMessage[];
   pinned?: boolean;
   updatedAt: number;
+  /** The title was written by the AI or by you (not just the first words of the chat). */
+  titled?: boolean;
   /** Cowork sessions are listed in the Cowork sidebar, not with chats. */
   workspace?: "cowork";
 }
@@ -147,6 +149,12 @@ export interface State {
   connections: SavedConnection[];
   chats: Chat[];
   favorites: string[]; // `${connectionId}:${modelId}`
+  /** Chats moved to the Trash; they can be restored for 30 days. */
+  trash?: (Chat & { trashedAt: number })[];
+  /** How hard models think, when they have that setting (low…max). Unset = the model's default. */
+  thinking?: string;
+  /** Models that failed in a way waiting won't fix ("not on your plan"), by `${connectionId}:${modelId}`. */
+  modelNotes?: Record<string, string>;
   lastModel?: ModelRef;
   modes: Mode[]; // user-made; built-ins live in code
   searchKey?: { provider: "tavily" | "exa" | "brave"; key: string };
@@ -324,6 +332,27 @@ export function patchChat(id: string, patch: Partial<Chat>) {
 export function deleteChat(id: string) {
   update((s) => ({ ...s, chats: s.chats.filter((c) => c.id !== id) }));
 }
+
+const TRASH_DAYS = 30;
+/** Move a chat to the Trash (restorable for 30 days); older Trash is emptied as new chats arrive. */
+export function trashChat(id: string) {
+  update((s) => {
+    const c = s.chats.find((x) => x.id === id);
+    if (!c) return s;
+    const keep = (s.trash ?? []).filter((t) => Date.now() - t.trashedAt < TRASH_DAYS * 86_400_000 && t.id !== id);
+    return { ...s, chats: s.chats.filter((x) => x.id !== id), trash: [{ ...c, trashedAt: Date.now() }, ...keep] };
+  });
+}
+export function restoreChat(id: string) {
+  update((s) => {
+    const t = s.trash?.find((x) => x.id === id);
+    if (!t) return s;
+    const { trashedAt: _gone, ...chat } = t;
+    void _gone;
+    return { ...s, chats: [{ ...chat, updatedAt: Date.now() }, ...s.chats], trash: s.trash!.filter((x) => x.id !== id) };
+  });
+}
+export const deleteForever = (id?: string) => update((s) => ({ ...s, trash: id ? (s.trash ?? []).filter((x) => x.id !== id) : [] }));
 
 export function findModel(ref?: ModelRef) {
   if (!ref) return undefined;

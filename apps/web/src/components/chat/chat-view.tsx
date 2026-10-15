@@ -68,6 +68,7 @@ import {
   addMemory,
   findModel,
   getState,
+  patchChat,
   saveChat,
   update,
   useStore,
@@ -75,6 +76,7 @@ import {
   type Mode,
   type ModelRef,
 } from "@/lib/store";
+import { summarize } from "@/lib/summarize";
 import { Message, textOf, type Usage } from "./message";
 import { MicButton } from "./mic-button";
 
@@ -95,6 +97,8 @@ function costLabel(m: UIMessage): string | undefined {
 const COWORK_INSTRUCTIONS =
   "Cowork: you're working alongside the person on their own computer. Use the folders, screen and browser tabs they shared when it helps, say what you're about to do before doing it, and stop to ask whenever something could delete, buy, send or publish anything.";
 
+const MODEL_PROBLEM = /doesn't recognize this model|isn't on your .{1,40} plan|out of credit/;
+
 export function ChatView({
   chat,
   model,
@@ -104,6 +108,7 @@ export function ChatView({
   onOpenKeys,
   onOpenArtifact,
   initialFiles,
+  initialText,
   bigInput,
   projectId,
   cowork,
@@ -116,12 +121,14 @@ export function ChatView({
   onOpenKeys: () => void;
   onOpenArtifact: (a: Artifact) => void;
   initialFiles?: FileUIPart[];
+  /** Text already in the message box (e.g. a summary carried over from another chat). */
+  initialText?: string;
   bigInput?: boolean;
   projectId?: string;
   /** Cowork: the AI may use shared folders, this PC's screen and shared browser tabs (each with permission). */
   cowork?: boolean;
 }) {
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState(initialText ?? "");
   const [computerOn, setComputerOn] = useState(false);
   // Cowork on another device: a change or command on the home PC waits for the person's OK here.
   const [ask, setAsk] = useState<{ what: string; decide: (ok: boolean) => void }>();
@@ -168,6 +175,7 @@ export function ChatView({
       body: {
         connection: { apiKey, providerId, baseURL },
         modelId: found.model.id,
+        thinking: getState().thinking,
         instructions: [
           buildInstructions({
             mode: mode.instructions,
@@ -388,6 +396,13 @@ export function ChatView({
       });
     },
   });
+  // A model this key can't use: say so next to it in the model menu, so it isn't picked again by mistake.
+  useEffect(() => {
+    const m = error?.message.match(MODEL_PROBLEM);
+    if (!m || !model || isAuto(model)) return;
+    const note = /plan/.test(m[0]) ? "Not on your plan" : /credit/.test(m[0]) ? "Out of credit" : "Not available";
+    update((s) => ({ ...s, modelNotes: { ...s.modelNotes, [`${model.connectionId}:${model.modelId}`]: note } }));
+  }, [error, model]);
 
   const streaming = status === "streaming" || status === "submitted";
   useEffect(() => {
@@ -408,6 +423,15 @@ export function ChatView({
       messages,
       updatedAt: Date.now(),
     });
+    // After the first answer, the AI gives the chat a short title (instead of its first words).
+    const now = getState().chats.find((c) => c.id === chat.id);
+    if (now && !now.titled && messages.some((m) => m.role === "assistant" && textOf(m).trim())) {
+      patchChat(chat.id, { titled: true });
+      summarize(now, "title").then(
+        (t) => t && patchChat(chat.id, { title: t }),
+        () => {},
+      );
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages, streaming]);
 
@@ -600,6 +624,11 @@ export function ChatView({
               className="flex flex-wrap items-center gap-3 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm"
             >
               <span className="flex-1">{friendly(error.message)}</span>
+              {MODEL_PROBLEM.test(error.message) && (
+                <Button size="sm" variant="outline" onClick={() => document.getElementById("composer-model")?.click()}>
+                  Choose another model
+                </Button>
+              )}
               <Button
                 size="sm"
                 variant="outline"
@@ -718,7 +747,7 @@ export function ChatView({
               </Button>
             )}
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex min-w-0 flex-wrap items-center gap-1">
             <input
               ref={fileInput}
               type="file"

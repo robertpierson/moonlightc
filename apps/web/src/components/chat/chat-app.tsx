@@ -24,7 +24,7 @@ const Projects = dynamic(() => import("@/components/desktop/projects").then((m) 
 const Terminals = dynamic(() => import("@/components/desktop/terminals").then((m) => m.Terminals), { ssr: false, loading: () => <div className="flex-1" /> });
 
 import { KeyRound, Menu } from "lucide-react";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ThemeToggle } from "@/components/theme";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -52,6 +52,8 @@ import type { FileUIPart } from "ai";
 import type { LaunchRequest } from "@/components/desktop/terminals";
 import { ChatView } from "./chat-view";
 import { KeysDialog } from "./keys-dialog";
+import { ThinkingSelect } from "@/components/chat/thinking-select";
+import { summarize } from "@/lib/summarize";
 import { ModelPicker } from "./model-picker";
 import { ModeSelect, ModesDialog, useModes } from "./modes";
 import { CommandPalette } from "./command-palette";
@@ -146,6 +148,7 @@ function Inner() {
   const [termOpened, setTermOpened] = useState(false);
   const [launch, setLaunch] = useState<LaunchRequest>();
   const [pendingFiles, setPendingFiles] = useState<FileUIPart[]>();
+  const [pendingText, setPendingText] = useState<string>();
   const [draftProject, setDraftProject] = useState<string>();
   const projects = useStore((s) => s.projects) ?? [];
   const [quick] = useState(() => new URLSearchParams(location.search).has("quick"));
@@ -181,6 +184,7 @@ function Inner() {
 
   const start = (c: Chat = newChat(), ws: "chat" | "cowork" = workspace === "cowork" ? "cowork" : "chat") => {
     if (blocked()) return;
+    setPendingText(undefined);
     setDraft(ws === "cowork" ? { ...c, workspace: "cowork" } : c);
     setActiveId(undefined);
     setDraftModel(undefined);
@@ -191,6 +195,32 @@ function Inner() {
     setWorkspace(ws);
     setNavOpen(false);
   };
+  // "Continue in a new chat": the AI summarizes the old chat and the summary waits in a new chat's message box.
+  const startRef = useRef(start);
+  useEffect(() => {
+    startRef.current = start;
+  });
+  useEffect(() => {
+    const go = async (e: Event) => {
+      const old = getState().chats.find((c) => c.id === (e as CustomEvent<string>).detail);
+      if (!old) return;
+      const id = toast.loading("Summarizing the chat…");
+      try {
+        const summary = await summarize(old, "summary");
+        startRef.current(newChat(), old.workspace === "cowork" ? "cowork" : "chat");
+        setPendingText(`Continuing from my chat "${old.title}". Summary:
+
+${summary}
+
+`);
+        toast.success("Summary added to a new chat. Add your next question and send.", { id });
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : String(err), { id });
+      }
+    };
+    addEventListener("moonc:continue", go);
+    return () => removeEventListener("moonc:continue", go);
+  }, []);
   const switchWorkspace = (w: Workspace) => {
     if (w === "code") return go("code");
     const isCowork = chat.workspace === "cowork";
@@ -430,14 +460,7 @@ function Inner() {
             <Button variant="ghost" size="icon" className={quick ? "hidden" : "md:hidden"} aria-label="Open chats" onClick={() => setNavOpen(true)}>
               <Menu />
             </Button>
-            {chatConns.length > 0 ? (
-              <ModelPicker
-                value={model}
-                onChange={(r) => (saved ? patchChat(chat.id, { model: r }) : setDraftModel(r))}
-              />
-            ) : (
-              <span className="px-2 font-semibold">MoonlightC</span>
-            )}
+            <span className="min-w-0 truncate px-2 font-semibold">{saved && chat.title ? chat.title : "MoonlightC"}</span>
             <div className="ml-auto flex items-center">
               <Button variant="ghost" size="icon" aria-label="Models and keys" onClick={() => setKeysOpen(true)}>
                 <KeyRound />
@@ -489,12 +512,19 @@ function Inner() {
                 lockPrivate={saved || started}
                 onChange={(id) => (saved ? patchChat(chat.id, { modeId: id }) : setDraftMode(id))}
               />
+              {chatConns.length > 0 && (
+                <>
+                  <ModelPicker compact id="composer-model" value={model} onChange={(r) => (saved ? patchChat(chat.id, { model: r }) : setDraftModel(r))} />
+                  <ThinkingSelect model={model} />
+                </>
+              )}
               </>
             )}
             onBranch={branch}
             onOpenKeys={() => setKeysOpen(true)}
             onOpenArtifact={setArtifact}
             initialFiles={pendingFiles}
+            initialText={pendingText}
             bigInput={look.bigInput}
             projectId={saved ? chat.projectId : (draftProject)}
           />

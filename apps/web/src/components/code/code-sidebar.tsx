@@ -99,7 +99,7 @@ export function CodeSidebar({ projectId, chatId, onSelect }: { projectId?: strin
       <Button className="justify-start" onClick={() => setCreating(true)}>
         <Plus /> New project
       </Button>
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
         <h3 className="px-2 py-1 font-mono text-[11px] tracking-wide text-muted-foreground">~/projects</h3>
         <ul className="grid gap-0.5">{projects.map(project)}</ul>
         {!projects.length && <p className="p-2 text-sm text-muted-foreground">Your code projects will appear here. Each project holds its files and its chats.</p>}

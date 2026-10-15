@@ -35,7 +35,7 @@ export interface SyncBackend {
 }
 
 /** Settings that follow you (never keys or sign-in tokens). */
-export const SYNCED_KEYS = ["modes", "favorites", "look", "distroId", "customDistros", "pinnedModes", "autoPicks", "projects", "memory", "profile", "myThemes", "codeFolders", "codePermission", "webTools", "lastModel"] as const;
+export const SYNCED_KEYS = ["modes", "favorites", "look", "distroId", "customDistros", "pinnedModes", "autoPicks", "projects", "memory", "profile", "myThemes", "codeFolders", "codePermission", "webTools", "lastModel", "thinking"] as const;
 
 const MAX_PART = 150_000;
 

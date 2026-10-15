@@ -312,6 +312,7 @@ export function KeysPanel() {
   const [refreshing, setRefreshing] = useState<string>();
   // Quick connect: open the company's key page, then pick up the key you copy there when you come back.
   const [waiting, setWaiting] = useState<string>();
+  const [picked, setPicked] = useState<string>();
   const form = useRef<HTMLFormElement>(null);
   useEffect(() => {
     if (!waiting) return;
@@ -466,26 +467,41 @@ export function KeysPanel() {
 
       <section aria-label="Quick connect" className="grid gap-2">
         <h3 className="text-sm font-medium">Quick connect</h3>
-        <p className="text-xs text-muted-foreground">Pick a company: its key page opens. Create a key and copy it, then come back here. MoonlightC picks up the copied key, checks it and connects.</p>
+        <p className="text-xs text-muted-foreground">Pick a company, open its key page, create a key and copy it, then come back here. MoonlightC picks up the copied key, checks it and connects.</p>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {QUICK.map(([id, name]) => (
             <Button
               key={id}
               type="button"
               variant="outline"
-              aria-pressed={waiting === id}
+              aria-pressed={picked === id}
               onClick={() => {
-                const p = PROVIDERS.find((x) => x.id === id)!;
                 setProviderId(id);
                 setError("");
-                setWaiting(id);
-                window.open(p.keyUrl, "_blank", "noopener");
+                setWaiting(undefined);
+                setPicked(id);
               }}
             >
               {name}
             </Button>
           ))}
         </div>
+        {picked && !waiting && (
+          <div className="grid gap-2 rounded-lg border p-3 text-sm">
+            <p>
+              Next: open <strong>{new URL(PROVIDERS.find((x) => x.id === picked)!.keyUrl).host}</strong> in a new tab, sign in there, and create an API key. MoonlightC never sees your password.
+            </p>
+            <a
+              className="inline-flex items-center gap-1.5 justify-self-start rounded-lg border px-3 py-1.5 font-medium hover:bg-muted"
+              href={PROVIDERS.find((x) => x.id === picked)!.keyUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setWaiting(picked)}
+            >
+              Open {new URL(PROVIDERS.find((x) => x.id === picked)!.keyUrl).host} <ExternalLink className="size-3.5" />
+            </a>
+          </div>
+        )}
         {waiting && (
           <p role="status" className="flex items-center gap-2 text-xs text-muted-foreground">
             <Loader2 className="size-3 animate-spin" /> Waiting for your {QUICK.find(([id]) => id === waiting)?.[1]} key: copy it on the page that opened, then come back.
@@ -574,8 +590,12 @@ export function KeysPanel() {
         </Button>
         <p className="text-xs text-muted-foreground">
           Have Claude Pro or ChatGPT Plus? Those subscriptions can&apos;t be
-          used by other apps (the providers don&apos;t allow it). Use an API
-          key, or OpenRouter, here instead.
+          used by other apps (the providers don&apos;t allow it), and API keys
+          are billed separately.
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Free ways to start: a Gemini key (Google&apos;s free tier covers the Flash models), a Groq key, free models on
+          OpenRouter, or models running on your own PC (desktop app &gt; Model library).
         </p>
       </form>
       <SearchKeySection />

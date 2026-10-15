@@ -1,4 +1,4 @@
-import { getProvider, languageModel, ProviderError } from "@moonc/core";
+import { getProvider, languageModel, ProviderError, thinkingOptions } from "@moonc/core";
 import { fileTools, readGrants } from "@/lib/local-files";
 import { APICallError, convertToModelMessages, isStepCount, jsonSchema, tool, type ToolSet, createUIMessageStreamResponse, streamText, toUIMessageStream, type UIMessage } from "ai";
 import { readConnection } from "@/lib/server-guard";
@@ -15,6 +15,8 @@ interface Body {
   modelId: string;
   instructions?: string;
   temperature?: number;
+  /** How hard the model thinks (low…max), when the model has that setting. */
+  thinking?: string;
   tools?: { search?: SearchKey };
   research?: boolean;
   mcp?: unknown;
@@ -151,15 +153,17 @@ export async function POST(req: Request) {
     const tools = { ...files?.tools, ...builtIn, ...mcp?.tools, ...google?.tools, ...accountTools, ...readModTools(body.modTools), ...memoryTool, ...skillTool, ...browserTools, ...homeTools, ...(desktopComputer ? { computer: computerTool } : {}), ...(body.code === true ? codeTools : {}) };
     const hasTools = Object.keys(tools).length > 0;
 
+    const think = thinkingOptions(c.providerId, body.modelId, typeof body.thinking === "string" ? body.thinking : undefined);
     const result = streamText({
       model: languageModel(c, body.modelId),
+      ...(think.providerOptions ? { providerOptions: think.providerOptions as never } : {}),
       instructions:
         [
           typeof body.instructions === "string" ? body.instructions.slice(0, 80000) : "",
           desktopComputer ? COMPUTER_INSTRUCTIONS : "",
           body.code === "plan" ? "Plan mode: don't change any files. Read the request and the current files, then reply with a short, numbered plan of the changes you would make and why." : "",
         ].filter(Boolean).join("\n\n") || undefined,
-      temperature: typeof body.temperature === "number" ? Math.min(2, Math.max(0, body.temperature)) : undefined,
+      temperature: typeof body.temperature === "number" && !think.noTemperature ? Math.min(2, Math.max(0, body.temperature)) : undefined,
       messages: await convertToModelMessages(body.messages),
       abortSignal: req.signal,
       ...(hasTools ? { tools, toolApproval: { ...mcp?.approval, ...google?.approval, ...slack?.approval, ...files?.approval }, stopWhen: isStepCount(body.research || desktopComputer || body.code ? 40 : 8) } : {}),
@@ -194,7 +198,11 @@ function friendlyError(e: unknown, provider: string): string {
   if (APICallError.isInstance(e)) {
     if (e.statusCode === 401 || e.statusCode === 403) return `${provider} rejected your key. Open Settings → Models and paste a fresh key.`;
     if (e.statusCode === 402) return `${provider} says your account is out of credit. Add credit on their site, then retry.`;
+    const detail = `${e.message} ${e.responseBody ?? ""}`;
     if (e.statusCode === 404) return `${provider} doesn't recognize this model. Pick another model and retry.`;
+    // Free plans get no use of some models (Gemini says "limit: 0"); that's not something waiting fixes.
+    if (e.statusCode === 429 && /limit: ?0|free_tier|free tier/i.test(detail)) return `This model isn't on your ${provider} plan (no free use). Pick another model.`;
+    if (/insufficient_quota|credit balance|billing/i.test(detail)) return `${provider} says your account is out of credit. Add credit on their site, or pick another model.`;
     if (e.statusCode === 429) return `${provider} is rate-limiting you. Wait a moment, then retry.`;
     return `${provider} returned an error${e.statusCode ? ` (${e.statusCode})` : ""}: ${e.message.slice(0, 200)}`;
   }

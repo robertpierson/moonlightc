@@ -49,7 +49,7 @@ function Chips({ options, value, onChange, label }: { options: string[]; value: 
             type="button"
             aria-pressed={on}
             onClick={() => onChange(on ? value.filter((x) => x !== o) : [...value, o])}
-            className="rounded-full border px-3 py-1.5 text-sm aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground"
+            className="rounded-full border px-3 py-1.5 text-sm aria-pressed:border-selected aria-pressed:bg-selected aria-pressed:text-selected-foreground"
           >
             {o}
           </button>

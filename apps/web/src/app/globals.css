@@ -40,6 +40,8 @@
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
   --color-link: var(--link);
+  --color-selected: var(--selected);
+  --color-selected-foreground: var(--selected-foreground);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
@@ -63,6 +65,9 @@
   /* Buttons and highlights are near-black navy; links get their own token so they stay readable. */
   --primary: oklch(0.21 0.035 268);
   --primary-foreground: oklch(0.985 0.005 265);
+  /* A chosen option (toggle, tab, tile): always high contrast, whatever the theme. */
+  --selected: oklch(0.21 0.035 268);
+  --selected-foreground: oklch(0.985 0.005 265);
   --link: oklch(0.38 0.09 268);
   --secondary: oklch(0.97 0.014 265);
   --secondary-foreground: oklch(0.205 0.014 265);
@@ -100,6 +105,8 @@
   /* Dark blue page, black accents (no light blue). */
   --primary: oklch(0.1 0.018 268);
   --primary-foreground: oklch(0.97 0.01 265);
+  --selected: oklch(0.93 0.02 265);
+  --selected-foreground: oklch(0.17 0.035 268);
   --link: oklch(0.9 0.02 268);
   --secondary: oklch(0.12 0.022 268);
   --secondary-foreground: oklch(0.985 0.014 265);

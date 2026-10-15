@@ -30,6 +30,16 @@ createServer(async (req, res) => {
     const url = prompt.match(/read (https:\/\/\S+)/)?.[1];
     const py = prompt.match(/python: (.+)/)?.[1];
     const add = prompt.match(/add (\d+) (\d+)/);
+    if (!body.stream) {
+      // Titles and summaries (generateText): a fixed short answer.
+      const sys = body.messages.find((m) => m.role === "system")?.content ?? "";
+      const firstWords = (prompt.match(/^You: (.*)$/m)?.[1] ?? prompt).split(/\s+/).slice(0, 4).join(" ");
+      const text = /short title/.test(sys) ? (/butter/.test(prompt) ? "Baking with butter" : firstWords) : /Summarize this conversation/.test(sys) ? "- Goal: bake bread\n- Done: picked a recipe" : null;
+      if (text) {
+        res.setHeader("content-type", "application/json");
+        return res.end(JSON.stringify({ id: "x", object: "chat.completion", created: 0, model: body.model, choices: [{ index: 0, message: { role: "assistant", content: text }, finish_reason: "stop" }], usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 } }));
+      }
+    }
     if (body.response_format && prompt.includes("RECURRING subscriptions")) {
       // Structured output (generateText with Output.array): answer with JSON that matches the schema.
       const elements = [{ service: "Netflix Standard", amount: 15.49, currency: "USD", period: "monthly", lastCharged: "2026-10-01" }];

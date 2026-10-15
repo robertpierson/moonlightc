@@ -6,8 +6,11 @@ test("quick connect opens the key page and picks up the copied key", async ({ pa
   await page.goto("/app");
   await page.getByRole("button", { name: "Connect a model" }).click();
   const quick = page.getByRole("region", { name: "Quick connect" });
-  const popup = page.waitForEvent("popup");
+  // Picking a company opens nothing by itself: the person clicks a clearly labeled outside link.
   await quick.getByRole("button", { name: "ChatGPT" }).click();
+  await expect(quick.getByRole("button", { name: "ChatGPT" })).toHaveAttribute("aria-pressed", "true");
+  const popup = page.waitForEvent("popup");
+  await quick.getByRole("link", { name: "Open platform.openai.com" }).click();
   expect((await popup).url()).toContain("platform.openai.com");
   await expect(quick.getByRole("status")).toContainText("Waiting for your ChatGPT key");
   // Something that isn't a key is ignored; a key is filled in and checked straight away.
