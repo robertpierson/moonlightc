@@ -426,6 +426,18 @@ test("your Claude Code: chat with the CLI signed in on this PC (if installed)", 
   await expect(page.getByRole("button", { name: "Send to Claude Code" })).toBeVisible({ timeout: 30_000 });
 });
 
+test("terminal: Ctrl+V pastes (e.g. a sign-in code)", async () => {
+  await page.getByRole("group", { name: "Mode" }).getByRole("button", { name: "Code" }).click();
+  await page.getByRole("navigation", { name: "Sections" }).getByRole("button", { name: "Terminal" }).click();
+  const term = page.getByTestId("terminal").last();
+  await expect(term).toBeVisible();
+  await app.evaluate(({ clipboard }) => clipboard.writeText("echo pasted-ok-123"));
+  await term.click();
+  await page.keyboard.press("Control+V");
+  await page.keyboard.press("Enter");
+  await expect(term).toContainText("pasted-ok-123", { timeout: 15_000 });
+});
+
 test("finds API keys already set up on this PC (shown masked, added only when picked)", async () => {
   const found = await page.evaluate(() => window.moonc.keys.scan());
   const k = found.find((x) => x.source === "MISTRAL_API_KEY");

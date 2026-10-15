@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "MoonlightC",
   "description": "Let the AI in MoonlightC read and use browser tabs you share with it. Nothing is shared until you choose a tab.",
-  "version": "0.6.4",
+  "version": "0.6.5",
   "minimum_chrome_version": "120",
   "icons": { "128": "icon.png" },
   "action": { "default_title": "Share this tab with MoonlightC", "default_popup": "popup.html", "default_icon": { "128": "icon.png" } },

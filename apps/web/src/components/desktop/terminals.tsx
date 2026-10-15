@@ -26,6 +26,32 @@ function TermPane({ tab, active, onExit }: { tab: Tab; active: boolean; onExit: 
     term.loadAddon(fit);
     term.open(el.current!);
     fit.fit();
+    // Copy and paste like Windows Terminal: Ctrl+V or right-click pastes; Ctrl+C copies when text is selected.
+    const paste = () => bridge.clipboard.readText().then((t) => t && term.paste(t));
+    const copy = () => {
+      navigator.clipboard.writeText(term.getSelection()).catch(() => {});
+      term.clearSelection();
+    };
+    term.attachCustomKeyEventHandler((e) => {
+      if (e.type !== "keydown" || !e.ctrlKey) return true;
+      const k = e.key.toLowerCase();
+      if (k === "v") {
+        e.preventDefault();
+        paste();
+        return false;
+      }
+      if (k === "c" && term.hasSelection()) {
+        copy();
+        return false;
+      }
+      return true;
+    });
+    const onMenu = (e: MouseEvent) => {
+      e.preventDefault();
+      if (term.hasSelection()) copy();
+      else paste();
+    };
+    el.current!.addEventListener("contextmenu", onMenu);
     let id: string | undefined;
     const offs: (() => void)[] = [];
     let disposed = false;

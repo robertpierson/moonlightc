@@ -354,6 +354,8 @@ handle("claude:stop", (_e, id) => {
   return true;
 });
 // Quick connect: hand back the clipboard only when it looks like an API key (one token, no spaces).
+// The built-in terminal's paste (Ctrl+V / right-click).
+handle("clipboard:text", async () => String((await clipboard.readText()) ?? "").slice(0, 1_000_000));
 handle("clipboard:key", async () => {
   const t = String((await clipboard.readText()) ?? "").trim();
   return /^[\w.-]{16,300}$/.test(t) ? t : null;

@@ -53,7 +53,7 @@ contextBridge.exposeInMainWorld("moonc", {
   },
   device: { info: () => invoke("device:info") },
   keys: { scan: () => invoke("keys:scan") },
-  clipboard: { readKey: () => invoke("clipboard:key") },
+  clipboard: { readKey: () => invoke("clipboard:key"), readText: () => invoke("clipboard:text") },
   claude: {
     status: () => invoke("claude:status"),
     run: (id, prompt, sessionId) => invoke("claude:run", id, prompt, sessionId),
