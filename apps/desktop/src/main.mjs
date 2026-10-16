@@ -145,7 +145,7 @@ const startHidden = process.argv.includes("--hidden");
 const webPreferences = { preload: path.join(here, "preload.cjs"), contextIsolation: true, sandbox: true, nodeIntegration: false };
 
 function createWindow() {
-  win = new BrowserWindow({ width: 1280, height: 840, minWidth: 360, minHeight: 500, backgroundColor: "#0e1220", title: "MoonlightC", icon: iconPath(), show: !testRun && !startHidden, webPreferences: testRun ? { ...webPreferences, backgroundThrottling: false } : webPreferences });
+  win = new BrowserWindow({ width: 1280, height: 840, minWidth: 360, minHeight: 500, backgroundColor: "#0e1220", title: "MoonlightC", icon: iconPath(), show: !testRun && !startHidden, webPreferences: { ...webPreferences, backgroundThrottling: false } });
   lockDown(win);
   win.loadURL(appURL + "/app");
   // Settings has unsaved changes: ask instead of silently refusing to quit.

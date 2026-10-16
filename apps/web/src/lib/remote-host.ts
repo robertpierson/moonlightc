@@ -1,7 +1,7 @@
 "use client";
 
 import type { MooncBridge } from "./desktop";
-import { gathered, ICE, type Req } from "./remote";
+import { gathered, hifiAudio, ICE, type Req } from "./remote";
 
 const OLLAMA = "http://127.0.0.1:11434";
 
@@ -69,13 +69,26 @@ export function createHostHandler(
         closeRtc(req.from);
         // With the PC's sound where the system allows it; video only otherwise.
         await b.remote.allowStream(req.from);
-        const stream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: true }).catch(async () => {
+        // Game and music sound as it is: no call-style echo/noise filtering or volume leveling.
+        const audio = { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 2 };
+        const stream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 60, max: 60 } }, audio }).catch(async () => {
           await b.remote.allowStream(req.from);
-          return navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: false });
+          return navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 60, max: 60 } }, audio: false });
         });
+        stream.getVideoTracks().forEach((t) => (t.contentHint = "detail"));
+        stream.getAudioTracks().forEach((t) => (t.contentHint = "music"));
         const pc = new RTCPeerConnection({ iceServers: ICE });
         rtc.set(req.from, { pc, stream });
         stream.getTracks().forEach((t) => pc.addTrack(t, stream));
+        // Room for sharp, smooth video and clear sound on a good connection (WebRTC lowers it when the network is slow).
+        const tune = () =>
+          pc.getSenders().forEach((s) => {
+            const p = s.getParameters();
+            if (!p.encodings?.length) return;
+            p.encodings[0].maxBitrate = s.track?.kind === "audio" ? 192_000 : 8_000_000;
+            if (s.track?.kind === "video") p.encodings[0].maxFramerate = 60;
+            s.setParameters(p).catch(() => {});
+          });
         pc.addEventListener("connectionstatechange", () => {
           if (pc.connectionState === "failed" || pc.connectionState === "closed") closeRtc(req.from);
         });
@@ -84,12 +97,17 @@ export function createHostHandler(
         pc.addEventListener("datachannel", (e) =>
           e.channel.addEventListener("message", (m) => {
             try {
-              b.remote.input(req.from, JSON.parse(String(m.data))).catch(() => {});
+              const a = JSON.parse(String(m.data));
+              // Game mode asks for smooth motion over sharp text (and back again when it ends).
+              if (a.action === "hint") return stream.getVideoTracks().forEach((t) => (t.contentHint = a.hint === "motion" ? "motion" : "detail"));
+              b.remote.input(req.from, a).catch(() => {});
             } catch {}
           }),
         );
         await pc.setRemoteDescription({ type: "offer", sdp: String(p.sdp ?? "") });
-        await pc.setLocalDescription(await pc.createAnswer());
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription({ type: "answer", sdp: hifiAudio(answer.sdp) });
+        tune();
         await gathered(pc);
         return { sdp: pc.localDescription?.sdp };
       }

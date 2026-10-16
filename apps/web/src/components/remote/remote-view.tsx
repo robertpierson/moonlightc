@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { TwoStepGate } from "@/components/account/two-step-gate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { gathered, ICE, isOnline, joinChannel, RemoteClient, subscribed, TIER_LABELS, type Tier } from "@/lib/remote";
+import { gathered, hifiAudio, ICE, isOnline, joinChannel, RemoteClient, subscribed, TIER_LABELS, type Tier } from "@/lib/remote";
 import { supabase } from "@/lib/supabase/client";
 import { useDevices } from "./your-computers";
 
@@ -203,10 +203,15 @@ function Screen({ client, control }: { client: RemoteClient; control: boolean })
         dc.current = pc.createDataChannel("input");
         pc.addEventListener("track", (e) => e.track.kind === "audio" && setHasAudio(true));
         const track = new Promise<MediaStream>((resolve) => pc!.addEventListener("track", (e) => resolve(e.streams[0] ?? new MediaStream([e.track]))));
-        await pc.setLocalDescription(await pc.createOffer());
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription({ type: "offer", sdp: hifiAudio(offer.sdp) });
         await gathered(pc);
         const r = await client.call<{ sdp: string }>("rtc.offer", { sdp: pc.localDescription?.sdp }, 30_000);
         await pc.setRemoteDescription({ type: "answer", sdp: r.sdp });
+        // Show frames as soon as they arrive (no extra buffering), for the lowest delay.
+        pc.getReceivers().forEach((rc) => {
+          (rc as RTCRtpReceiver & { jitterBufferTarget?: number | null }).jitterBufferTarget = 0;
+        });
         const v = video.current!;
         v.srcObject = await Promise.race([track, timeout(10_000)]);
         await Promise.race([new Promise((resolve) => v.addEventListener("loadeddata", resolve, { once: true })), timeout(10_000)]);
@@ -277,10 +282,22 @@ function Screen({ client, control }: { client: RemoteClient; control: boolean })
       if (dx || dy) input({ action: "move_by", dx: Math.round(dx), dy: Math.round(dy) });
       dx = dy = 0;
     };
+    if (dc.current?.readyState === "open") dc.current.send(JSON.stringify({ action: "hint", hint: "motion" }));
+    let lastEsc = 0;
     const key = (e: KeyboardEvent) => {
       const k = CODES(e.code);
       if (!k) return;
       e.preventDefault();
+      // Escape twice quickly: leave game mode and full screen. Once: Escape goes to the game.
+      if (e.type === "keydown" && k === "escape" && !e.repeat) {
+        if (Date.now() - lastEsc < 500) {
+          setGame(false);
+          if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+          setFull(false);
+          return;
+        }
+        lastEsc = Date.now();
+      }
       if (e.type === "keydown") {
         if (down.has(k)) return;
         down.add(k);
@@ -327,6 +344,7 @@ function Screen({ client, control }: { client: RemoteClient; control: boolean })
       removeEventListener("contextmenu", blockMenu);
       removeEventListener("wheel", wheel);
       for (const k of down) input({ action: "key_up", key: k });
+      if (dc.current?.readyState === "open") dc.current.send(JSON.stringify({ action: "hint", hint: "detail" }));
       if (document.pointerLockElement) document.exitPointerLock();
       (navigator as Navigator & { keyboard?: { unlock(): void } }).keyboard?.unlock();
       cancelAnimationFrame(frame);
@@ -385,7 +403,7 @@ function Screen({ client, control }: { client: RemoteClient; control: boolean })
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-xs text-muted-foreground" role="status">
           {live === "video" ? "Live video" : live === "pictures" ? "Pictures (this network blocks live video)" : "Connecting…"}
-          {game && " · Game mode: click the screen to capture the mouse; in full screen hold Esc to leave"}
+          {game && " · Game mode: click the screen to capture the mouse; press Esc twice quickly to leave"}
         </span>
         <span className="flex-1" />
         {control && (

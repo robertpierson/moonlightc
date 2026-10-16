@@ -98,6 +98,9 @@ export class RemoteClient {
 /** Public servers that only tell each side its own internet address, so the two can stream video directly. */
 export const ICE: RTCIceServer[] = [{ urls: ["stun:stun.l.google.com:19302", "stun:stun.cloudflare.com:3478"] }];
 
+/** Opus at music quality in stereo (the default is tuned for voices on calls). */
+export const hifiAudio = (sdp?: string) => (sdp ?? "").replace(/useinbandfec=1/g, "useinbandfec=1;stereo=1;sprop-stereo=1;maxaveragebitrate=192000");
+
 /** Wait until the connection knows all its possible network paths (so one message carries everything). */
 export function gathered(pc: RTCPeerConnection, ms = 4000) {
   return new Promise<void>((resolve) => {
