@@ -68,6 +68,10 @@ STATUS: BUILDING
 - [x] R49 Staff panel (/admin, Settings > Staff for admins): right now (active people, PCs online, events/errors per hour), people list with search and per-person activity/devices/providers, errors grouped (app.error events: message, path, version only). staff_* SQL functions need admin + aal2. No keystroke logging or message content (declined).
 - [x] R50 Remote game mode (held keys, mouse buttons, pointer-lock relative mouse, keyboard lock for Escape in full screen; input over the WebRTC data channel; held keys released when a session ends); fallback pictures smaller with two in flight
 - [x] R51 Claude Code from other devices via the home PC ("claude" remote request, chat tier; models 'Claude Code · …' under Home PC; per-chat CLI session)
+- [x] R52 Remote: lower delay (no jitter buffer, motion hint in game mode, 60 fps / 8 Mbps caps, host window never throttled), hi-fi stereo audio (no call filters), double Esc leaves game mode + full screen; raw relative mouse via SendInput (koffi) so games turn
+- [x] R53 Model menu: company first, top 3 models + Show all; thinking Off for Gemini 2.5 Flash / OpenAI
+- [x] R54 Other devices link to the home PC's AI models automatically (chat-only sessions: no prompt, no frame, no idle cut-off); remote control stays separate
+- [x] R55 Separate Trash for Chat, Cowork and Code (code chats restorable into their project); Settings > Privacy > Empty all Trash
 
 ## Phase 0 tasks
 - [x] Check prerequisites (node 22, pnpm 11, git, gh logged in as robertpierson; Vercel + Supabase via MCP)

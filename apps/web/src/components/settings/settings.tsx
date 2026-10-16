@@ -2,7 +2,7 @@
 
 import { Brain, ChartBar, Cpu, MonitorSmartphone, Download, FolderOpen, Gauge, Globe, KeyRound, Laptop, Moon, Palette, Plug, Puzzle, Shield, SlidersHorizontal, Sparkles, Sun, KeySquare, Trash2, Upload, UserRound, Wand2, X } from "lucide-react";
 import { SaveBar } from "./save-bar";
-import { beginEditing, endEditing } from "@/lib/store";
+import { beginEditing, endEditing, emptyAllTrash } from "@/lib/store";
 import { RemoteSettings } from "@/components/remote/remote-settings";
 import dynamic from "next/dynamic";
 import { useTheme } from "next-themes";
@@ -463,6 +463,17 @@ function Privacy() {
         <Row label="Export your data" hint="Chats, modes, projects, memory and settings as a JSON file. Keys and sign-in tokens are left out.">
           <Button variant="outline" onClick={exportData}>
             <Download /> Export
+          </Button>
+        </Row>
+        <Row label="Empty all Trash" hint="Deletes everything in the Chat, Cowork and Code Trash for good.">
+          <Button
+            variant="outline"
+            onClick={() => {
+              emptyAllTrash();
+              toast.success("Trash emptied.");
+            }}
+          >
+            <Trash2 /> Empty all Trash
           </Button>
         </Row>
         <Row label="Delete everything on this device" hint="Removes all chats, keys, connections, pictures and code projects stored here. This can't be undone.">

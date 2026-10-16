@@ -151,6 +151,8 @@ export interface State {
   favorites: string[]; // `${connectionId}:${modelId}`
   /** Chats moved to the Trash; they can be restored for 30 days. */
   trash?: (Chat & { trashedAt: number })[];
+  /** Code chats moved to the Trash (with the project they came from). */
+  codeTrash?: { projectId: string; projectName: string; chat: import("./code").CodeChat; trashedAt: number }[];
   /** How hard models think, when they have that setting (low…max). Unset = the model's default. */
   thinking?: string;
   /** Models that failed in a way waiting won't fix ("not on your plan"), by `${connectionId}:${modelId}`. */
@@ -352,6 +354,8 @@ export function restoreChat(id: string) {
     return { ...s, chats: [{ ...chat, updatedAt: Date.now() }, ...s.chats], trash: s.trash!.filter((x) => x.id !== id) };
   });
 }
+/** Empty every Trash (Chat, Cowork and Code). */
+export const emptyAllTrash = () => update((s) => ({ ...s, trash: [], codeTrash: [] }));
 export const deleteForever = (id?: string) => update((s) => ({ ...s, trash: id ? (s.trash ?? []).filter((x) => x.id !== id) : [] }));
 
 export function findModel(ref?: ModelRef) {

@@ -87,17 +87,22 @@ export function end(clientId, reason = "disconnected") {
     audit("end", { clientId: id, name: s.name, reason });
     releaseAll();
   }
-  if (!sessions.size) {
+  if (!watching()) {
     overlay?.destroy();
     overlay = undefined;
   } else showOverlay();
   emit();
 }
 
+// "Use this PC's AI models" only: no screen, files or keyboard, so no frame on screen and no idle cut-off.
+const modelsOnly = (tiers) => tiers.every((t) => t === "chat");
+const watching = () => [...sessions.values()].some((s) => !modelsOnly(s.tiers));
+
 function touch(clientId) {
   const s = sessions.get(clientId);
   if (!s) return;
   clearTimeout(s.timer);
+  if (modelsOnly(s.tiers)) return;
   s.timer = setTimeout(() => end(clientId, "idle for 15 minutes"), IDLE_MS);
 }
 
@@ -137,8 +142,10 @@ export async function connect(parent, client, wanted) {
   const tiers = [...new Set((Array.isArray(wanted) ? wanted : []).filter((t) => t in TIERS))];
   if (!id || !tiers.length) throw new Error("Nothing to allow.");
   const remembered = grants().find((g) => g.clientId === id);
-  let ok = (!!remembered && tiers.every((t) => remembered.tiers.includes(t))) || trusted();
-  if (ok && !remembered) audit("approve.trusted", { clientId: id, name, tiers });
+  // Your own devices (same account, two-step sign-in, checked by the server) may use this PC's AI models
+  // without asking: that's like using your own models, not controlling the PC.
+  let ok = (!!remembered && tiers.every((t) => remembered.tiers.includes(t))) || trusted() || modelsOnly(tiers);
+  if (ok && !remembered) audit(modelsOnly(tiers) ? "approve.models" : "approve.trusted", { clientId: id, name, tiers });
   if (!ok) {
     const r = autoApprove()
       ? { response: 0, checkboxChecked: false }
@@ -162,8 +169,10 @@ export async function connect(parent, client, wanted) {
   sessions.set(id, { name, tiers, startedAt: Date.now() });
   touch(id);
   audit("connect", { clientId: id, name, tiers });
-  showOverlay();
-  new Notification({ title: "Remote control", body: `${name} is connected. Ctrl+Alt+Shift+M disconnects.` }).show();
+  if (!modelsOnly(tiers)) {
+    showOverlay();
+    new Notification({ title: "Remote control", body: `${name} is connected. Ctrl+Alt+Shift+M disconnects.` }).show();
+  }
   emit();
   return { allowed: true, tiers };
 }

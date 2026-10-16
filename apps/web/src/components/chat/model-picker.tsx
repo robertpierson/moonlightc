@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronsUpDown, Sparkles, Star } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, ChevronsUpDown, Sparkles, Star } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -29,6 +29,16 @@ export function ModelPicker({ value, onChange, plain, label = "Choose model", co
   // Each company shows its main models; "Show all" (or searching) lists everything.
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState<string[]>([]);
+  // Pick a company first (Gemini, Claude, ChatGPT…), then one of its models.
+  const [provider, setProvider] = useState<string>();
+  const conns = connections.filter((c) => c.models.length);
+  const top = (c: (typeof conns)[number]) => {
+    const f = featuredModels(c.providerId, c.models);
+    const base = f.length ? f : c.models.slice(0, 3);
+    const cur = value?.connectionId === c.id ? c.models.find((m) => m.id === value.modelId) : undefined;
+    return cur && !base.includes(cur) ? [...base, cur] : base;
+  };
+  const browsing = conns.find((c) => c.id === provider);
   const autoReady = useStore((s) => !!findModel(s.autoPicks?.everyday));
   const current = isAuto(value) ? { name: "Auto" } : value && connections.find((c) => c.id === value.connectionId)?.models.find((m) => m.id === value.modelId);
 
@@ -80,7 +90,16 @@ export function ModelPicker({ value, onChange, plain, label = "Choose model", co
   );
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover
+      open={open}
+      onOpenChange={(o) => {
+        setOpen(o);
+        if (o) {
+          setSearch("");
+          setProvider(conns.length === 1 ? conns[0].id : undefined);
+        }
+      }}
+    >
       <PopoverTrigger asChild>
         <Button id={id} variant="ghost" size={compact ? "sm" : "default"} role="combobox" aria-expanded={open} aria-label={label} className={compact ? "max-w-44 justify-between gap-1 font-medium sm:max-w-60" : "max-w-[60vw] justify-between gap-1 font-medium sm:max-w-sm"}>
           <span className="truncate">{current?.name ?? "Choose a model"}</span>
@@ -92,7 +111,7 @@ export function ModelPicker({ value, onChange, plain, label = "Choose model", co
           <CommandInput placeholder="Search models…" value={search} onValueChange={setSearch} />
           <CommandList className="max-h-[60dvh]">
             <CommandEmpty>No model matches.</CommandEmpty>
-            {autoReady && !plain && (
+            {!search && (!browsing || conns.length === 1) && autoReady && !plain && (
               <CommandGroup>
                 <CommandItem value="auto best model for each message" onSelect={() => pick(AUTO)} className="gap-2">
                   <Check className={isAuto(value) ? "opacity-100" : "opacity-0"} />
@@ -105,21 +124,48 @@ export function ModelPicker({ value, onChange, plain, label = "Choose model", co
                 </CommandItem>
               </CommandGroup>
             )}
-            {favRows.length > 0 && <CommandGroup heading="Favorites">{favRows}</CommandGroup>}
-            {connections.filter((c) => c.models.length).map((c) => {
-              const main = featuredModels(c.providerId, c.models);
-              const short = main.length > 0 && !search && !expanded.includes(c.id) && !(value?.connectionId === c.id && !main.some((m) => m.id === value.modelId));
-              return (
-                <CommandGroup key={c.id} heading={c.label}>
-                  {(short ? main : c.models).map((m) => row(c.id, c.label, m, false))}
-                  {short && (
-                    <CommandItem value={`${c.label} show all models`} onSelect={() => setExpanded((e) => [...e, c.id])} className="text-xs text-muted-foreground">
-                      Show all {c.models.length} {c.label} models
+            {!search && (!browsing || conns.length === 1) && favRows.length > 0 && <CommandGroup heading="Favorites">{favRows}</CommandGroup>}
+            {!search && !browsing && (
+              <CommandGroup heading="Companies">
+                {conns.map((c) => (
+                  <CommandItem key={c.id} value={`company ${c.label}`} onSelect={() => setProvider(c.id)} className="gap-2">
+                    <Check className={value?.connectionId === c.id ? "opacity-100" : "opacity-0"} />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate">{c.label}</div>
+                      <div className="truncate text-xs text-muted-foreground">
+                        {value?.connectionId === c.id && current ? `Using ${current.name}` : `${c.models.length} model${c.models.length === 1 ? "" : "s"}`}
+                      </div>
+                    </div>
+                    <ChevronRight className="size-4 opacity-50" />
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+            {!search && browsing && (
+              <>
+                {conns.length > 1 && (
+                  <CommandGroup>
+                    <CommandItem value="back to all companies" onSelect={() => setProvider(undefined)} className="gap-2 text-muted-foreground">
+                      <ChevronLeft className="size-4" /> All companies
+                    </CommandItem>
+                  </CommandGroup>
+                )}
+                <CommandGroup heading={browsing.label}>
+                  {(expanded.includes(browsing.id) ? browsing.models : top(browsing)).map((m) => row(browsing.id, browsing.label, m, false))}
+                  {!expanded.includes(browsing.id) && browsing.models.length > top(browsing).length && (
+                    <CommandItem value={`${browsing.label} show all models`} onSelect={() => setExpanded((e) => [...e, browsing.id])} className="text-xs text-muted-foreground">
+                      Show all {browsing.models.length} {browsing.label} models
                     </CommandItem>
                   )}
                 </CommandGroup>
-              );
-            })}
+              </>
+            )}
+            {search &&
+              conns.map((c) => (
+                <CommandGroup key={c.id} heading={c.label}>
+                  {c.models.map((m) => row(c.id, c.label, m, false))}
+                </CommandGroup>
+              ))}
           </CommandList>
         </Command>
       </PopoverContent>

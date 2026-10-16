@@ -14,4 +14,11 @@ describe("thinking levels", () => {
     expect(thinkingOptions("openai", "gpt-5", "high").providerOptions).toEqual({ openai: { reasoningEffort: "high" } });
     expect(thinkingOptions("openai", "gpt-4o", "high").providerOptions).toBeUndefined();
   });
+  it("turns thinking off where the model allows it", () => {
+    expect(thinkingLevels("google", "gemini-2.5-flash")[0]).toBe("off");
+    expect(thinkingLevels("google", "gemini-2.5-pro")).not.toContain("off");
+    expect(thinkingOptions("google", "gemini-2.5-flash-lite", "off").providerOptions).toEqual({ google: { thinkingConfig: { thinkingBudget: 0 } } });
+    expect(thinkingOptions("openai", "gpt-5", "off").providerOptions).toEqual({ openai: { reasoningEffort: "minimal" } });
+    expect(thinkingLevels("anthropic", "claude-opus-5-5")).not.toContain("off");
+  });
 });

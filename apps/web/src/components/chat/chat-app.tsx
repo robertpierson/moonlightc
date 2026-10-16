@@ -55,6 +55,7 @@ import { KeysDialog } from "./keys-dialog";
 import { ThinkingSelect } from "@/components/chat/thinking-select";
 import { summarize } from "@/lib/summarize";
 import { syncClaudeCode } from "@/lib/claude-code";
+import { linkHomePcModels } from "@/lib/home-pc";
 import { ModelPicker } from "./model-picker";
 import { ModeSelect, ModesDialog, useModes } from "./modes";
 import { CommandPalette } from "./command-palette";
@@ -104,8 +105,10 @@ function Inner() {
   // ?keys=1 (from onboarding) opens the key form straight away.
   const [keysOpen, setKeysOpen] = useState(() => new URLSearchParams(location.search).has("keys"));
   // Desktop: Claude Code on this PC shows up as models (Chat, Cowork and Code).
+  // Other devices: your home PC's models (Claude Code, local ones) show up too, without a remote session.
   useEffect(() => {
-    syncClaudeCode().catch(() => {});
+    if (desktop()) syncClaudeCode().catch(() => {});
+    else if (accountsEnabled) linkHomePcModels().catch(() => {});
   }, []);
   // Desktop: offer AI keys already set up on this PC (shown masked; nothing is added until you pick them).
   useEffect(() => {

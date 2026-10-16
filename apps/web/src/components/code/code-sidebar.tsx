@@ -1,12 +1,14 @@
 "use client";
 
-import { ChevronRight, FolderCode, MessageSquare, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
+import { ChevronRight, FolderCode, MessageSquare, MoreHorizontal, Pencil, Plus, Trash2, Undo2 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import type { CodeProject } from "@/lib/code";
-import { deleteProject, saveProject, useCodeProjects } from "@/lib/code-store";
+import { deleteProject, getProject, saveProject, useCodeProjects } from "@/lib/code-store";
+import { getState, update, useStore } from "@/lib/store";
+import { toast } from "sonner";
 import { NewProject } from "./new-project";
 
 /** The Code sidebar: projects (each a group of chats, with its own files), like Chat's projects. */
@@ -117,10 +119,12 @@ export function CodeSidebar({ projectId, chatId, onSelect }: { projectId?: strin
                           variant="destructive"
                           onSelect={() => {
                             saveProject({ ...p, chats: (p.chats ?? []).filter((x) => x.id !== c.id) });
+                            update((s) => ({ ...s, codeTrash: [{ projectId: p.id, projectName: p.name, chat: c, trashedAt: Date.now() }, ...(s.codeTrash ?? []).filter((t) => Date.now() - t.trashedAt < 30 * 86_400_000)] }));
                             if (c.id === chatId) onSelect(p.id);
+                            toast("Moved to Trash.", { action: { label: "Undo", onClick: () => restoreCodeChat(c.id) } });
                           }}
                         >
-                          <Trash2 /> Delete chat
+                          <Trash2 /> Move to Trash
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -145,7 +149,44 @@ export function CodeSidebar({ projectId, chatId, onSelect }: { projectId?: strin
         <ul className="grid gap-0.5">{projects.map(project)}</ul>
         {!projects.length && <p className="p-2 text-sm text-muted-foreground">Your code projects will appear here. Each project holds its files and its chats.</p>}
       </div>
+      <CodeTrash />
       <NewProject open={creating} onOpenChange={setCreating} onCreate={(p) => onSelect(p.id)} />
     </nav>
+  );
+}
+
+/** Put a Code chat back into its project (if the project still exists). */
+function restoreCodeChat(id: string) {
+  const t = getState().codeTrash?.find((x) => x.chat.id === id);
+  const p = t && getProject(t.projectId);
+  if (!t) return;
+  if (!p) return toast.error(`The project "${t.projectName}" no longer exists.`);
+  saveProject({ ...p, chats: [t.chat, ...(p.chats ?? []).filter((c) => c.id !== id)] });
+  update((s) => ({ ...s, codeTrash: (s.codeTrash ?? []).filter((x) => x.chat.id !== id) }));
+}
+
+/** The Code Trash: chats deleted from code projects, kept for 30 days. */
+export function CodeTrash() {
+  const trash = useStore((s) => s.codeTrash) ?? [];
+  if (!trash.length) return null;
+  return (
+    <details className="px-1 text-sm">
+      <summary className="cursor-pointer rounded-md px-2 py-1.5 text-muted-foreground hover:bg-accent">Trash ({trash.length})</summary>
+      <ul aria-label="Code Trash" className="grid gap-0.5 pt-1">
+        {trash.map((t) => (
+          <li key={t.chat.id} className="flex min-w-0 items-center gap-1 rounded-md px-2 py-1 hover:bg-accent">
+            <span className="min-w-0 flex-1 truncate" title={t.projectName}>
+              {t.chat.title || "New chat"}
+            </span>
+            <Button size="icon-xs" variant="ghost" aria-label={`Restore ${t.chat.title}`} onClick={() => restoreCodeChat(t.chat.id)}>
+              <Undo2 />
+            </Button>
+            <Button size="icon-xs" variant="ghost" aria-label={`Delete ${t.chat.title} for good`} onClick={() => update((s) => ({ ...s, codeTrash: (s.codeTrash ?? []).filter((x) => x.chat.id !== t.chat.id) }))}>
+              <Trash2 />
+            </Button>
+          </li>
+        ))}
+      </ul>
+    </details>
   );
 }

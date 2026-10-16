@@ -157,7 +157,7 @@ export function Sidebar({
   onOpenProject: (id: string) => void;
   workspace?: "chat" | "cowork";
 }) {
-  const trashCount = useStore((s) => s.trash?.length ?? 0);
+  const trashCount = useStore((s) => (s.trash ?? []).filter((t) => (t.workspace === "cowork") === (workspace === "cowork")).length);
   const allChats = useStore((s) => s.chats);
   const projects = useStore((s) => s.projects) ?? [];
   const chats = useMemo(() => allChats.filter((c) => (workspace === "cowork" ? c.workspace === "cowork" : c.workspace !== "cowork")), [allChats, workspace]);
@@ -281,21 +281,22 @@ export function AllChats({ activeId, onSelect, onNew, workspace = "chat" }: { ac
             Show more ({list.length - limit} more)
           </Button>
         )}
-        <Trash />
+        <Trash workspace={workspace} />
       </div>
     </div>
   );
 }
 
 /** Chats moved to the Trash: restore them, or delete them for good. Emptied after 30 days. */
-function Trash() {
-  const trash = useStore((s) => s.trash) ?? [];
+function Trash({ workspace }: { workspace: "chat" | "cowork" }) {
+  const all = useStore((s) => s.trash);
+  const trash = (all ?? []).filter((t) => (t.workspace === "cowork") === (workspace === "cowork"));
   if (!trash.length) return null;
   return (
     <section id="trash" aria-label="Trash" className="grid scroll-mt-4 gap-2 border-t pt-4">
       <div className="flex items-center gap-2">
         <h3 className="flex-1 font-medium">Trash</h3>
-        <Button size="sm" variant="ghost" onClick={() => deleteForever()}>
+        <Button size="sm" variant="ghost" onClick={() => trash.forEach((t) => deleteForever(t.id))}>
           Empty Trash
         </Button>
       </div>

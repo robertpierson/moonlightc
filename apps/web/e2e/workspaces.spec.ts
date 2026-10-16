@@ -134,7 +134,14 @@ test("code projects hold several chats, saved and reopened", async ({ page }) =>
   await openMenu(page);
   const list = page.getByRole("list", { name: "Chats in Tips" }).locator("visible=true");
   await list.getByRole("button", { name: "Options for chat hello code" }).click();
-  await page.getByRole("menuitem", { name: "Delete chat" }).click();
+  await page.getByRole("menuitem", { name: "Move to Trash" }).click();
   await expect(list).not.toContainText("hello code");
+  // Code has its own Trash: restoring puts the chat back in its project.
+  // Deleting the open chat returns to the project, which closes the phone's menu; open it again there.
+  await page.waitForTimeout(500);
+  if ((await page.getByRole("dialog").count()) === 0) await openMenu(page);
+  await page.getByText("Trash (1)").locator("visible=true").click();
+  await page.getByRole("button", { name: "Restore hello code" }).locator("visible=true").click();
+  await expect(list).toContainText("hello code");
   await expect(page.getByRole("button", { name: "Options for Tips" }).locator("visible=true")).toBeVisible();
 });

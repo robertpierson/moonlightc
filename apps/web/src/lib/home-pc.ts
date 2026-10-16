@@ -36,14 +36,16 @@ export async function findHomePc(): Promise<Device | undefined> {
   return (data?.[0] as Device | undefined) ?? undefined;
 }
 
-export async function connectHomePc(device: Device) {
-  set({ device, connecting: true, error: undefined });
+export async function connectHomePc(device: Device, tiers: Tier[] = ["files", "terminal", "chat"], quiet = false) {
+  if (!quiet) set({ device, connecting: true, error: undefined });
+  if (channel) supabase().removeChannel(channel);
+  channel = undefined;
   let ch: RealtimeChannel | undefined;
   try {
     ch = await joinChannel(device.id, { key: `client:${crypto.randomUUID()}` });
     const client = new RemoteClient(ch);
     await subscribed(ch);
-    const r = await client.call<{ allowed: boolean; tiers?: Tier[] }>("connect", { tiers: ["files", "terminal", "chat"] }, 130_000);
+    const r = await client.call<{ allowed: boolean; tiers?: Tier[] }>("connect", { tiers }, 130_000);
     if (!r.allowed) throw new Error("The home PC didn't allow this device.");
     channel = ch;
     set({ client, tiers: r.tiers ?? [], connecting: false });
@@ -61,6 +63,7 @@ export async function connectHomePc(device: Device) {
       }));
   } catch (e) {
     if (ch) supabase().removeChannel(ch);
+    if (quiet) return;
     set({ connecting: false, error: e instanceof Error ? e.message : String(e) });
   }
 }
@@ -120,6 +123,16 @@ export function homeChatStream(modelId: string, messages: UIMessage[], signal?: 
       ctl.close();
     },
   });
+}
+
+/** On your other devices: use the home PC's AI models (Claude Code, local models) without asking or sharing the
+ * screen. Needs two-step sign-in on this device; quietly does nothing otherwise. */
+export async function linkHomePcModels() {
+  if (state.client) return;
+  const { data } = await supabase().auth.mfa.getAuthenticatorAssuranceLevel();
+  if (data?.currentLevel !== "aal2") return;
+  const pc = await findHomePc().catch(() => undefined);
+  if (pc && Date.now() - Date.parse(pc.last_seen) < 3 * 60_000) await connectHomePc(pc, ["chat"], true);
 }
 
 /** Tools the AI gets in Cowork while the home PC is connected. Changes and commands ask the person first. */

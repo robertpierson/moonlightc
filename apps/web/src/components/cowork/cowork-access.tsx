@@ -83,7 +83,7 @@ function HomePcChip({ onSetup, onOpenScreen }: { onSetup: () => void; onOpenScre
         to work on your home PC
       </span>
     );
-  if (pc.client)
+  if (pc.client && pc.tiers.includes("files"))
     return (
       <>
         <span className="min-w-0 flex-1 truncate">AI can use {pc.device?.name}</span>
