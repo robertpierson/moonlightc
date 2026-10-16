@@ -450,13 +450,15 @@ test("game mode input: held keys, mouse buttons and relative mouse moves (CI onl
     await b.input("game-test", { action: "move_by", dx: 40, dy: -20 });
     await b.input("game-test", { action: "key_down", key: "shift" });
     await b.input("game-test", { action: "key_up", key: "shift" });
+    await b.input("game-test", { action: "wheel", amount: 1 });
     const bad = await b.input("game-test", { action: "key_down", key: "rm -rf" }).then(() => "ignored", (e) => String(e));
     await b.end("game-test", "test done");
     return { bad };
   });
   const p = robot.getMousePos();
-  expect(Math.abs(p.x - 340)).toBeLessThan(3);
-  expect(Math.abs(p.y - 280)).toBeLessThan(3);
+  // Raw mouse movement (what games read) goes through Windows' pointer speed, so only the direction is exact.
+  expect(p.x).toBeGreaterThan(300);
+  expect(p.y).toBeLessThan(300);
   expect(r.bad).toBe("ignored");
 });
 

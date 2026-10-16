@@ -302,6 +302,16 @@ function Screen({ client, control }: { client: RemoteClient; control: boolean })
       input({ action: e.type === "mousedown" ? "mouse_down" : "mouse_up", button: e.button === 2 ? "right" : "left" });
     };
     const blockMenu = (e: MouseEvent) => document.pointerLockElement && e.preventDefault();
+    // The scroll wheel goes to the game (hotbar, zoom), not the page.
+    let lastWheel = 0;
+    const wheel = (e: WheelEvent) => {
+      if (!document.pointerLockElement) return;
+      e.preventDefault();
+      if (Date.now() - lastWheel < 40 || !e.deltaY) return;
+      lastWheel = Date.now();
+      input({ action: "wheel", amount: e.deltaY > 0 ? -1 : 1 });
+    };
+    addEventListener("wheel", wheel, { passive: false });
     addEventListener("keydown", key, true);
     addEventListener("keyup", key, true);
     addEventListener("mousemove", move);
@@ -315,6 +325,7 @@ function Screen({ client, control }: { client: RemoteClient; control: boolean })
       removeEventListener("mousedown", button);
       removeEventListener("mouseup", button);
       removeEventListener("contextmenu", blockMenu);
+      removeEventListener("wheel", wheel);
       for (const k of down) input({ action: "key_up", key: k });
       if (document.pointerLockElement) document.exitPointerLock();
       (navigator as Navigator & { keyboard?: { unlock(): void } }).keyboard?.unlock();
@@ -354,7 +365,7 @@ function Screen({ client, control }: { client: RemoteClient; control: boolean })
       input({ action: "right_click", ...at(e) });
     },
     onWheel: (e: React.WheelEvent) => {
-      if (!control || Date.now() - lastWheel.current < 120) return;
+      if (!control || game || Date.now() - lastWheel.current < 120) return;
       lastWheel.current = Date.now();
       input({ action: "scroll", amount: e.deltaY > 0 ? -3 : 3, ...at(e) });
     },

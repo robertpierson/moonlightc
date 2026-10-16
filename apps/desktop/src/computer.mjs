@@ -3,6 +3,7 @@
 // and every action is written to an audit log.
 import robot from "@jitsi/robotjs";
 import { app, BrowserWindow, desktopCapturer, dialog, screen } from "electron";
+import { createRequire } from "node:module";
 import fs from "node:fs";
 import path from "node:path";
 import { looksDestructive } from "./safety.mjs";
@@ -137,6 +138,23 @@ export async function runAction(a, sc) {
   }
 }
 
+// Raw relative mouse movement (Windows): games read these like a real mouse; moving the cursor to a spot
+// doesn't turn the view, because games pull the cursor back to the middle.
+let sendMove;
+function rawMove(dx, dy) {
+  if (process.platform !== "win32") return false;
+  if (!sendMove) {
+    const koffi = createRequire(import.meta.url)("koffi");
+    const MOUSEINPUT = koffi.struct("MOUSEINPUT", { dx: "long", dy: "long", mouseData: "uint32", dwFlags: "uint32", time: "uint32", dwExtraInfo: "uintptr_t" });
+    const INPUT = koffi.struct("INPUT", { type: "uint32", mi: MOUSEINPUT });
+    const SendInput = koffi.load("user32.dll").func("unsigned int __stdcall SendInput(unsigned int cInputs, INPUT *pInputs, int cbSize)");
+    const size = koffi.sizeof(INPUT);
+    sendMove = (x, y) => SendInput(1, [{ type: 0, mi: { dx: x, dy: y, mouseData: 0, dwFlags: 0x0001, time: 0, dwExtraInfo: 0 } }], size);
+  }
+  sendMove(dx, dy);
+  return true;
+}
+
 /** Game mode: hold keys and buttons, and move the mouse by an amount (for looking around in games). */
 const held = new Set();
 export function hold(a) {
@@ -149,9 +167,13 @@ export function hold(a) {
   } else if (a.action === "mouse_down" || a.action === "mouse_up") {
     robot.mouseToggle(a.action === "mouse_down" ? "down" : "up", a.button === "right" ? "right" : "left");
   } else if (a.action === "move_by") {
-    const p = robot.getMousePos();
     const clamp = (n) => Math.max(-400, Math.min(400, Math.round(Number(n) || 0)));
-    robot.moveMouse(p.x + clamp(a.dx), p.y + clamp(a.dy));
+    if (!rawMove(clamp(a.dx), clamp(a.dy))) {
+      const p = robot.getMousePos();
+      robot.moveMouse(p.x + clamp(a.dx), p.y + clamp(a.dy));
+    }
+  } else if (a.action === "wheel") {
+    robot.scrollMouse(0, Math.sign(Number(a.amount) || 0) * 120);
   }
 }
 /** Let go of everything (when a session ends), so no key stays stuck down. */
