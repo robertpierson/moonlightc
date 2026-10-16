@@ -421,6 +421,9 @@ test("your Claude Code is a model in Chat (if installed)", async () => {
   await page.getByRole("button", { name: "Chat", exact: true }).click();
   await page.getByRole("button", { name: "New chat" }).first().click();
   await page.getByRole("combobox", { name: "Choose model" }).click();
+  // With several companies connected, pick Claude Code first; with one, its models show straight away.
+  const company = page.getByRole("option", { name: /Claude Code \(your plan\)/ });
+  if (await company.isVisible().catch(() => false)) await company.click();
   await page.getByRole("option", { name: /Sonnet 5\.5/ }).click();
   await page.getByLabel("Message", { exact: true }).fill("What is 4242 plus 1? Reply with the number only.");
   await page.getByRole("button", { name: "Send message" }).click();
