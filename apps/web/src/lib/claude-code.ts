@@ -28,20 +28,20 @@ export async function syncClaudeCode() {
 }
 
 const KEY = "moonc:claude-code-sessions";
-const sessions = (): Record<string, string> => {
+export const sessions = (): Record<string, string> => {
   try {
     return JSON.parse(localStorage.getItem(KEY) ?? "{}");
   } catch {
     return {};
   }
 };
-const remember = (chat: string, sid: string) => {
+export const remember = (chat: string, sid: string) => {
   try {
     localStorage.setItem(KEY, JSON.stringify({ ...sessions(), [chat]: sid }));
   } catch {}
 };
 
-const friendly = (msg = "") =>
+export const friendly = (msg = "") =>
   /authenticat|log ?in|expired/i.test(msg)
     ? "Claude Code needs you to sign in again: in Code > Terminal type claude, press Enter, then type /login."
     : /usage credits/i.test(msg)
@@ -49,6 +49,14 @@ const friendly = (msg = "") =>
       : msg || "Claude Code stopped.";
 
 const textOf = (m: UIMessage) => m.parts.flatMap((p) => (p.type === "text" ? [p.text] : [])).join("\n");
+
+/** What to send: the new message, or (for a new Claude Code session in an ongoing chat) the conversation so far. */
+export function claudePrompt(messages: UIMessage[], sid?: string) {
+  const lastAt = messages.findLastIndex((m) => m.role === "user");
+  const last = textOf(messages[lastAt]);
+  const earlier = messages.slice(0, lastAt).filter((m) => textOf(m).trim());
+  return sid || !earlier.length ? last : `Earlier in this conversation:\n\n${earlier.map((m) => `${m.role === "user" ? "Me" : "You"}: ${textOf(m)}`).join("\n\n")}\n\nNow: ${last}`;
+}
 
 /** A reply from Claude Code, in the AI SDK's chat format. Each MoonlightC chat keeps its own Claude Code session. */
 export function claudeCodeStream(model: string, messages: UIMessage[], chatId: string, signal?: AbortSignal): ReadableStream<UIMessageChunk> {
@@ -58,11 +66,7 @@ export function claudeCodeStream(model: string, messages: UIMessage[], chatId: s
       const id = crypto.randomUUID();
       const tid = `cc-${id}`;
       const sid = sessions()[chatId];
-      const lastAt = messages.findLastIndex((m) => m.role === "user");
-      const last = textOf(messages[lastAt]);
-      const earlier = messages.slice(0, lastAt).filter((m) => textOf(m).trim());
-      // A new session (first message, or a chat started with another model) gets the conversation so far.
-      const prompt = sid || !earlier.length ? last : `Earlier in this conversation:\n\n${earlier.map((m) => `${m.role === "user" ? "Me" : "You"}: ${textOf(m)}`).join("\n\n")}\n\nNow: ${last}`;
+      const prompt = claudePrompt(messages, sid);
       let done = false;
       let wrote = false;
       ctl.enqueue({ type: "start" });

@@ -8,7 +8,7 @@ export function routeLocal(net: ChatTransport<UIMessage>, body: () => unknown): 
     sendMessages: (o) => {
       const b = body() as { connection?: { providerId?: string }; modelId?: string } | undefined;
       const provider = b?.connection?.providerId;
-      if (provider === "home-pc") return Promise.resolve(homeChatStream(b?.modelId ?? "", o.messages, o.abortSignal));
+      if (provider === "home-pc") return Promise.resolve(homeChatStream(b?.modelId ?? "", o.messages, o.abortSignal, o.chatId));
       if (provider === "claude-code") return Promise.resolve(claudeCodeStream(b?.modelId ?? "", o.messages, o.chatId, o.abortSignal));
       return net.sendMessages(o);
     },

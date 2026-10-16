@@ -137,6 +137,31 @@ export async function runAction(a, sc) {
   }
 }
 
+/** Game mode: hold keys and buttons, and move the mouse by an amount (for looking around in games). */
+const held = new Set();
+export function hold(a) {
+  if (a.action === "key_down" || a.action === "key_up") {
+    const key = String(a.key ?? "").toLowerCase();
+    if (!/^[a-z0-9]$|^(space|enter|escape|tab|backspace|shift|control|alt|up|down|left|right|f\d{1,2})$/.test(key)) return;
+    robot.keyToggle(key, a.action === "key_down" ? "down" : "up");
+    if (a.action === "key_down") held.add(key);
+    else held.delete(key);
+  } else if (a.action === "mouse_down" || a.action === "mouse_up") {
+    robot.mouseToggle(a.action === "mouse_down" ? "down" : "up", a.button === "right" ? "right" : "left");
+  } else if (a.action === "move_by") {
+    const p = robot.getMousePos();
+    const clamp = (n) => Math.max(-400, Math.min(400, Math.round(Number(n) || 0)));
+    robot.moveMouse(p.x + clamp(a.dx), p.y + clamp(a.dy));
+  }
+}
+/** Let go of everything (when a session ends), so no key stays stuck down. */
+export function releaseAll() {
+  for (const k of held) robot.keyToggle(k, "up");
+  held.clear();
+  robot.mouseToggle("up", "left");
+  robot.mouseToggle("up", "right");
+}
+
 /** The screen's size in the pixels the mouse uses (correct with display scaling too). */
 export const screenPixels = () => robot.getScreenSize();
 

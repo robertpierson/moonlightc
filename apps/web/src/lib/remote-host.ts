@@ -79,10 +79,45 @@ export function createHostHandler(
         pc.addEventListener("connectionstatechange", () => {
           if (pc.connectionState === "failed" || pc.connectionState === "closed") closeRtc(req.from);
         });
+        // Mouse and keyboard over the same direct connection (much faster than the server channel);
+        // every event is still checked by the desktop app ("use the mouse and keyboard" must be allowed).
+        pc.addEventListener("datachannel", (e) =>
+          e.channel.addEventListener("message", (m) => {
+            try {
+              b.remote.input(req.from, JSON.parse(String(m.data))).catch(() => {});
+            } catch {}
+          }),
+        );
         await pc.setRemoteDescription({ type: "offer", sdp: String(p.sdp ?? "") });
         await pc.setLocalDescription(await pc.createAnswer());
         await gathered(pc);
         return { sdp: pc.localDescription?.sdp };
+      }
+      // Claude Code on this PC, for your other devices (needs "chat with the AI models on this PC").
+      case "claude.status":
+        await need(req, "chat");
+        return b.claude.status();
+      case "claude": {
+        await need(req, "chat");
+        const reqId = String(p.reqId ?? req.id).slice(0, 64);
+        const runId = crypto.randomUUID();
+        const off = b.claude.onEvent((id, raw) => {
+          if (id !== runId) return;
+          let e: { type?: string; subtype?: string; is_error?: boolean; session_id?: string; result?: string; message?: { content?: { type: string; text?: string }[] } };
+          try {
+            e = JSON.parse(raw);
+          } catch {
+            return;
+          }
+          const text = e.type === "assistant" ? (e.message?.content ?? []).flatMap((c) => (c.type === "text" && c.text ? [c.text] : [])).join("\n\n") : "";
+          if (text || e.session_id) send("chat", { to: req.from, reqId, delta: text, session: e.session_id });
+          if (e.type === "result" || e.type === "exit") {
+            off();
+            send("chat", { to: req.from, reqId, done: true, ...(e.type === "result" && (e.is_error || e.subtype !== "success") ? { error: e.result || "Claude Code stopped." } : {}) });
+          }
+        });
+        await b.claude.run(runId, String(p.prompt ?? "").slice(0, 100_000), p.session ? String(p.session) : undefined, String(p.model ?? ""));
+        return { started: true };
       }
       case "rtc.stop":
         closeRtc(req.from);

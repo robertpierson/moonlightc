@@ -51,7 +51,7 @@ export function subscribed(ch: RealtimeChannel) {
 export class RemoteClient {
   private pending = new Map<string, { resolve: (v: unknown) => void; reject: (e: Error) => void; timer: ReturnType<typeof setTimeout> }>();
   private onTerm = new Map<string, (data: string) => void>();
-  private onChat = new Map<string, (delta: { delta?: string; done?: boolean; error?: string }) => void>();
+  private onChat = new Map<string, (delta: { delta?: string; done?: boolean; error?: string; session?: string }) => void>();
   readonly me = thisClient();
   constructor(private ch: RealtimeChannel) {
     ch.on("broadcast", { event: "res" }, ({ payload }) => {
@@ -89,7 +89,7 @@ export class RemoteClient {
     this.onTerm.set(termId, cb);
     return () => this.onTerm.delete(termId);
   }
-  listenChat(reqId: string, cb: (c: { delta?: string; done?: boolean; error?: string }) => void) {
+  listenChat(reqId: string, cb: (c: { delta?: string; done?: boolean; error?: string; session?: string }) => void) {
     this.onChat.set(reqId, cb);
     return () => this.onChat.delete(reqId);
   }

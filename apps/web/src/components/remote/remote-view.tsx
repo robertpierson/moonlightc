@@ -2,7 +2,7 @@
 
 import "@xterm/xterm/css/xterm.css";
 import type { RealtimeChannel } from "@supabase/supabase-js";
-import { ArrowDown, ArrowLeft, ArrowUp, Download, FileIcon, Folder, Loader2, Maximize, Minimize, Monitor, Power, Upload, Volume2, VolumeX, ZoomIn, ZoomOut } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, Download, FileIcon, Folder, Loader2, Maximize, Minimize, Monitor, Power, Gamepad2, Upload, Volume2, VolumeX, ZoomIn, ZoomOut } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { TwoStepGate } from "@/components/account/two-step-gate";
@@ -142,6 +142,12 @@ export function RemoteView({ deviceId, onSetup }: { deviceId: string; onSetup: (
 
 type Live = "connecting" | "video" | "pictures";
 const ZOOMS = [1, 1.5, 2, 3];
+// Game mode: physical keys (e.code) to the PC's key names, so holding W walks.
+const CODES = (code: string) =>
+  /^Key[A-Z]$/.test(code) ? code.slice(3).toLowerCase()
+  : /^Digit\d$/.test(code) ? code.slice(5)
+  : /^F\d{1,2}$/.test(code) ? code.toLowerCase()
+  : ({ Space: "space", Enter: "enter", Escape: "escape", Tab: "tab", Backspace: "backspace", ShiftLeft: "shift", ShiftRight: "shift", ControlLeft: "control", ControlRight: "control", AltLeft: "alt", AltRight: "alt", ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right" } as Record<string, string>)[code];
 const KEYS: Record<string, string> = { Enter: "enter", Backspace: "backspace", Tab: "tab", Escape: "escape", Delete: "delete", ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right", Home: "home", End: "end", PageUp: "pageup", PageDown: "pagedown" };
 
 function Screen({ client, control }: { client: RemoteClient; control: boolean }) {
@@ -154,6 +160,10 @@ function Screen({ client, control }: { client: RemoteClient; control: boolean })
   const [volume, setVolume] = useState(0.8);
   const [hasAudio, setHasAudio] = useState(false);
   const video = useRef<HTMLVideoElement>(null);
+  // Input goes over the direct video connection when it's up (fast), otherwise through the server.
+  const dc = useRef<RTCDataChannel | undefined>(undefined);
+  const [game, setGame] = useState(false);
+  const [speed, setSpeed] = useState(1);
   useEffect(() => {
     const v = video.current;
     if (!v) return;
@@ -190,6 +200,7 @@ function Screen({ client, control }: { client: RemoteClient; control: boolean })
         pc = new RTCPeerConnection({ iceServers: ICE });
         pc.addTransceiver("video", { direction: "recvonly" });
         pc.addTransceiver("audio", { direction: "recvonly" });
+        dc.current = pc.createDataChannel("input");
         pc.addEventListener("track", (e) => e.track.kind === "audio" && setHasAudio(true));
         const track = new Promise<MediaStream>((resolve) => pc!.addEventListener("track", (e) => resolve(e.streams[0] ?? new MediaStream([e.track]))));
         await pc.setLocalDescription(await pc.createOffer());
@@ -222,7 +233,7 @@ function Screen({ client, control }: { client: RemoteClient; control: boolean })
   useEffect(() => {
     if (live !== "pictures") return;
     let on = true;
-    (async () => {
+    const loop = async () => {
       while (on) {
         try {
           const f = await client.call<{ image: string; width: number; height: number }>("frame");
@@ -242,13 +253,80 @@ function Screen({ client, control }: { client: RemoteClient; control: boolean })
           await new Promise((r) => setTimeout(r, 2000));
         }
       }
-    })();
+    };
+    loop();
+    setTimeout(loop, 150); // a second request in flight roughly doubles the picture rate
     return () => {
       on = false;
     };
   }, [live, client]);
 
-  const input = (a: Record<string, unknown>) => client.call("input", a).catch((e: Error) => toast.error(e.message));
+  const input = (a: Record<string, unknown>) => {
+    if (dc.current?.readyState === "open") return void dc.current.send(JSON.stringify(a));
+    client.call("input", a).catch((e: Error) => toast.error(e.message));
+  };
+  // Game mode: keys are held (not typed), the mouse is captured and moves the view, Escape goes to the game.
+  useEffect(() => {
+    if (!game || !control) return;
+    const down = new Set<string>();
+    let dx = 0;
+    let dy = 0;
+    let frame = 0;
+    const flush = () => {
+      frame = 0;
+      if (dx || dy) input({ action: "move_by", dx: Math.round(dx), dy: Math.round(dy) });
+      dx = dy = 0;
+    };
+    const key = (e: KeyboardEvent) => {
+      const k = CODES(e.code);
+      if (!k) return;
+      e.preventDefault();
+      if (e.type === "keydown") {
+        if (down.has(k)) return;
+        down.add(k);
+        input({ action: "key_down", key: k });
+      } else {
+        down.delete(k);
+        input({ action: "key_up", key: k });
+      }
+    };
+    const move = (e: MouseEvent) => {
+      if (!document.pointerLockElement) return;
+      dx += e.movementX * speed;
+      dy += e.movementY * speed;
+      frame ||= requestAnimationFrame(flush);
+    };
+    const button = (e: MouseEvent) => {
+      if (!document.pointerLockElement) return;
+      e.preventDefault();
+      input({ action: e.type === "mousedown" ? "mouse_down" : "mouse_up", button: e.button === 2 ? "right" : "left" });
+    };
+    const blockMenu = (e: MouseEvent) => document.pointerLockElement && e.preventDefault();
+    addEventListener("keydown", key, true);
+    addEventListener("keyup", key, true);
+    addEventListener("mousemove", move);
+    addEventListener("mousedown", button);
+    addEventListener("mouseup", button);
+    addEventListener("contextmenu", blockMenu);
+    return () => {
+      removeEventListener("keydown", key, true);
+      removeEventListener("keyup", key, true);
+      removeEventListener("mousemove", move);
+      removeEventListener("mousedown", button);
+      removeEventListener("mouseup", button);
+      removeEventListener("contextmenu", blockMenu);
+      for (const k of down) input({ action: "key_up", key: k });
+      if (document.pointerLockElement) document.exitPointerLock();
+      (navigator as Navigator & { keyboard?: { unlock(): void } }).keyboard?.unlock();
+      cancelAnimationFrame(frame);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- input reads the live connection
+  }, [game, control, speed]);
+  const capture = (el: HTMLElement) => {
+    el.requestPointerLock?.();
+    // In full screen, Chrome lets the page keep Escape (hold Esc to leave full screen).
+    (navigator as Navigator & { keyboard?: { lock(keys?: string[]): Promise<void> } }).keyboard?.lock().catch(() => {});
+  };
   // Where on the PC's screen, as fractions (works at any zoom or size).
   const at = (e: React.MouseEvent) => {
     const r = e.currentTarget.getBoundingClientRect();
@@ -263,14 +341,15 @@ function Screen({ client, control }: { client: RemoteClient; control: boolean })
     style: { width: `${zoom * 100}%`, maxWidth: "none", height: "auto" },
     onClick: (e: React.MouseEvent<HTMLElement>) => {
       if (!control) return;
+      if (game) return capture(e.currentTarget);
       e.currentTarget.focus();
       input({ action: "click", ...at(e) });
     },
     onDoubleClick: (e: React.MouseEvent) => {
-      if (control) input({ action: "double_click", ...at(e) });
+      if (control && !game) input({ action: "double_click", ...at(e) });
     },
     onContextMenu: (e: React.MouseEvent) => {
-      if (!control) return;
+      if (!control || game) return;
       e.preventDefault();
       input({ action: "right_click", ...at(e) });
     },
@@ -281,7 +360,7 @@ function Screen({ client, control }: { client: RemoteClient; control: boolean })
     },
     // Typing while the screen is selected goes straight to the PC.
     onKeyDown: (e: React.KeyboardEvent) => {
-      if (!control) return;
+      if (!control || game) return;
       const mods = [e.ctrlKey && "control", e.altKey && "alt", e.shiftKey && e.key.length > 1 && "shift"].filter(Boolean) as string[];
       if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) input({ action: "type", text: e.key });
       else if (KEYS[e.key] || (e.key.length === 1 && (e.ctrlKey || e.altKey))) input({ action: "key", keys: [...mods, KEYS[e.key] ?? e.key.toLowerCase()].join("+") });
@@ -295,8 +374,19 @@ function Screen({ client, control }: { client: RemoteClient; control: boolean })
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-xs text-muted-foreground" role="status">
           {live === "video" ? "Live video" : live === "pictures" ? "Pictures (this network blocks live video)" : "Connecting…"}
+          {game && " · Game mode: click the screen to capture the mouse; in full screen hold Esc to leave"}
         </span>
         <span className="flex-1" />
+        {control && (
+          <>
+            <Button size="sm" variant="secondary" aria-pressed={game} onClick={() => setGame((g) => !g)} title="Hold keys like WASD, look around with the mouse, and send Escape to the game">
+              <Gamepad2 /> Game mode
+            </Button>
+            {game && (
+              <input type="range" aria-label="Mouse speed" min={0.25} max={3} step={0.25} value={speed} onChange={(e) => setSpeed(Number(e.target.value))} className="w-20 accent-primary" />
+            )}
+          </>
+        )}
         {live === "video" && hasAudio && (
           <>
             <Button size="icon-sm" variant="secondary" aria-label={sound ? "Turn sound off" : "Turn sound on"} aria-pressed={sound} onClick={() => setSound((v) => !v)}>

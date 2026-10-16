@@ -440,6 +440,26 @@ test("terminal: Ctrl+V pastes (e.g. a sign-in code)", async () => {
   await expect(term).toContainText("pasted-ok-123", { timeout: 15_000 });
 });
 
+test("game mode input: held keys, mouse buttons and relative mouse moves (CI only: moves the real mouse)", async () => {
+  test.skip(!process.env.CI, "moves the real mouse and keyboard");
+  const robot = (await import("@jitsi/robotjs")).default;
+  robot.moveMouse(300, 300);
+  const r = await page.evaluate(async () => {
+    const b = window.moonc.remote;
+    await b.connect({ id: "game-test", name: "Game test" }, ["view", "control"]);
+    await b.input("game-test", { action: "move_by", dx: 40, dy: -20 });
+    await b.input("game-test", { action: "key_down", key: "shift" });
+    await b.input("game-test", { action: "key_up", key: "shift" });
+    const bad = await b.input("game-test", { action: "key_down", key: "rm -rf" }).then(() => "ignored", (e) => String(e));
+    await b.end("game-test", "test done");
+    return { bad };
+  });
+  const p = robot.getMousePos();
+  expect(Math.abs(p.x - 340)).toBeLessThan(3);
+  expect(Math.abs(p.y - 280)).toBeLessThan(3);
+  expect(r.bad).toBe("ignored");
+});
+
 test("finds API keys already set up on this PC (shown masked, added only when picked)", async () => {
   const found = await page.evaluate(() => window.moonc.keys.scan());
   const k = found.find((x) => x.source === "MISTRAL_API_KEY");

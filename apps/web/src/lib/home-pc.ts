@@ -4,6 +4,7 @@ import type { RealtimeChannel } from "@supabase/supabase-js";
 import { useSyncExternalStore } from "react";
 import { joinChannel, RemoteClient, subscribed, type Device, type Tier } from "./remote";
 import type { UIMessage, UIMessageChunk } from "ai";
+import { CLAUDE_CODE_MODELS, claudePrompt, friendly, remember, sessions } from "./claude-code";
 import { update } from "./store";
 import { supabase } from "./supabase/client";
 
@@ -48,6 +49,11 @@ export async function connectHomePc(device: Device) {
     set({ client, tiers: r.tiers ?? [], connecting: false });
     // Its local models show up in the model picker on this device (never synced: they only work through this link).
     const models = (device.local_models ?? []).map((m) => ({ id: m, name: m }));
+    // Claude Code on the home PC (your own login there) works from here too.
+    if (r.tiers?.includes("chat")) {
+      const cc = await client.call<{ installed: boolean }>("claude.status", {}, 30_000).catch(() => ({ installed: false }));
+      if (cc.installed) models.unshift(...CLAUDE_CODE_MODELS.map((m) => ({ id: `claude-code:${m.id}`, name: `Claude Code · ${m.name}` })));
+    }
     if (models.length && r.tiers?.includes("chat"))
       update((s) => ({
         ...s,
@@ -69,7 +75,9 @@ export async function disconnectHomePc() {
 export const HOME_CONN = "home-pc";
 
 /** A chat reply from a local model on the home PC, streamed back over the remote link in the AI SDK's format. */
-export function homeChatStream(modelId: string, messages: UIMessage[], signal?: AbortSignal): ReadableStream<UIMessageChunk> {
+export function homeChatStream(modelId: string, messages: UIMessage[], signal?: AbortSignal, chatId = ""): ReadableStream<UIMessageChunk> {
+  const claude = modelId.startsWith("claude-code:");
+  const key = `home:${chatId}`;
   const c = state.client;
   return new ReadableStream<UIMessageChunk>({
     async start(ctl) {
@@ -84,8 +92,9 @@ export function homeChatStream(modelId: string, messages: UIMessage[], signal?: 
       ctl.enqueue({ type: "text-start", id });
       const finished = new Promise<void>((resolve) => {
         const off = c.listenChat(reqId, (d) => {
+          if (d.session) remember(key, d.session);
           if (d.delta) ctl.enqueue({ type: "text-delta", id, delta: d.delta });
-          if (d.error) ctl.enqueue({ type: "error", errorText: d.error });
+          if (d.error) ctl.enqueue({ type: "error", errorText: claude ? friendly(d.error) : d.error });
           if (d.done) {
             off();
             resolve();
@@ -100,7 +109,8 @@ export function homeChatStream(modelId: string, messages: UIMessage[], signal?: 
         .map((m) => ({ role: m.role, content: m.parts.flatMap((p) => (p.type === "text" ? [p.text] : [])).join("\n") }))
         .filter((m) => m.content);
       try {
-        await c.call("chat", { model: modelId, messages: plain, reqId }, 30_000);
+        if (claude) await c.call("claude", { model: modelId.slice("claude-code:".length), prompt: claudePrompt(messages, sessions()[key]), session: sessions()[key], reqId }, 30_000);
+        else await c.call("chat", { model: modelId, messages: plain, reqId }, 30_000);
         await finished;
       } catch (e) {
         ctl.enqueue({ type: "error", errorText: e instanceof Error ? e.message : String(e) });

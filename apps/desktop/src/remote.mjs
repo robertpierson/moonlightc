@@ -7,12 +7,13 @@ import { exec as runShell } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { captureJpeg, runAction, screenPixels } from "./computer.mjs";
+import { captureJpeg, hold, releaseAll, runAction, screenPixels } from "./computer.mjs";
 
 const IDLE_MS = 15 * 60_000;
 const MAX_FILE = 10 * 1024 * 1024;
 export const TIERS = { view: "See the screen and hear its sound", control: "Use the mouse and keyboard", files: "Browse, download and upload files in your home folder", terminal: "Run commands in a terminal", chat: "Chat with the AI models on this PC" };
-const INPUTS = new Set(["click", "double_click", "right_click", "move", "type", "key", "scroll"]);
+const INPUTS = new Set(["click", "double_click", "right_click", "move", "type", "key", "scroll", "key_down", "key_up", "mouse_down", "mouse_up", "move_by"]);
+const HOLDS = new Set(["key_down", "key_up", "mouse_down", "mouse_up", "move_by"]);
 
 const sessions = new Map(); // clientId -> { name, tiers, startedAt, timer }
 let overlay;
@@ -84,6 +85,7 @@ export function end(clientId, reason = "disconnected") {
     clearTimeout(s.timer);
     sessions.delete(id);
     audit("end", { clientId: id, name: s.name, reason });
+    releaseAll();
   }
   if (!sessions.size) {
     overlay?.destroy();
@@ -169,8 +171,8 @@ export async function connect(parent, client, wanted) {
 export async function frame(clientId) {
   need(clientId, "view");
   // Realtime messages have a size cap; busy screens get a smaller, softer frame instead of not arriving at all.
-  let f = await captureJpeg(1024, 55);
-  if (f.image.length > 160_000) f = await captureJpeg(900, 40);
+  let f = await captureJpeg(860, 45);
+  if (f.image.length > 160_000) f = await captureJpeg(760, 35);
   if (f.image.length > 160_000) f = await captureJpeg(720, 30);
   scale = f.scale;
   return { image: f.image, width: f.width, height: f.height };
@@ -179,6 +181,8 @@ export async function frame(clientId) {
 export async function input(clientId, a) {
   need(clientId, "control");
   if (!a || !INPUTS.has(a.action)) throw new Error("Unknown action.");
+  // Game mode sends many small events; they skip the activity log (one "game input" entry per session would be noise).
+  if (HOLDS.has(a.action)) return (hold(a), { ok: true });
   // Positions can come as fractions of the screen (0-1), which works at any size the other device shows it.
   const frac = (v) => typeof v === "number" && v >= 0 && v <= 1;
   if (frac(a.nx) && frac(a.ny)) {
