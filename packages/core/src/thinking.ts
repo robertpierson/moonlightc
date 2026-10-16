@@ -13,6 +13,8 @@ const openaiReasoning = (id: string) => /^(gpt-5|o\d)/.test(id);
 
 /** Levels this model accepts (empty: it has no thinking setting). */
 export function thinkingLevels(providerId: string, modelId: string): ThinkingLevel[] {
+  // Claude Code (on this PC or the home PC) takes the same effort levels as Claude itself.
+  if (providerId === "claude-code" || (providerId === "home-pc" && modelId.startsWith("claude-code:"))) return thinkingLevels("anthropic", modelId.replace(/^claude-code:/, ""));
   if (providerId === "anthropic" && claudeAdaptive(modelId)) return claudeNoXhigh(modelId) ? ["low", "medium", "high", "max"] : ["low", "medium", "high", "xhigh", "max"];
   // Gemini 2.5 Flash models can think not at all; Pro always thinks a little.
   if (providerId === "google" && gemini25(modelId) && /flash/.test(modelId)) return ["off", "low", "medium", "high"];

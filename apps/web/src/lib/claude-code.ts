@@ -59,7 +59,7 @@ export function claudePrompt(messages: UIMessage[], sid?: string) {
 }
 
 /** A reply from Claude Code, in the AI SDK's chat format. Each MoonlightC chat keeps its own Claude Code session. */
-export function claudeCodeStream(model: string, messages: UIMessage[], chatId: string, signal?: AbortSignal): ReadableStream<UIMessageChunk> {
+export function claudeCodeStream(model: string, messages: UIMessage[], chatId: string, signal?: AbortSignal, effort?: string): ReadableStream<UIMessageChunk> {
   const b = desktop()!;
   return new ReadableStream<UIMessageChunk>({
     start(ctl) {
@@ -104,7 +104,7 @@ export function claudeCodeStream(model: string, messages: UIMessage[], chatId: s
         b.claude.stop(id);
         finish();
       });
-      b.claude.run(id, prompt, sid, model);
+      b.claude.run(id, prompt, sid, model, effort);
     },
   });
 }

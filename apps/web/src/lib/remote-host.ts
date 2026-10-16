@@ -134,7 +134,7 @@ export function createHostHandler(
             send("chat", { to: req.from, reqId, done: true, ...(e.type === "result" && (e.is_error || e.subtype !== "success") ? { error: e.result || "Claude Code stopped." } : {}) });
           }
         });
-        await b.claude.run(runId, String(p.prompt ?? "").slice(0, 100_000), p.session ? String(p.session) : undefined, String(p.model ?? ""));
+        await b.claude.run(runId, String(p.prompt ?? "").slice(0, 100_000), p.session ? String(p.session) : undefined, String(p.model ?? ""), p.effort ? String(p.effort) : undefined);
         return { started: true };
       }
       case "rtc.stop":

@@ -1,6 +1,7 @@
 "use client";
 
-import { FolderOpen, Globe, Loader2, Monitor } from "lucide-react";
+import { ChevronDown, FolderOpen, Globe, Loader2, Monitor, Plug, Unplug } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useEffect, useRef, useState } from "react";
 import { TwoStepGate } from "@/components/account/two-step-gate";
 import { Button } from "@/components/ui/button";
@@ -83,36 +84,42 @@ function HomePcChip({ onSetup, onOpenScreen }: { onSetup: () => void; onOpenScre
         to work on your home PC
       </span>
     );
-  if (pc.client && pc.tiers.includes("files"))
-    return (
-      <>
-        <span className="min-w-0 flex-1 truncate">AI can use {pc.device?.name}</span>
-        <Button size="xs" variant="outline" onClick={() => pc.device && onOpenScreen(pc.device.id)}>
-          See screen
-        </Button>
-        <Button size="xs" variant="outline" onClick={() => disconnectHomePc()}>
-          Disconnect
-        </Button>
-      </>
-    );
   if (found === undefined) return <Loader2 className="animate-spin" aria-label="Looking for your home PC" />;
   if (!found) return <span className="text-muted-foreground">Your files: pick a home PC in the desktop app (Settings &gt; Remote control)</span>;
+  const linked = !!pc.client && pc.tiers.includes("files");
+  // One menu for the home PC: connect the AI to it, or remote-control its screen.
   return (
     <>
       <span className="min-w-0 flex-1">
-        {pc.connecting ? `Approve on ${found.name}…` : `Home PC: ${found.name}`}
+        <span className="block truncate">Home PC: {found.name}</span>
+        <span className="block truncate text-xs text-muted-foreground">{pc.connecting ? "Connecting…" : linked ? "Connected: the AI can use its files and models" : pc.client ? "Its AI models are ready" : "Not connected"}</span>
         {pc.error && !pc.connecting && (
           <span role="alert" className="block text-xs text-destructive">
             {pc.error}
           </span>
         )}
       </span>
-      <Button size="xs" variant="outline" onClick={() => onOpenScreen(found.id)}>
-        See screen
-      </Button>
-      <Button size="xs" variant="outline" disabled={pc.connecting} onClick={() => connect(found)} title="Let the AI read and change files and run commands there">
-        Let AI use it
-      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button size="xs" variant="outline" disabled={pc.connecting}>
+            {linked ? "Connected" : "Connect"} <ChevronDown />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          {linked ? (
+            <DropdownMenuItem onSelect={() => disconnectHomePc()}>
+              <Unplug /> Disconnect
+            </DropdownMenuItem>
+          ) : (
+            <DropdownMenuItem onSelect={() => connect(found)}>
+              <Plug /> Connect (AI uses its files and models)
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuItem onSelect={() => onOpenScreen(found.id)}>
+            <Monitor /> Remote control (see the screen)
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
       <Dialog open={unlock} onOpenChange={setUnlock}>
         <DialogContent>
           <DialogHeader>

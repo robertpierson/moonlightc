@@ -23,7 +23,7 @@ const Studio = dynamic(() => import("@/components/studio/studio").then((m) => m.
 const Projects = dynamic(() => import("@/components/desktop/projects").then((m) => m.Projects), { loading: () => <div className="flex-1" /> });
 const Terminals = dynamic(() => import("@/components/desktop/terminals").then((m) => m.Terminals), { ssr: false, loading: () => <div className="flex-1" /> });
 
-import { KeyRound, Menu } from "lucide-react";
+import { KeyRound, Menu, MessageSquare } from "lucide-react";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ThemeToggle } from "@/components/theme";
 import { Button } from "@/components/ui/button";
@@ -157,6 +157,7 @@ function Inner() {
   const [launch, setLaunch] = useState<LaunchRequest>();
   const [pendingFiles, setPendingFiles] = useState<FileUIPart[]>();
   const [pendingText, setPendingText] = useState<string>();
+  const [sideChat, setSideChat] = useState(false);
   const [draftProject, setDraftProject] = useState<string>();
   const projects = useStore((s) => s.projects) ?? [];
   const [quick] = useState(() => new URLSearchParams(location.search).has("quick"));
@@ -295,6 +296,61 @@ ${summary}
     setActiveId(c.id);
   };
 
+  // The chat itself, shown in Chat/Cowork, and in a side panel during remote control.
+  const chatView = (
+    <ChatView
+      key={chat.id}
+      cowork={view === "cowork"}
+      chat={chat}
+      model={model}
+      mode={mode}
+      modeSlot={(started) => (
+        <>
+        {projects.length > 0 && (
+          <Select
+            value={(saved ? chat.projectId : (draftProject)) ?? "none"}
+            onValueChange={(v) => {
+              const id = v === "none" ? undefined : v;
+              if (saved) patchChat(chat.id, { projectId: id });
+              else setDraftProject(id);
+            }}
+          >
+            <SelectTrigger size="sm" aria-label="Project" className="h-8 w-auto max-w-40 gap-1 border-0 bg-transparent shadow-none dark:bg-transparent">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">No project</SelectItem>
+              {projects.map((p) => (
+                <SelectItem key={p.id} value={p.id}>
+                  {p.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+        <ModeSelect
+          value={mode.id}
+          lockPrivate={saved || started}
+          onChange={(id) => (saved ? patchChat(chat.id, { modeId: id }) : setDraftMode(id))}
+        />
+        {chatConns.length > 0 && (
+          <>
+            <ModelPicker compact id="composer-model" value={model} onChange={(r) => (saved ? patchChat(chat.id, { model: r }) : setDraftModel(r))} />
+            <ThinkingSelect model={model} />
+          </>
+        )}
+        </>
+      )}
+      onBranch={branch}
+      onOpenKeys={() => setKeysOpen(true)}
+      onOpenArtifact={setArtifact}
+      initialFiles={pendingFiles}
+      initialText={pendingText}
+      bigInput={look.bigInput}
+      projectId={saved ? chat.projectId : (draftProject)}
+    />
+  );
+
   const sidebar = (
     <div className="flex h-full min-h-0 flex-col" data-workspace={workspace}>
       <div className="grid gap-2 border-b p-2">
@@ -387,7 +443,31 @@ ${summary}
             </header>
           )}
           {view === "settings" && <Settings section={section} onSection={setSection} availableViews={availableViews()} onClose={() => go(workspace)} onChat={() => go("chat")} />}
-          {view === "remote" && remoteDevice && <RemoteView key={remoteDevice} deviceId={remoteDevice} onSetup={() => openSettings("account")} />}
+          {view === "remote" && remoteDevice && (
+            // Remote control with a chat you can open on the right (hidden behind the screen in full screen).
+            <div className="relative flex min-h-0 flex-1">
+              <RemoteView
+                key={remoteDevice}
+                deviceId={remoteDevice}
+                onSetup={() => openSettings("account")}
+                extra={
+                  <Button size="sm" variant="secondary" aria-pressed={sideChat} onClick={() => setSideChat((v) => !v)}>
+                    <MessageSquare /> {sideChat ? "Close chat" : "Chat"}
+                  </Button>
+                }
+              />
+              {sideChat && (
+                <aside aria-label="Chat beside remote control" className="fixed inset-y-0 right-0 z-30 flex w-full max-w-sm flex-col border-l bg-background md:static md:z-auto md:w-96">
+                  <div className="flex justify-end border-b p-1 md:hidden">
+                    <Button size="sm" variant="ghost" onClick={() => setSideChat(false)}>
+                      Close chat
+                    </Button>
+                  </div>
+                  {chatView}
+                </aside>
+              )}
+            </div>
+          )}
           {view === "code" && <CodeWorkspace
               projectId={codeProjectId}
               chatId={codeChatId}
@@ -486,57 +566,7 @@ ${summary}
               }}
             />
           )}
-          <ChatView
-            key={chat.id}
-            cowork={view === "cowork"}
-            chat={chat}
-            model={model}
-            mode={mode}
-            modeSlot={(started) => (
-              <>
-              {projects.length > 0 && (
-                <Select
-                  value={(saved ? chat.projectId : (draftProject)) ?? "none"}
-                  onValueChange={(v) => {
-                    const id = v === "none" ? undefined : v;
-                    if (saved) patchChat(chat.id, { projectId: id });
-                    else setDraftProject(id);
-                  }}
-                >
-                  <SelectTrigger size="sm" aria-label="Project" className="h-8 w-auto max-w-40 gap-1 border-0 bg-transparent shadow-none dark:bg-transparent">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No project</SelectItem>
-                    {projects.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-              <ModeSelect
-                value={mode.id}
-                lockPrivate={saved || started}
-                onChange={(id) => (saved ? patchChat(chat.id, { modeId: id }) : setDraftMode(id))}
-              />
-              {chatConns.length > 0 && (
-                <>
-                  <ModelPicker compact id="composer-model" value={model} onChange={(r) => (saved ? patchChat(chat.id, { model: r }) : setDraftModel(r))} />
-                  <ThinkingSelect model={model} />
-                </>
-              )}
-              </>
-            )}
-            onBranch={branch}
-            onOpenKeys={() => setKeysOpen(true)}
-            onOpenArtifact={setArtifact}
-            initialFiles={pendingFiles}
-            initialText={pendingText}
-            bigInput={look.bigInput}
-            projectId={saved ? chat.projectId : (draftProject)}
-          />
+          {chatView}
           </>)}
         </main>
         {artifact && (

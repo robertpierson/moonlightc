@@ -56,7 +56,7 @@ contextBridge.exposeInMainWorld("moonc", {
   clipboard: { readKey: () => invoke("clipboard:key"), readText: () => invoke("clipboard:text") },
   claude: {
     status: () => invoke("claude:status"),
-    run: (id, prompt, sessionId, model) => invoke("claude:run", id, prompt, sessionId, model),
+    run: (id, prompt, sessionId, model, effort) => invoke("claude:run", id, prompt, sessionId, model, effort),
     stop: (id) => invoke("claude:stop", id),
     onEvent: (cb) => {
       const f = (_e, id, line) => cb(id, line);

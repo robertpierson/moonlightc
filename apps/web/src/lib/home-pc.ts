@@ -78,7 +78,7 @@ export async function disconnectHomePc() {
 export const HOME_CONN = "home-pc";
 
 /** A chat reply from a local model on the home PC, streamed back over the remote link in the AI SDK's format. */
-export function homeChatStream(modelId: string, messages: UIMessage[], signal?: AbortSignal, chatId = ""): ReadableStream<UIMessageChunk> {
+export function homeChatStream(modelId: string, messages: UIMessage[], signal?: AbortSignal, chatId = "", effort?: string): ReadableStream<UIMessageChunk> {
   const claude = modelId.startsWith("claude-code:");
   const key = `home:${chatId}`;
   const c = state.client;
@@ -112,7 +112,7 @@ export function homeChatStream(modelId: string, messages: UIMessage[], signal?: 
         .map((m) => ({ role: m.role, content: m.parts.flatMap((p) => (p.type === "text" ? [p.text] : [])).join("\n") }))
         .filter((m) => m.content);
       try {
-        if (claude) await c.call("claude", { model: modelId.slice("claude-code:".length), prompt: claudePrompt(messages, sessions()[key]), session: sessions()[key], reqId }, 30_000);
+        if (claude) await c.call("claude", { model: modelId.slice("claude-code:".length), prompt: claudePrompt(messages, sessions()[key]), session: sessions()[key], effort, reqId }, 30_000);
         else await c.call("chat", { model: modelId, messages: plain, reqId }, 30_000);
         await finished;
       } catch (e) {

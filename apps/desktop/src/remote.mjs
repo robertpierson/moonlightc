@@ -95,7 +95,7 @@ export function end(clientId, reason = "disconnected") {
 }
 
 // "Use this PC's AI models" only: no screen, files or keyboard, so no frame on screen and no idle cut-off.
-const modelsOnly = (tiers) => tiers.every((t) => t === "chat");
+const modelsOnly = (tiers) => tiers.every((t) => t === "chat" || t === "files" || t === "terminal");
 const watching = () => [...sessions.values()].some((s) => !modelsOnly(s.tiers));
 
 function touch(clientId) {
@@ -142,8 +142,9 @@ export async function connect(parent, client, wanted) {
   const tiers = [...new Set((Array.isArray(wanted) ? wanted : []).filter((t) => t in TIERS))];
   if (!id || !tiers.length) throw new Error("Nothing to allow.");
   const remembered = grants().find((g) => g.clientId === id);
-  // Your own devices (same account, two-step sign-in, checked by the server) may use this PC's AI models
-  // without asking: that's like using your own models, not controlling the PC.
+  // Your own devices (same account, two-step sign-in, checked by the server) may use this PC's AI models, and let
+  // the AI work in your home folder (each change and command is approved on that device), without asking here.
+  // Seeing or controlling the screen still asks.
   let ok = (!!remembered && tiers.every((t) => remembered.tiers.includes(t))) || trusted() || modelsOnly(tiers);
   if (ok && !remembered) audit(modelsOnly(tiers) ? "approve.models" : "approve.trusted", { clientId: id, name, tiers });
   if (!ok) {

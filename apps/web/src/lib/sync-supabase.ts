@@ -113,8 +113,16 @@ export function startSync(userId: string) {
   let timer: ReturnType<typeof setTimeout> | undefined = setTimeout(run, 300);
   const unsub = subscribe(() => {
     clearTimeout(timer);
-    timer = setTimeout(run, 2500);
+    timer = setTimeout(run, 1000);
   });
+  // Live: when another device changes a chat, settings or a connection, pull it right away.
+  const soon = () => {
+    clearTimeout(timer);
+    timer = setTimeout(run, 300);
+  };
+  const live = supabase().channel(`sync:${userId}`);
+  for (const table of ["chats", "user_settings", "connections"]) live.on("postgres_changes", { event: "*", schema: "public", table, filter: `user_id=eq.${userId}` }, soon);
+  live.subscribe();
   const every = setInterval(run, 60_000);
   const onFocus = () => run();
   addEventListener("focus", onFocus);
@@ -123,6 +131,7 @@ export function startSync(userId: string) {
     clearInterval(every);
     unsub();
     removeEventListener("focus", onFocus);
+    supabase().removeChannel(live);
     runNow = undefined;
   };
 }

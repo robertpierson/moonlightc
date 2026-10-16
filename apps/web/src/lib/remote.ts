@@ -52,8 +52,14 @@ export class RemoteClient {
   private pending = new Map<string, { resolve: (v: unknown) => void; reject: (e: Error) => void; timer: ReturnType<typeof setTimeout> }>();
   private onTerm = new Map<string, (data: string) => void>();
   private onChat = new Map<string, (delta: { delta?: string; done?: boolean; error?: string; session?: string }) => void>();
-  readonly me = thisClient();
-  constructor(private ch: RealtimeChannel) {
+  readonly me: { id: string; name: string };
+  /** role: a separate connection from this device (remote control vs. the AI link), so ending one keeps the other. */
+  constructor(
+    private ch: RealtimeChannel,
+    role?: string,
+  ) {
+    const c = thisClient();
+    this.me = role ? { id: `${c.id}:${role}`, name: c.name } : c;
     ch.on("broadcast", { event: "res" }, ({ payload }) => {
       const r = payload as Res;
       if (r.to !== this.me.id) return;

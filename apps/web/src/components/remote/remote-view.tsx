@@ -16,7 +16,7 @@ type Tab = "screen" | "terminal" | "files" | "chat";
 const ALL: Tier[] = ["view", "control", "files", "terminal", "chat"];
 
 /** Control one of your computers from this device. */
-export function RemoteView({ deviceId, onSetup }: { deviceId: string; onSetup: () => void }) {
+export function RemoteView({ deviceId, onSetup, extra }: { deviceId: string; onSetup: () => void; extra?: React.ReactNode }) {
   const device = useDevices().find((d) => d.id === deviceId);
   const [wanted, setWanted] = useState<Tier[]>(ALL);
   const [client, setClient] = useState<RemoteClient>();
@@ -56,7 +56,7 @@ export function RemoteView({ deviceId, onSetup }: { deviceId: string; onSetup: (
     setError("");
     try {
       const ch = await joinChannel(deviceId, { key: `client:${crypto.randomUUID()}` });
-      const c = new RemoteClient(ch);
+      const c = new RemoteClient(ch, "screen");
       await subscribed(ch);
       chRef.current = ch;
       const r = await c.call<{ allowed: boolean; tiers?: Tier[] }>("connect", { tiers: wanted }, 130_000);
@@ -79,8 +79,10 @@ export function RemoteView({ deviceId, onSetup }: { deviceId: string; onSetup: (
           <Monitor className="size-5" />
           <h2 className="text-lg font-semibold">{device?.name ?? "Your computer"}</h2>
           {device && <span className="text-sm text-muted-foreground">{isOnline(device) ? "Online" : `Last seen ${new Date(device.last_seen).toLocaleString()}`}</span>}
+          <span className="ml-auto" />
+          {extra}
           {client && (
-            <Button size="sm" variant="destructive" className="ml-auto" onClick={disconnect}>
+            <Button size="sm" variant="destructive" onClick={disconnect}>
               <Power /> Disconnect
             </Button>
           )}

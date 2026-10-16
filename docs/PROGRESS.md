@@ -72,6 +72,8 @@ STATUS: BUILDING
 - [x] R53 Model menu: company first, top 3 models + Show all; thinking Off for Gemini 2.5 Flash / OpenAI
 - [x] R54 Other devices link to the home PC's AI models automatically (chat-only sessions: no prompt, no frame, no idle cut-off); remote control stays separate
 - [x] R55 Separate Trash for Chat, Cowork and Code (code chats restorable into their project); Settings > Privacy > Empty all Trash
+- [x] R56 Claude Code effort levels (--effort, here and via the home PC); AI access from own devices (chat/files/terminal) connects without the Allow prompt or frame, screen view/control still asks; remote-control and AI link use separate client ids; Home PC dropdown (Connect / Remote control); chat side panel in remote control
+- [x] R57 Live sync: chats, settings and connections in the realtime publication; devices pull within ~0.3 s of a change elsewhere
 
 ## Phase 0 tasks
 - [x] Check prerequisites (node 22, pnpm 11, git, gh logged in as robertpierson; Vercel + Supabase via MCP)
