@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { TwoStepGate } from "@/components/account/two-step-gate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { gathered, hifiAudio, ICE, isOnline, whereAmI, joinChannel, RemoteClient, subscribed, TIER_LABELS, type Tier } from "@/lib/remote";
 import { supabase } from "@/lib/supabase/client";
 import { useDevices } from "./your-computers";
@@ -184,7 +185,8 @@ function Screen({ client, control, mini }: { client: RemoteClient; control: bool
   // Input goes over the direct video connection when it's up (fast), otherwise through the server.
   const dc = useRef<RTCDataChannel | undefined>(undefined);
   const [game, setGame] = useState(false);
-  const [speed, setSpeed] = useState(1);
+  // Mouse moves go on their own lane that never waits or resends (an old move is worthless); keys stay reliable.
+  const moves = useRef<RTCDataChannel | undefined>(undefined);
   useEffect(() => {
     const v = video.current;
     if (!v) return;
@@ -222,6 +224,7 @@ function Screen({ client, control, mini }: { client: RemoteClient; control: bool
         pc.addTransceiver("video", { direction: "recvonly" });
         pc.addTransceiver("audio", { direction: "recvonly" });
         dc.current = pc.createDataChannel("input");
+        moves.current = pc.createDataChannel("moves", { ordered: false, maxRetransmits: 0 });
         pc.addEventListener("track", (e) => e.track.kind === "audio" && setHasAudio(true));
         const track = new Promise<MediaStream>((resolve) => pc!.addEventListener("track", (e) => resolve(e.streams[0] ?? new MediaStream([e.track]))));
         const offer = await pc.createOffer();
@@ -231,7 +234,8 @@ function Screen({ client, control, mini }: { client: RemoteClient; control: bool
         await pc.setRemoteDescription({ type: "answer", sdp: r.sdp });
         // Show frames as soon as they arrive (no extra buffering), for the lowest delay.
         pc.getReceivers().forEach((rc) => {
-          (rc as RTCRtpReceiver & { jitterBufferTarget?: number | null }).jitterBufferTarget = 0;
+          (rc as RTCRtpReceiver & { jitterBufferTarget?: number | null; playoutDelayHint?: number }).jitterBufferTarget = 0;
+          (rc as RTCRtpReceiver & { playoutDelayHint?: number }).playoutDelayHint = 0;
         });
         const v = video.current!;
         v.srcObject = await Promise.race([track, timeout(10_000)]);
@@ -288,6 +292,7 @@ function Screen({ client, control, mini }: { client: RemoteClient; control: bool
   }, [live, client]);
 
   const input = (a: Record<string, unknown>) => {
+    if (a.action === "move_by" && moves.current?.readyState === "open") return void moves.current.send(JSON.stringify(a));
     if (dc.current?.readyState === "open") return void dc.current.send(JSON.stringify(a));
     client.call("input", a).catch((e: Error) => toast.error(e.message));
   };
@@ -330,8 +335,8 @@ function Screen({ client, control, mini }: { client: RemoteClient; control: bool
     };
     const move = (e: MouseEvent) => {
       if (!document.pointerLockElement) return;
-      dx += e.movementX * speed;
-      dy += e.movementY * speed;
+      dx += e.movementX;
+      dy += e.movementY;
       frame ||= requestAnimationFrame(flush);
     };
     const button = (e: MouseEvent) => {
@@ -371,7 +376,7 @@ function Screen({ client, control, mini }: { client: RemoteClient; control: bool
       cancelAnimationFrame(frame);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- input reads the live connection
-  }, [game, control, speed]);
+  }, [game, control]);
   const capture = (el: HTMLElement) => {
     el.requestPointerLock?.();
     // In full screen, Chrome lets the page keep Escape (hold Esc to leave full screen).
@@ -429,12 +434,11 @@ function Screen({ client, control, mini }: { client: RemoteClient; control: bool
         <span className="flex-1" />
         {control && (
           <>
-            <Button size="sm" variant="secondary" aria-pressed={game} onClick={() => setGame((g) => !g)} title="Hold keys like WASD, look around with the mouse, and send Escape to the game">
-              <Gamepad2 /> Game mode
-            </Button>
-            {game && (
-              <input type="range" aria-label="Mouse speed" min={0.25} max={3} step={0.25} value={speed} onChange={(e) => setSpeed(Number(e.target.value))} className="w-20 accent-primary" />
-            )}
+            <label className="flex items-center gap-2 text-sm" title="Hold keys like WASD, look around with the mouse, and send Escape to the game">
+              <Gamepad2 className="size-4" /> Game mode
+              <Switch aria-label="Game mode" checked={game} onCheckedChange={setGame} className="data-[state=checked]:bg-emerald-600" />
+              <span className={`w-7 text-xs font-semibold ${game ? "text-emerald-600" : "text-muted-foreground"}`}>{game ? "ON" : "OFF"}</span>
+            </label>
           </>
         )}
         {live === "video" && hasAudio && (

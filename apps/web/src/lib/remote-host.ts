@@ -100,7 +100,21 @@ export function createHostHandler(
             try {
               const a = JSON.parse(String(m.data));
               // Game mode asks for smooth motion over sharp text (and back again when it ends).
-              if (a.action === "hint") return stream.getVideoTracks().forEach((t) => (t.contentHint = a.hint === "motion" ? "motion" : "detail"));
+              if (a.action === "hint") {
+                const motion = a.hint === "motion";
+                stream.getVideoTracks().forEach((t) => (t.contentHint = motion ? "motion" : "detail"));
+                // Game mode: a bit smaller picture that never stutters (quicker to encode, send and decode).
+                pc.getSenders()
+                  .filter((s) => s.track?.kind === "video")
+                  .forEach((s) => {
+                    const p = s.getParameters();
+                    if (!p.encodings?.length) return;
+                    p.encodings[0].scaleResolutionDownBy = motion ? 1.5 : 1;
+                    (p as RTCRtpSendParameters & { degradationPreference?: string }).degradationPreference = motion ? "maintain-framerate" : "balanced";
+                    s.setParameters(p).catch(() => {});
+                  });
+                return;
+              }
               b.remote.input(req.from, a).catch(() => {});
             } catch {}
           }),
