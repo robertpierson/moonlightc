@@ -130,7 +130,15 @@ export function ChatView({
   /** Cowork: the AI may use shared folders, this PC's screen and shared browser tabs (each with permission). */
   cowork?: boolean;
 }) {
-  const [input, setInput] = useState(initialText ?? "");
+  // Unsent text stays when you click away and come back (per chat, on this device).
+  const draftKey = `moonc:draft:${chat.id}`;
+  const [input, setInput] = useState(() => initialText ?? (typeof localStorage === "undefined" ? "" : (localStorage.getItem(draftKey) ?? "")));
+  useEffect(() => {
+    try {
+      if (input) localStorage.setItem(draftKey, input);
+      else localStorage.removeItem(draftKey);
+    } catch {}
+  }, [input, draftKey]);
   const [computerOn, setComputerOn] = useState(false);
   // Cowork on another device: a change or command on the home PC waits for the person's OK here.
   const [ask, setAsk] = useState<{ what: string; decide: (ok: boolean) => void }>();

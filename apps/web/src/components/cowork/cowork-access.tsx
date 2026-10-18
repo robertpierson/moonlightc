@@ -61,6 +61,7 @@ function HomePcChip({ onSetup, onOpenScreen }: { onSetup: () => void; onOpenScre
   const pc = useHomePc();
   const user = useUser();
   const [found, setFound] = useState<Device | null>();
+  const [online, setOnline] = useState(true);
   // Reaching your PC needs this device signed in with your two-step code too (the server refuses otherwise).
   const [unlock, setUnlock] = useState(false);
   const connect = async (d: Device) => {
@@ -71,7 +72,10 @@ function HomePcChip({ onSetup, onOpenScreen }: { onSetup: () => void; onOpenScre
   useEffect(() => {
     if (user)
       findHomePc()
-        .then((d) => setFound(d ?? null))
+        .then((d) => {
+          setFound(d ?? null);
+          setOnline(!!d && Date.now() - Date.parse(d.last_seen) < 3 * 60_000);
+        })
         .catch(() => setFound(null));
   }, [user]);
   if (user === null)
@@ -87,6 +91,7 @@ function HomePcChip({ onSetup, onOpenScreen }: { onSetup: () => void; onOpenScre
   if (found === undefined) return <Loader2 className="animate-spin" aria-label="Looking for your home PC" />;
   if (!found) return <span className="text-muted-foreground">Your files: pick a home PC in the desktop app (Settings &gt; Remote control)</span>;
   const linked = !!pc.client && pc.tiers.includes("files");
+  if (!online && !pc.client) return <span className="text-muted-foreground">Home PC: {found.name} · Offline (turn it on and open MoonlightC to connect)</span>;
   // One menu for the home PC: connect the AI to it, or remote-control its screen.
   return (
     <>

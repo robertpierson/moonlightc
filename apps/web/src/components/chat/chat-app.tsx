@@ -108,7 +108,11 @@ function Inner() {
   // Other devices: your home PC's models (Claude Code, local ones) show up too, without a remote session.
   useEffect(() => {
     if (desktop()) syncClaudeCode().catch(() => {});
-    else if (accountsEnabled) linkHomePcModels().catch(() => {});
+    else if (accountsEnabled) {
+      // Home PC models show only while it's actually connected.
+      update((s) => ({ ...s, connections: s.connections.filter((c) => c.id !== "home-pc") }));
+      linkHomePcModels().catch(() => {});
+    }
   }, []);
   // Desktop: offer AI keys already set up on this PC (shown masked; nothing is added until you pick them).
   useEffect(() => {

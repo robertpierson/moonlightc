@@ -70,6 +70,7 @@ export async function connectHomePc(device: Device, tiers: Tier[] = ["files", "t
 
 export async function disconnectHomePc() {
   await state.client?.call("disconnect").catch(() => {});
+  update((s) => ({ ...s, connections: s.connections.filter((c) => c.id !== HOME_CONN) }));
   if (channel) supabase().removeChannel(channel);
   channel = undefined;
   set({ client: undefined, tiers: [] });
