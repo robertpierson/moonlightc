@@ -110,7 +110,7 @@ function Inner() {
     if (desktop()) syncClaudeCode().catch(() => {});
     else if (accountsEnabled) {
       // Home PC models show only while it's actually connected.
-      update((s) => ({ ...s, connections: s.connections.filter((c) => c.id !== "home-pc") }));
+      if (getState().connections.some((c) => c.id === "home-pc")) update((s) => ({ ...s, connections: s.connections.filter((c) => c.id !== "home-pc") }));
       linkHomePcModels().catch(() => {});
     }
   }, []);
@@ -162,6 +162,8 @@ function Inner() {
   const [pendingFiles, setPendingFiles] = useState<FileUIPart[]>();
   const [pendingText, setPendingText] = useState<string>();
   const [sideChat, setSideChat] = useState(false);
+  const [remoteLive, setRemoteLive] = useState(false);
+  const [pip, setPip] = useState({ x: 16, y: 16 });
   const [draftProject, setDraftProject] = useState<string>();
   const projects = useStore((s) => s.projects) ?? [];
   const [quick] = useState(() => new URLSearchParams(location.search).has("quick"));
@@ -447,12 +449,35 @@ ${summary}
             </header>
           )}
           {view === "settings" && <Settings section={section} onSection={setSection} availableViews={availableViews()} onClose={() => go(workspace)} onChat={() => go("chat")} />}
-          {view === "remote" && remoteDevice && (
-            // Remote control with a chat you can open on the right (hidden behind the screen in full screen).
-            <div className="relative flex min-h-0 flex-1">
+          {remoteDevice && (
+            // Remote control stays connected when you go elsewhere: then it floats as a small picture you can move
+            // and resize (watch only), until you come back.
+            <div
+              className={view === "remote" ? "relative flex min-h-0 flex-1" : remoteLive ? "fixed z-40 overflow-hidden rounded-xl border bg-card shadow-xl [resize:both]" : "hidden"}
+              style={view === "remote" ? undefined : { right: pip.x, bottom: pip.y, width: 360, height: 240, minWidth: 220, minHeight: 150, maxWidth: "90vw", maxHeight: "80vh" }}
+              onPointerDown={(e) => {
+                if (view === "remote" || !(e.target as HTMLElement).closest("[data-pip-handle]") || (e.target as HTMLElement).closest("button")) return;
+                // The window is placed from the bottom-right corner, so moving the pointer right/down shrinks the offsets.
+                const start = { cx: e.clientX, cy: e.clientY, x: pip.x, y: pip.y };
+                const move = (m: PointerEvent) => setPip({ x: Math.max(0, start.x - (m.clientX - start.cx)), y: Math.max(0, start.y - (m.clientY - start.cy)) });
+                const up = () => {
+                  removeEventListener("pointermove", move);
+                  removeEventListener("pointerup", up);
+                };
+                addEventListener("pointermove", move);
+                addEventListener("pointerup", up);
+              }}
+            >
               <RemoteView
                 key={remoteDevice}
                 deviceId={remoteDevice}
+                mini={view !== "remote"}
+                onLive={setRemoteLive}
+                onOpen={() => go("remote")}
+                onClose={() => {
+                  setRemoteDevice(undefined);
+                  setRemoteLive(false);
+                }}
                 onSetup={() => openSettings("account")}
                 extra={
                   <Button size="sm" variant="secondary" aria-pressed={sideChat} onClick={() => setSideChat((v) => !v)}>
@@ -460,7 +485,7 @@ ${summary}
                   </Button>
                 }
               />
-              {sideChat && (
+              {view === "remote" && sideChat && (
                 <aside aria-label="Chat beside remote control" className="fixed inset-y-0 right-0 z-30 flex w-full max-w-sm flex-col border-l bg-background md:static md:z-auto md:w-96">
                   <div className="flex justify-end border-b p-1 md:hidden">
                     <Button size="sm" variant="ghost" onClick={() => setSideChat(false)}>

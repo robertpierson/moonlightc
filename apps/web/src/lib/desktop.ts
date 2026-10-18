@@ -52,6 +52,8 @@ export interface ComputerAction {
 
 export type ComputerState = { active: false } | { active: true; task: string; startedAt: number; endsAt: number };
 
+export type Places = { on: boolean; list: { kind: "ip" | "country"; value: string; label: string }[]; blocked: { ip: string; country: string; city: string; at: string; verified: boolean }[] };
+
 export interface MooncBridge {
   platform: NodeJS.Platform;
   arch: string;
@@ -88,7 +90,7 @@ export interface MooncBridge {
     get(): Promise<{ openAtLogin: boolean }>;
     setOpenAtLogin(on: boolean): Promise<void>;
   };
-  device: { info(): Promise<{ id: string; name: string; os: string; version: string }> };
+  device: { info(): Promise<{ id: string; name: string; os: string; version: string; mac?: string }> };
   clipboard: { readKey(): Promise<string | null>; readText(): Promise<string> };
   claude: {
     status(): Promise<{ installed: boolean; version?: string }>;
@@ -100,7 +102,9 @@ export interface MooncBridge {
   keys: { scan(): Promise<{ provider: string; source: string; value: string; masked: string }[]> };
   /** Remote control of this PC from your other devices (every call is checked against what the person allowed). */
   remote: {
-    connect(client: { id: string; name: string }, tiers: string[]): Promise<{ allowed: boolean; tiers?: string[] }>;
+    connect(client: { id: string; name: string }, tiers: string[], where?: unknown): Promise<{ allowed: boolean; tiers?: string[]; reason?: string }>;
+    places(): Promise<Places>;
+    setPlaces(p: Places): Promise<Places>;
     trusted(): Promise<boolean>;
     allowStream(clientId: string): Promise<boolean>;
     setTrusted(on: boolean): Promise<boolean>;

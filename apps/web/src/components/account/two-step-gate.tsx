@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { accountsEnabled, supabase, useUser } from "@/lib/supabase/client";
 
 /** Shows its children only when this session is signed in with two-step sign-in; otherwise helps get there. */
-export function TwoStepGate({ children, onSetup, what = "Remote control" }: { children: React.ReactNode; onSetup: () => void; what?: string }) {
+export function TwoStepGate({ children, onSetup, what = "Remote control", quick }: { children: React.ReactNode; onSetup: () => void; what?: string; quick?: boolean }) {
   const user = useUser();
   const [level, setLevel] = useState<{ current?: string; next?: string }>();
   const [code, setCode] = useState("");
@@ -23,10 +23,13 @@ export function TwoStepGate({ children, onSetup, what = "Remote control" }: { ch
   );
   useEffect(() => {
     if (!user) return;
-    supabase()
-      .auth.mfa.getAuthenticatorAssuranceLevel()
-      .then(({ data }) => setLevel({ current: data?.currentLevel ?? undefined, next: data?.nextLevel ?? undefined }));
-  }, [user]);
+    (async () => {
+      const { data } = await supabase().auth.mfa.getAuthenticatorAssuranceLevel();
+      // "Connect to my PCs without the code" counts as unlocked for PC features.
+      const open = quick && data?.currentLevel !== "aal2" && (await supabase().rpc("quick_access_on")).data === true;
+      setLevel({ current: open ? "aal2" : (data?.currentLevel ?? undefined), next: data?.nextLevel ?? undefined });
+    })();
+  }, [user, quick]);
 
   if (!accountsEnabled) return <p className="text-sm text-muted-foreground">{what} needs accounts, which aren&apos;t set up on this server.</p>;
   if (user === undefined || (user && !level)) return <Loader2 className="size-4 animate-spin" aria-label="Checking your sign-in" />;

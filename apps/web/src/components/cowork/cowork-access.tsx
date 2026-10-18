@@ -9,8 +9,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { hasExtension } from "@/lib/browser-ext";
 import { desktop } from "@/lib/desktop";
 import { connectHomePc, disconnectHomePc, findHomePc, useHomePc } from "@/lib/home-pc";
-import type { Device } from "@/lib/remote";
-import { accountsEnabled, supabase, useUser } from "@/lib/supabase/client";
+import { canReachPcs, type Device } from "@/lib/remote";
+import { accountsEnabled, useUser } from "@/lib/supabase/client";
 
 /** Top of Cowork: what the AI can reach right now, and how to give it more. Nothing is shared by default. */
 export function CoworkAccess({ onOpenSettings, onOpenScreen }: { onOpenSettings: (section: "files" | "browser" | "account") => void; onOpenScreen: (deviceId: string) => void }) {
@@ -65,8 +65,7 @@ function HomePcChip({ onSetup, onOpenScreen }: { onSetup: () => void; onOpenScre
   // Reaching your PC needs this device signed in with your two-step code too (the server refuses otherwise).
   const [unlock, setUnlock] = useState(false);
   const connect = async (d: Device) => {
-    const { data } = await supabase().auth.mfa.getAuthenticatorAssuranceLevel();
-    if (data?.currentLevel !== "aal2") return setUnlock(true);
+    if (!(await canReachPcs())) return setUnlock(true);
     connectHomePc(d);
   };
   useEffect(() => {
@@ -131,7 +130,7 @@ function HomePcChip({ onSetup, onOpenScreen }: { onSetup: () => void; onOpenScre
             <DialogTitle>Unlock your home PC</DialogTitle>
             <DialogDescription>For safety, this device needs your two-step code before it can reach {found.name}.</DialogDescription>
           </DialogHeader>
-          <TwoStepGate what="Your home PC" onSetup={onSetup}>
+          <TwoStepGate what="Your home PC" onSetup={onSetup} quick>
             <Unlocked
               onReady={() => {
                 setUnlock(false);

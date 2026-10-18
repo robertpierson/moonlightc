@@ -2,10 +2,10 @@
 
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { useSyncExternalStore } from "react";
-import { joinChannel, RemoteClient, subscribed, type Device, type Tier } from "./remote";
+import { canReachPcs, joinChannel, RemoteClient, subscribed, type Device, type Tier } from "./remote";
 import type { UIMessage, UIMessageChunk } from "ai";
 import { CLAUDE_CODE_MODELS, claudePrompt, friendly, remember, sessions } from "./claude-code";
-import { update } from "./store";
+import { getState, update } from "./store";
 import { supabase } from "./supabase/client";
 
 // One open connection from this device to your home PC, shared by Cowork's chats.
@@ -70,7 +70,7 @@ export async function connectHomePc(device: Device, tiers: Tier[] = ["files", "t
 
 export async function disconnectHomePc() {
   await state.client?.call("disconnect").catch(() => {});
-  update((s) => ({ ...s, connections: s.connections.filter((c) => c.id !== HOME_CONN) }));
+  if (getState().connections.some((c) => c.id === HOME_CONN)) update((s) => ({ ...s, connections: s.connections.filter((c) => c.id !== HOME_CONN) }));
   if (channel) supabase().removeChannel(channel);
   channel = undefined;
   set({ client: undefined, tiers: [] });
@@ -130,8 +130,7 @@ export function homeChatStream(modelId: string, messages: UIMessage[], signal?: 
  * screen. Needs two-step sign-in on this device; quietly does nothing otherwise. */
 export async function linkHomePcModels() {
   if (state.client) return;
-  const { data } = await supabase().auth.mfa.getAuthenticatorAssuranceLevel();
-  if (data?.currentLevel !== "aal2") return;
+  if (!(await canReachPcs())) return;
   const pc = await findHomePc().catch(() => undefined);
   if (pc && Date.now() - Date.parse(pc.last_seen) < 3 * 60_000) await connectHomePc(pc, ["chat"], true);
 }

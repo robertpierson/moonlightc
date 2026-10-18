@@ -208,3 +208,27 @@ test("staff panel: admins with two-step sign-in only; no message content", async
   for (const f of ["public.staff_live()", "public.staff_errors(7)", `public.staff_user('${B}')`]) assert.ok((await staff(A, "aal2", `select ${f} r`)).rows, f);
   await as(null, "update public.profiles set is_admin = false");
 });
+
+test("quick access: on needs two-step once, then the PC channel opens without it; off needs nothing", async () => {
+  const U = "00000000-0000-0000-0000-0000000000e1";
+  const D = "00000000-0000-0000-0000-0000000000e2";
+  await db.query("insert into auth.users (id, email) values ($1, 'q@example.com')", [U]);
+  await as(U, "insert into public.devices (id, user_id, name) values ($1, $2, 'PC')", [D, U]);
+  const run = async (aal, sql) => {
+    await db.exec(`reset role; select set_config('request.jwt.claim.sub', '${U}', false); select set_config('request.jwt.claims', '{"aal":"${aal}"}', false); set role authenticated;`);
+    try {
+      return { rows: (await db.query(sql)).rows };
+    } catch (e) {
+      return { error: String(e.message) };
+    } finally {
+      await db.exec("reset role; select set_config('request.jwt.claims', '', false);");
+    }
+  };
+  const can = `select public.can_use_device_channel('device:${D}') ok`;
+  assert.equal((await run("aal1", can)).rows[0].ok, false);
+  assert.match((await run("aal1", "select public.set_quick_access(true)")).error ?? "", /two-step/);
+  assert.ok((await run("aal2", "select public.set_quick_access(true)")).rows);
+  assert.equal((await run("aal1", can)).rows[0].ok, true);
+  assert.ok((await run("aal1", "select public.set_quick_access(false)")).rows);
+  assert.equal((await run("aal1", can)).rows[0].ok, false);
+});

@@ -63,6 +63,7 @@ export function createHostHandler(
         return b.remote.connect(
           { id: req.from, name: req.fromName },
           Array.isArray(p.tiers) ? (p.tiers as string[]) : [],
+          p.where,
         );
       case "rtc.offer": {
         await need(req, "view");

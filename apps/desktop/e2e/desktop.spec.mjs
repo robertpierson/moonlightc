@@ -465,6 +465,20 @@ test("game mode input: held keys, mouse buttons and relative mouse moves (CI onl
   expect(r.bad).toBe("ignored");
 });
 
+test("allowed places: with the setting on, remote control from elsewhere is refused and listed", async () => {
+  const r = await page.evaluate(async () => {
+    const b = window.moonc.remote;
+    await b.setPlaces({ on: true, list: [], blocked: [] });
+    const c = await b.connect({ id: "far-away", name: "Far away" }, ["view"], { ip: "198.51.100.9", country: "FR", city: "Paris", exp: Date.now() + 60000, sig: "forged" });
+    const p = await b.places();
+    await b.setPlaces({ on: false, list: [], blocked: [] });
+    return { c, blocked: p.blocked[0] };
+  });
+  expect(r.c.allowed).toBe(false);
+  expect(r.c.reason).toMatch(/isn't allowed from this place/);
+  expect(r.blocked).toMatchObject({ ip: "198.51.100.9", verified: false });
+});
+
 test("finds API keys already set up on this PC (shown masked, added only when picked)", async () => {
   const found = await page.evaluate(() => window.moonc.keys.scan());
   const k = found.find((x) => x.source === "MISTRAL_API_KEY");

@@ -65,7 +65,9 @@ contextBridge.exposeInMainWorld("moonc", {
     },
   },
   remote: {
-    connect: (client, tiers) => invoke("remote:connect", client, tiers),
+    connect: (client, tiers, where) => invoke("remote:connect", client, tiers, where),
+    places: () => invoke("remote:places"),
+    setPlaces: (p) => invoke("remote:setPlaces", p),
     trusted: () => invoke("remote:trusted"),
     setTrusted: (on) => invoke("remote:setTrusted", on),
     end: (clientId, reason) => invoke("remote:end", clientId, reason),

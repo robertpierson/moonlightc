@@ -59,7 +59,10 @@ export function deviceInfo() {
     id = crypto.randomUUID();
     fs.writeFileSync(file("device.json"), JSON.stringify({ id }));
   }
-  return { id, name: os.hostname().slice(0, 80), os: process.platform === "win32" ? "windows" : process.platform === "darwin" ? "mac" : "linux", version: app.getVersion() };
+  // The wired network adapter's hardware address, for waking this PC from the router (Wake-on-LAN).
+  const nics = Object.entries(os.networkInterfaces()).flatMap(([n, list]) => (list ?? []).filter((a) => !a.internal && a.mac !== "00:00:00:00:00:00").map((a) => ({ n, mac: a.mac })));
+  const mac = (nics.find((x) => /ethernet|eth|en0/i.test(x.n)) ?? nics[0])?.mac;
+  return { id, name: os.hostname().slice(0, 80), os: process.platform === "win32" ? "windows" : process.platform === "darwin" ? "mac" : "linux", version: app.getVersion(), mac };
 }
 
 function showOverlay() {
@@ -135,12 +138,52 @@ export const setTrusted = (on) => (fs.writeFileSync(file("remote-trust.json"), J
 // Automated tests of unpackaged builds can't click native dialogs; installed apps always ask a person.
 const autoApprove = () => !app.isPackaged && process.env.MOONC_E2E_AUTO_APPROVE === "1";
 
+// "Only allow remote control from certain places" (off by default): network addresses and/or countries.
+// The other device brings a note signed by the MoonlightC website saying where it is; this PC checks it there.
+const SITE = process.env.MOONC_SITE || "https://moonlightc.vercel.app";
+export function places() {
+  try {
+    return { on: false, list: [], blocked: [], ...JSON.parse(fs.readFileSync(file("remote-places.json"), "utf8")) };
+  } catch {
+    return { on: false, list: [], blocked: [] };
+  }
+}
+export function setPlaces(p) {
+  const clean = {
+    on: !!p?.on,
+    list: (Array.isArray(p?.list) ? p.list : []).slice(0, 50).map((x) => ({ kind: x.kind === "country" ? "country" : "ip", value: String(x.value ?? "").trim().slice(0, 64), label: String(x.label ?? "").slice(0, 60) })).filter((x) => x.value),
+    blocked: (Array.isArray(p?.blocked) ? p.blocked : places().blocked).slice(0, 20),
+  };
+  fs.writeFileSync(file("remote-places.json"), JSON.stringify(clean), { mode: 0o600 });
+  audit("places", { on: clean.on, count: clean.list.length });
+  return clean;
+}
+const matches = (place, w) =>
+  place.kind === "country" ? place.value.toUpperCase() === String(w.country).toUpperCase() : place.value.endsWith("*") ? String(w.ip).startsWith(place.value.slice(0, -1)) : place.value === w.ip;
+async function fromAllowedPlace(where) {
+  const p = places();
+  if (!p.on) return true;
+  const ok = await fetch(`${SITE}/api/attest/verify`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(where ?? {}) })
+    .then((r) => r.json())
+    .then((d) => d.ok === true)
+    .catch(() => false);
+  if (ok && p.list.some((x) => matches(x, where))) return true;
+  const seen = { ip: String(where?.ip ?? "unknown"), country: String(where?.country ?? ""), city: String(where?.city ?? ""), at: new Date().toISOString(), verified: ok };
+  setPlaces({ ...p, blocked: [seen, ...p.blocked.filter((b) => b.ip !== seen.ip)] });
+  return false;
+}
+
 /** A device asks to connect. Remembered devices skip the prompt for the access they already have. */
-export async function connect(parent, client, wanted) {
+export async function connect(parent, client, wanted, where) {
   const id = String(client?.id ?? "").slice(0, 64);
   const name = String(client?.name ?? "Another device").slice(0, 60);
   const tiers = [...new Set((Array.isArray(wanted) ? wanted : []).filter((t) => t in TIERS))];
   if (!id || !tiers.length) throw new Error("Nothing to allow.");
+  // Seeing or controlling the screen: only from allowed places, when that setting is on.
+  if (tiers.some((t) => t === "view" || t === "control") && !(await fromAllowedPlace(where))) {
+    audit("deny.place", { clientId: id, name, ip: where?.ip, country: where?.country });
+    return { allowed: false, reason: "Remote control isn't allowed from this place. On the PC, open Settings > Remote control to allow it." };
+  }
   const remembered = grants().find((g) => g.clientId === id);
   // Your own devices (same account, two-step sign-in, checked by the server) may use this PC's AI models, and let
   // the AI work in your home folder (each change and command is approved on that device), without asking here.

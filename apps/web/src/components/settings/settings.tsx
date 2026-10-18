@@ -1,6 +1,6 @@
 "use client";
 
-import { Brain, ChartBar, Cpu, MonitorSmartphone, Download, FolderOpen, Gauge, Globe, KeyRound, Laptop, Moon, Palette, Plug, Puzzle, Shield, SlidersHorizontal, Sparkles, Sun, KeySquare, Trash2, Upload, UserRound, Wand2, X } from "lucide-react";
+import { Brain, ChartBar, Cpu, MonitorSmartphone, Download, FolderOpen, Gauge, Globe, KeyRound, Laptop, Moon, Sunset, Palette, Plug, Puzzle, Shield, SlidersHorizontal, Sparkles, Sun, KeySquare, Trash2, Upload, UserRound, Wand2, X } from "lucide-react";
 import { SaveBar } from "./save-bar";
 import { beginEditing, endEditing, emptyAllTrash } from "@/lib/store";
 import { RemoteSettings } from "@/components/remote/remote-settings";
@@ -17,6 +17,7 @@ import { MemoryManager } from "@/components/library/library";
 import { AccountPanel } from "@/components/account/account";
 import { accountsEnabled, supabase, useUser } from "@/lib/supabase/client";
 import { TwoStepGate } from "@/components/account/two-step-gate";
+import { setSunPlace, sunPlace } from "@/lib/sun";
 import { Avatar } from "./avatar";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -268,7 +269,25 @@ function General() {
     { id: "light", label: "Light", icon: <Sun /> },
     { id: "dark", label: "Dark", icon: <Moon /> },
     { id: "system", label: "Match device", icon: <Laptop /> },
+    { id: "sun", label: "Follow the sun", icon: <Sunset /> },
   ];
+  // "Follow the sun" uses your rough location (rounded, kept on this device) to dim with dusk and dawn.
+  const [sun, setSun] = useState(() => typeof window !== "undefined" && !!sunPlace());
+  const pickMode = (id: string) => {
+    if (id !== "sun") {
+      setSunPlace(null);
+      setSun(false);
+      return setTheme(id);
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setSunPlace({ lat: pos.coords.latitude, lon: pos.coords.longitude });
+        setSun(true);
+      },
+      () => toast.error("Allow location for MoonlightC to follow the sun where you are."),
+      { maximumAge: 86_400_000, timeout: 15_000 },
+    );
+  };
   return (
     <Page title="General">
       <div className="grid gap-4">
@@ -278,8 +297,8 @@ function General() {
               <button
                 key={t.id}
                 role="radio"
-                aria-checked={theme === t.id}
-                onClick={() => setTheme(t.id)}
+                aria-checked={sun ? t.id === "sun" : theme === t.id}
+                onClick={() => pickMode(t.id)}
                 className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm aria-checked:bg-accent [&_svg]:size-4"
               >
                 {t.icon} {t.label}

@@ -114,3 +114,7 @@ Alternatives: a TURN relay (works on stricter networks, costs money; add if pict
 ## Staff panel access = admin account + two-step code, no shared password (2026-10-15)
 What: Settings > Staff and /admin show only for profiles.is_admin; the people/errors/live functions also require aal2.
 Why: a password in the code would be public on GitHub; the owner's account with two-step sign-in is stronger. Keystrokes and message content are never recorded (privacy, law, and the app's own promise).
+
+## PC access without the code, and allowed places (2026-10-18)
+What: an account switch (off by default) lets signed-in devices reach the owner's PCs without two-step sign-in; turning it on needs the code once, off needs nothing. Separately, a PC can allow remote control only from chosen networks/countries, using location notes signed by the website (HMAC, 5-minute expiry) and checked by the PC.
+Why: the owner asked for code-free access in emergencies and for a location lock. The trade-off (password alone reaches the PC) is stated next to the switch.

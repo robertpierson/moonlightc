@@ -6,6 +6,7 @@ import { syncNow, useSyncStatus } from "@/lib/sync-supabase";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -36,6 +37,7 @@ export function AccountPanel() {
       <SyncStatus />
       <Identities />
       <TwoStep />
+      <QuickAccess />
       <Data />
     </div>
   );
@@ -192,6 +194,39 @@ function TwoStep() {
           {busy && <Loader2 className="animate-spin" />} Set up two-step sign-in
         </Button>
       )}
+    </section>
+  );
+}
+
+/** Connect to your PCs without the two-step code. Off by default. */
+function QuickAccess() {
+  const [on, setOn] = useState<boolean>();
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    supabase()
+      .rpc("quick_access_on")
+      .then(({ data }) => setOn(data === true));
+  }, []);
+  const set = async (v: boolean) => {
+    setBusy(true);
+    const { error } = await supabase().rpc("set_quick_access", { enabled: v });
+    setBusy(false);
+    if (error) return toast.error(/two-step/.test(error.message) ? "Enter your two-step code first (Settings > Remote control or Cowork asks for it), then turn this on." : error.message);
+    setOn(v);
+    toast.success(v ? "Your devices can now reach your PCs without the code." : "Your PCs need the two-step code again.");
+  };
+  if (on === undefined) return null;
+  return (
+    <section aria-labelledby="quick-h" className="grid gap-2">
+      <h3 id="quick-h" className="font-medium">
+        Connect to my PCs without the code
+      </h3>
+      <p className="text-sm text-muted-foreground">
+        When this is on, any device signed in to your account can use and remote-control your PCs without the two-step code. Handy when you&apos;re out, but anyone who gets your password could reach your PCs. Turning it on needs your code once; turning it off doesn&apos;t.
+      </p>
+      <label className="flex items-center gap-2 text-sm">
+        <Switch aria-label="Connect to my PCs without the code" checked={on} disabled={busy} onCheckedChange={set} /> {on ? "On" : "Off"}
+      </label>
     </section>
   );
 }

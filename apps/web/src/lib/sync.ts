@@ -97,8 +97,9 @@ export const pickSettings = (s: State): Partial<State> => Object.fromEntries(SYN
 
 export const connectionRow = (c: SavedConnection): RemoteConnection => ({ id: c.id, provider_id: c.providerId, label: c.label, base_url: c.baseURL ?? null, models: c.models, extra: {} });
 
-type Meta = { lastPull: string | null; pushed: Record<string, number>; settingsAt: number; settingsSent: string; connections: string[] };
+type Meta = { lastPull: string | null; pushed: Record<string, number>; settingsAt: number; settingsSent: string; connections: string[]; searchSent?: string };
 export const emptyMeta = (): Meta => ({ lastPull: null, pushed: {}, settingsAt: 0, settingsSent: "", connections: [] });
+const SEARCH = "web-search";
 
 /** One sync pass: pull what changed elsewhere, then push what changed here. Returns the updated bookkeeping. */
 export async function syncOnce(backend: SyncBackend, get: () => State, set: (fn: (s: State) => State) => void, meta: Meta, now = Date.now()): Promise<Meta> {
@@ -124,7 +125,8 @@ export async function syncOnce(backend: SyncBackend, get: () => State, set: (fn:
   // Connections: add ones made on other devices (with their keys); upload new local ones.
   // Models on this PC (Ollama) or reached through the home PC only work on the device that has them: never synced.
   const syncable = (c: { providerId: string }) => c.providerId !== "home-pc" && !PROVIDERS.find((p) => p.id === c.providerId)?.local;
-  const remoteConns = (await backend.listConnections()).filter((r) => syncable({ providerId: r.provider_id }));
+  const allRemote = await backend.listConnections();
+  const remoteConns = allRemote.filter((r) => r.id !== SEARCH && syncable({ providerId: r.provider_id }));
   const localConns = get().connections.filter(syncable);
   const added: SavedConnection[] = [];
   for (const r of remoteConns) {
@@ -143,6 +145,25 @@ export async function syncOnce(backend: SyncBackend, get: () => State, set: (fn:
   for (const c of localConns) if (!goneElsewhere.includes(c.id) && !remoteConns.some((r) => r.id === c.id)) await backend.pushConnection(connectionRow(c), c.apiKey);
   for (const id of meta.connections) if (!get().connections.some((c) => c.id === id) && remoteConns.some((r) => r.id === id)) await backend.deleteConnection(id);
   next.connections = get().connections.filter(syncable).map((c) => c.id);
+
+  // Web search key (Tavily, Exa or Brave): one per account, its key kept in Vault like the model keys.
+  const search = get().searchKey;
+  const sig = search?.key ? `${search.provider}:${search.key.slice(-6)}` : "";
+  const remoteSearch = allRemote.find((r) => r.id === SEARCH);
+  if (sig && sig !== meta.searchSent) {
+    await backend.pushConnection({ id: SEARCH, provider_id: `search:${search!.provider}`, label: "Web search", base_url: null, models: [], extra: {} }, search!.key);
+    next.searchSent = sig;
+  } else if (!sig && meta.searchSent && remoteSearch) {
+    await backend.deleteConnection(SEARCH);
+    next.searchSent = undefined;
+  } else if (!sig && remoteSearch) {
+    const key = await backend.getKey(SEARCH);
+    const provider = remoteSearch.provider_id.replace(/^search:/, "") as "tavily" | "exa" | "brave";
+    if (key && ["tavily", "exa", "brave"].includes(provider)) {
+      set((s) => ({ ...s, searchKey: { provider, key } }));
+      next.searchSent = `${provider}:${key.slice(-6)}`;
+    }
+  }
 
   // Chats: pull newer ones, then push local changes and deletions.
   const pulled = await backend.pullChats(meta.lastPull);

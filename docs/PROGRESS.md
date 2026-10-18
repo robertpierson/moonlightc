@@ -75,11 +75,12 @@ STATUS: BUILDING
 - [x] R56 Claude Code effort levels (--effort, here and via the home PC); AI access from own devices (chat/files/terminal) connects without the Allow prompt or frame, screen view/control still asks; remote-control and AI link use separate client ids; Home PC dropdown (Connect / Remote control); chat side panel in remote control
 - [x] R57 Live sync: chats, settings and connections in the realtime publication; devices pull within ~0.3 s of a change elsewhere
 - [x] R58 Unsent message text kept per chat; home PC shows Offline (no connect) when not seen for 3 min; home PC models only listed while connected
-- [ ] R59 (owner's list, 2026-10-16) Remote control picture-in-picture when leaving the tab (view-only, movable/resizable, control resumes on return)
-- [ ] R60 Sync web-search keys/settings across the account (searchKey not in SYNCED_KEYS; keys belong in Vault like connections)
-- [ ] R61 "Remember this device" (not called risky): after one 2FA on a device, it can connect to the home PC without the code again; off by default; turn off without a code. Needs design: Supabase aal2 is per session, so use a device-bound credential stored in Vault + checked by a SECURITY DEFINER channel policy. Owner also wants any computer to connect without a code in emergencies: discuss risks before building
-- [ ] R62 Wake the home PC remotely (Wake-on-LAN needs an always-on device on the home network or a router with WoL; investigate options, owner steps likely)
-- [ ] R63 Adaptive theme: from the person's location, gets darker with the sun/moon cycle
+- [x] R59 (owner's list, 2026-10-16) Remote control picture-in-picture when leaving the tab (view-only, movable/resizable, control resumes on return)
+- [x] R60 Sync web-search keys/settings across the account (searchKey not in SYNCED_KEYS; keys belong in Vault like connections)
+- [x] R61 Done as account-level "Connect to my PCs without the code" (private.quick_access; can_use_device_channel accepts it). Was: "Remember this device" (not called risky): after one 2FA on a device, it can connect to the home PC without the code again; off by default; turn off without a code. Needs design: Supabase aal2 is per session, so use a device-bound credential stored in Vault + checked by a SECURITY DEFINER channel policy. Owner also wants any computer to connect without a code in emergencies: discuss risks before building
+- [x] R62 Wake guide + MAC in Settings > Remote control. Was: Wake the home PC remotely (Wake-on-LAN needs an always-on device on the home network or a router with WoL; investigate options, owner steps likely)
+- [x] R63 Adaptive theme (Settings > General > Follow the sun; lib/sun.ts): from the person's location, gets darker with the sun/moon cycle
+- [x] R64 Allowed places for remote control (PC setting, off by default): IPs (with * wildcard) and countries; signed location notes from /api/attest (ATTEST_SECRET in Vercel), verified by the PC; blocked attempts listed with one-click Allow
 
 ## Phase 0 tasks
 - [x] Check prerequisites (node 22, pnpm 11, git, gh logged in as robertpierson; Vercel + Supabase via MCP)

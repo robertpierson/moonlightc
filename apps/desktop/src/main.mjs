@@ -287,7 +287,9 @@ handle("computer:audit", () => computer.readAudit());
 computer.onState((st) => BrowserWindow.getAllWindows().forEach((w) => !w.isDestroyed() && w.webContents.send("computer:state", st)));
 remote.onState((st) => BrowserWindow.getAllWindows().forEach((w) => !w.isDestroyed() && w.webContents.send("remote:state", st)));
 handle("device:info", () => remote.deviceInfo());
-handle("remote:connect", (_e, client, tiers) => remote.connect(win, client, tiers));
+handle("remote:connect", (_e, client, tiers, where) => remote.connect(win, client, tiers, where));
+handle("remote:places", () => remote.places());
+handle("remote:setPlaces", (_e, p) => remote.setPlaces(p));
 handle("remote:end", (_e, clientId, reason) => remote.end(clientId ?? undefined, reason ? String(reason).slice(0, 80) : undefined));
 handle("remote:allowed", (_e, clientId, tier) => remote.allowed(String(clientId), String(tier)));
 handle("remote:frame", (_e, clientId) => remote.frame(String(clientId)));
@@ -321,8 +323,9 @@ handle("remote:audit", () => remote.readAudit());
 // Your own Claude Code on this PC (the CLI you installed and signed in to). Reachable only from this app's window.
 const CLAUDE = process.platform === "win32" ? "claude.cmd" : "claude";
 const claudeRuns = new Map();
+// Automated tests don't touch the real Claude Code unless a test asks for it (MOONC_E2E_CLAUDE=1).
 handle("claude:status", () =>
-  new Promise((done) =>
+  testRun && process.env.MOONC_E2E_CLAUDE !== "1" ? { installed: false } : new Promise((done) =>
     execFile(CLAUDE, ["--version"], { shell: process.platform === "win32", timeout: 20_000, windowsHide: true }, (err, out) => done(err ? { installed: false } : { installed: true, version: String(out).trim() })),
   ),
 );

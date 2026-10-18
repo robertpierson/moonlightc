@@ -51,6 +51,12 @@ describe("sync", () => {
     expect(phone.get().chats.map((c) => c.title)).toEqual(["Trip plan"]);
     expect(phone.get().connections[0].apiKey).toBe("sk-or-1");
     expect(phone.get().profile?.name).toBe("Shawn");
+    // The web search key follows the account too (but isn't listed with the AI models).
+    pc.set((s) => ({ ...s, searchKey: { provider: "tavily", key: "tvly-123456789" } }));
+    pcMeta = await syncOnce(backend, pc.get, pc.set, pcMeta, 3500);
+    phoneMeta = await syncOnce(backend, phone.get, phone.set, phoneMeta, 3600);
+    expect(phone.get().searchKey).toEqual({ provider: "tavily", key: "tvly-123456789" });
+    expect(phone.get().connections.some((c) => c.id === "web-search")).toBe(false);
 
     // Edit on the phone, delete on the PC: both changes reach the other device.
     phone.set((s) => ({ ...s, chats: [...s.chats, chat("c2", "Homework", 4000)] }));

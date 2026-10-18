@@ -120,3 +120,17 @@ export function gathered(pc: RTCPeerConnection, ms = 4000) {
     });
   });
 }
+
+/** This device may reach your PCs: signed in with the two-step code, or "connect without the code" is on. */
+export async function canReachPcs() {
+  const sb = supabase();
+  const { data } = await sb.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (data?.currentLevel === "aal2") return true;
+  return (await sb.rpc("quick_access_on")).data === true;
+}
+
+/** A note signed by the MoonlightC website saying where this device is (for PCs that allow only certain places). */
+export const whereAmI = () =>
+  fetch("https://moonlightc.vercel.app/api/attest", { cache: "no-store" })
+    .then((r) => r.json())
+    .catch(() => undefined);

@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { TwoStepGate } from "@/components/account/two-step-gate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { gathered, hifiAudio, ICE, isOnline, joinChannel, RemoteClient, subscribed, TIER_LABELS, type Tier } from "@/lib/remote";
+import { gathered, hifiAudio, ICE, isOnline, whereAmI, joinChannel, RemoteClient, subscribed, TIER_LABELS, type Tier } from "@/lib/remote";
 import { supabase } from "@/lib/supabase/client";
 import { useDevices } from "./your-computers";
 
@@ -16,7 +16,7 @@ type Tab = "screen" | "terminal" | "files" | "chat";
 const ALL: Tier[] = ["view", "control", "files", "terminal", "chat"];
 
 /** Control one of your computers from this device. */
-export function RemoteView({ deviceId, onSetup, extra }: { deviceId: string; onSetup: () => void; extra?: React.ReactNode }) {
+export function RemoteView({ deviceId, onSetup, extra, mini, onLive, onOpen, onClose }: { deviceId: string; onSetup: () => void; extra?: React.ReactNode; mini?: boolean; onLive?: (live: boolean) => void; onOpen?: () => void; onClose?: () => void }) {
   const device = useDevices().find((d) => d.id === deviceId);
   const [wanted, setWanted] = useState<Tier[]>(ALL);
   const [client, setClient] = useState<RemoteClient>();
@@ -59,8 +59,8 @@ export function RemoteView({ deviceId, onSetup, extra }: { deviceId: string; onS
       const c = new RemoteClient(ch, "screen");
       await subscribed(ch);
       chRef.current = ch;
-      const r = await c.call<{ allowed: boolean; tiers?: Tier[] }>("connect", { tiers: wanted }, 130_000);
-      if (!r.allowed) throw new Error("The person at the PC didn't allow it.");
+      const r = await c.call<{ allowed: boolean; tiers?: Tier[]; reason?: string }>("connect", { tiers: wanted, where: await whereAmI() }, 130_000);
+      if (!r.allowed) throw new Error(r.reason ?? "The person at the PC didn't allow it.");
       setTiers(r.tiers ?? []);
       setClient(c);
       setTab(r.tiers?.includes("view") ? "screen" : r.tiers?.includes("terminal") ? "terminal" : r.tiers?.includes("files") ? "files" : "chat");
@@ -72,6 +72,25 @@ export function RemoteView({ deviceId, onSetup, extra }: { deviceId: string; onS
     setBusy(false);
   };
 
+  useEffect(() => onLive?.(!!client), [client, onLive]);
+  // Picture-in-picture while you're elsewhere in the app: watch only (no clicks or keys), back to control on return.
+  if (mini)
+    return client ? (
+      <div className="flex h-full flex-col">
+        <div data-pip-handle className="flex cursor-move items-center gap-1 border-b bg-card px-2 py-1 text-xs select-none">
+          <span className="min-w-0 flex-1 truncate">{device?.name ?? "Your computer"} · watching</span>
+          <Button size="xs" variant="ghost" onClick={onOpen}>
+            Back to control
+          </Button>
+          <Button size="icon-xs" variant="ghost" aria-label="Disconnect" onClick={() => disconnect().then(onClose)}>
+            <Power />
+          </Button>
+        </div>
+        <div className="min-h-0 flex-1">
+          <Screen client={client} control={false} mini />
+        </div>
+      </div>
+    ) : null;
   return (
     <div className="min-h-0 flex-1 overflow-y-auto">
       <div className="mx-auto grid max-w-5xl gap-4 px-4 py-6">
@@ -87,7 +106,7 @@ export function RemoteView({ deviceId, onSetup, extra }: { deviceId: string; onS
             </Button>
           )}
         </div>
-        <TwoStepGate onSetup={onSetup}>
+        <TwoStepGate onSetup={onSetup} quick>
           {!device ? (
             <p className="text-sm text-muted-foreground">Loading…</p>
           ) : !device.remote_enabled ? (
@@ -152,7 +171,7 @@ const CODES = (code: string) =>
   : ({ Space: "space", Enter: "enter", Escape: "escape", Tab: "tab", Backspace: "backspace", ShiftLeft: "shift", ShiftRight: "shift", ControlLeft: "control", ControlRight: "control", AltLeft: "alt", AltRight: "alt", ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right" } as Record<string, string>)[code];
 const KEYS: Record<string, string> = { Enter: "enter", Backspace: "backspace", Tab: "tab", Escape: "escape", Delete: "delete", ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right", Home: "home", End: "end", PageUp: "pageup", PageDown: "pagedown" };
 
-function Screen({ client, control }: { client: RemoteClient; control: boolean }) {
+function Screen({ client, control, mini }: { client: RemoteClient; control: boolean; mini?: boolean }) {
   const [live, setLive] = useState<Live>("connecting");
   const [ready, setReady] = useState(false);
   const [text, setText] = useState("");
@@ -401,8 +420,8 @@ function Screen({ client, control }: { client: RemoteClient; control: boolean })
   };
 
   return (
-    <div ref={box} className={full ? "fixed inset-0 z-50 flex flex-col gap-2 bg-black p-2" : "grid gap-2"}>
-      <div className="flex flex-wrap items-center gap-2">
+    <div ref={box} className={mini ? "h-full bg-black" : full ? "fixed inset-0 z-50 flex flex-col gap-2 bg-black p-2" : "grid gap-2"}>
+      <div className={mini ? "hidden" : "flex flex-wrap items-center gap-2"}>
         <span className="text-xs text-muted-foreground" role="status">
           {live === "video" ? "Live video" : live === "pictures" ? "Pictures (this network blocks live video)" : "Connecting…"}
           {game && " · Game mode: click the screen to capture the mouse; press Esc twice quickly to leave"}
@@ -447,7 +466,7 @@ function Screen({ client, control }: { client: RemoteClient; control: boolean })
           {full ? <Minimize /> : <Maximize />} {full ? "Exit full screen" : "Full screen"}
         </Button>
       </div>
-      <div className={`overflow-auto rounded-lg ${full ? "min-h-0 flex-1" : "max-h-[75dvh]"}`}>
+      <div className={mini ? "h-full [&>*]:!h-full [&>*]:!w-full [&>*]:object-contain" : `overflow-auto rounded-lg ${full ? "min-h-0 flex-1" : "max-h-[75dvh]"}`}>
         <video ref={video} autoPlay playsInline muted {...surface} className={`${look} ${live === "video" ? "block" : "hidden"}`} />
         <canvas ref={canvas} {...surface} className={`${look} ${live === "pictures" && ready ? "block" : "hidden"}`} />
         {!ready && (
