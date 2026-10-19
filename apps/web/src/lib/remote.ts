@@ -33,18 +33,38 @@ export function thisClient() {
 export async function joinChannel(deviceId: string, presence: Record<string, unknown>) {
   const sb = supabase();
   await sb.realtime.setAuth();
+  // Supabase keeps one channel per PC in a page: the AI link, remote control and the PC's own host share it (each
+  // reads only answers addressed to it), and it closes when the last one leaves.
   const ch = sb.channel(channelName(deviceId), { config: { private: true, broadcast: { self: false }, presence: { key: String(presence.key ?? crypto.randomUUID()) } } });
+  users.set(ch, (users.get(ch) ?? 0) + 1);
   return ch;
 }
+const users = new Map<RealtimeChannel, number>();
+const joins = new WeakMap<RealtimeChannel, Promise<void>>();
 
+export function leaveChannel(ch: RealtimeChannel) {
+  const n = (users.get(ch) ?? 1) - 1;
+  if (n > 0) return void users.set(ch, n);
+  users.delete(ch);
+  joins.delete(ch);
+  supabase().removeChannel(ch);
+}
+
+/** Joined (a second subscribe on a shared channel never answers, so everyone waits on the first one). */
 export function subscribed(ch: RealtimeChannel) {
-  return new Promise<void>((resolve, reject) => {
-    ch.subscribe((status, err) => {
-      if (status === "SUBSCRIBED") resolve();
-      else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT")
-        reject(new Error(/unauthorized|denied|policy/i.test(String(err?.message ?? "")) ? "Two-step sign-in is needed on both devices." : "Couldn't reach your PC. Check that MoonlightC is open on it."));
+  let p = joins.get(ch);
+  if (!p) {
+    p = new Promise<void>((resolve, reject) => {
+      ch.subscribe((status, err) => {
+        if (status === "SUBSCRIBED") resolve();
+        else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT")
+          reject(new Error(/unauthorized|denied|policy/i.test(String(err?.message ?? "")) ? "Two-step sign-in is needed on both devices." : "Couldn't reach your PC. Check that MoonlightC is open on it."));
+      });
     });
-  });
+    joins.set(ch, p);
+    p.catch(() => joins.delete(ch));
+  }
+  return p;
 }
 
 /** The phone/browser side: send requests to the PC and wait for answers. */

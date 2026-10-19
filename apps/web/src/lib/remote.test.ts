@@ -1,7 +1,7 @@
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { MooncBridge } from "./desktop";
-import { RemoteClient, type Req, type Res } from "./remote";
+import { RemoteClient, subscribed, type Req, type Res } from "./remote";
 import { createHostHandler } from "./remote-host";
 
 /** An in-memory stand-in for a Realtime channel shared by the PC and one phone. */
@@ -113,5 +113,18 @@ describe("remote control protocol", () => {
     await done;
     expect(text).toBe("Hello");
     globalThis.fetch = real;
+  });
+});
+
+describe("shared PC channel", () => {
+  it("a second join waits on the first instead of subscribing again (which never answers)", async () => {
+    let calls = 0;
+    let done: (s: string) => void = () => {};
+    const ch = { subscribe: (cb: (s: string) => void) => (calls++, (done = cb)) } as unknown as Parameters<typeof subscribed>[0];
+    const a = subscribed(ch);
+    const b = subscribed(ch);
+    done("SUBSCRIBED");
+    await Promise.all([a, b]);
+    expect(calls).toBe(1);
   });
 });

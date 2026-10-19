@@ -2,7 +2,7 @@
 
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { useSyncExternalStore } from "react";
-import { canReachPcs, joinChannel, RemoteClient, subscribed, type Device, type Tier } from "./remote";
+import { canReachPcs, joinChannel, leaveChannel, RemoteClient, subscribed, type Device, type Tier } from "./remote";
 import type { UIMessage, UIMessageChunk } from "ai";
 import { CLAUDE_CODE_MODELS, claudePrompt, friendly, remember, sessions } from "./claude-code";
 import { getState, update } from "./store";
@@ -38,7 +38,7 @@ export async function findHomePc(): Promise<Device | undefined> {
 
 export async function connectHomePc(device: Device, tiers: Tier[] = ["files", "terminal", "chat"], quiet = false) {
   if (!quiet) set({ device, connecting: true, error: undefined });
-  if (channel) supabase().removeChannel(channel);
+  if (channel) leaveChannel(channel);
   channel = undefined;
   let ch: RealtimeChannel | undefined;
   try {
@@ -62,7 +62,7 @@ export async function connectHomePc(device: Device, tiers: Tier[] = ["files", "t
         connections: [...s.connections.filter((c) => c.id !== HOME_CONN), { id: HOME_CONN, providerId: "home-pc", label: `Home PC (${device.name})`, apiKey: "", models, addedAt: Date.now() }],
       }));
   } catch (e) {
-    if (ch) supabase().removeChannel(ch);
+    if (ch) leaveChannel(ch);
     if (quiet) return;
     set({ connecting: false, error: e instanceof Error ? e.message : String(e) });
   }
@@ -71,7 +71,7 @@ export async function connectHomePc(device: Device, tiers: Tier[] = ["files", "t
 export async function disconnectHomePc() {
   await state.client?.call("disconnect").catch(() => {});
   if (getState().connections.some((c) => c.id === HOME_CONN)) update((s) => ({ ...s, connections: s.connections.filter((c) => c.id !== HOME_CONN) }));
-  if (channel) supabase().removeChannel(channel);
+  if (channel) leaveChannel(channel);
   channel = undefined;
   set({ client: undefined, tiers: [] });
 }

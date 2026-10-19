@@ -3,7 +3,7 @@
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { useEffect, useState } from "react";
 import { desktop } from "@/lib/desktop";
-import { joinChannel, subscribed, type Req, type Res } from "@/lib/remote";
+import { joinChannel, leaveChannel, subscribed, type Req, type Res } from "@/lib/remote";
 import { createHostHandler, localModels } from "@/lib/remote-host";
 import { getState, updateNow, useStore } from "@/lib/store";
 import { supabase, useUser } from "@/lib/supabase/client";
@@ -103,7 +103,7 @@ export function RemoteHost() {
       offState();
       host.closeAll();
       b.remote.end(undefined, "remote control turned off");
-      if (ch) supabase().removeChannel(ch);
+      if (ch) leaveChannel(ch);
     };
   }, [b, uid, enabled, aal2]);
 

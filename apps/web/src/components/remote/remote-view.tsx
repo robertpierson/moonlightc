@@ -9,8 +9,8 @@ import { TwoStepGate } from "@/components/account/two-step-gate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { gathered, hifiAudio, ICE, isOnline, whereAmI, joinChannel, RemoteClient, subscribed, TIER_LABELS, type Tier } from "@/lib/remote";
-import { supabase } from "@/lib/supabase/client";
+import { gathered, hifiAudio, ICE, isOnline, whereAmI, joinChannel, leaveChannel, RemoteClient, subscribed, TIER_LABELS, type Tier } from "@/lib/remote";
+import { desktop } from "@/lib/desktop";
 import { useDevices } from "./your-computers";
 
 type Tab = "screen" | "terminal" | "files" | "chat";
@@ -29,7 +29,7 @@ export function RemoteView({ deviceId, onSetup, extra, mini, onLive, onOpen, onC
 
   const disconnect = async () => {
     await client?.call("disconnect").catch(() => {});
-    if (chRef.current) supabase().removeChannel(chRef.current);
+    if (chRef.current) leaveChannel(chRef.current);
     chRef.current = undefined;
     setClient(undefined);
     setTiers([]);
@@ -42,7 +42,7 @@ export function RemoteView({ deviceId, onSetup, extra, mini, onLive, onOpen, onC
   useEffect(() => {
     const end = () => {
       clientRef.current?.call("disconnect").catch(() => {});
-      if (chRef.current) supabase().removeChannel(chRef.current);
+      if (chRef.current) leaveChannel(chRef.current);
       chRef.current = undefined;
     };
     addEventListener("pagehide", end);
@@ -55,8 +55,11 @@ export function RemoteView({ deviceId, onSetup, extra, mini, onLive, onOpen, onC
   const connect = async () => {
     setBusy(true);
     setError("");
+    let ch: RealtimeChannel | undefined;
     try {
-      const ch = await joinChannel(deviceId, { key: `client:${crypto.randomUUID()}` });
+      const here = await desktop()?.device.info();
+      if (here?.id === deviceId) throw new Error("That's this PC. Connect to it from your phone, Chromebook or another computer.");
+      ch = await joinChannel(deviceId, { key: `client:${crypto.randomUUID()}` });
       const c = new RemoteClient(ch, "screen");
       await subscribed(ch);
       chRef.current = ch;
@@ -67,7 +70,7 @@ export function RemoteView({ deviceId, onSetup, extra, mini, onLive, onOpen, onC
       setTab(r.tiers?.includes("view") ? "screen" : r.tiers?.includes("terminal") ? "terminal" : r.tiers?.includes("files") ? "files" : "chat");
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
-      if (chRef.current) supabase().removeChannel(chRef.current);
+      if (ch) leaveChannel(ch);
       chRef.current = undefined;
     }
     setBusy(false);
