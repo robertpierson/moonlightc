@@ -185,6 +185,8 @@ export interface State {
   codePermission?: "ask" | "auto" | "plan" | "bypass";
   /** Desktop app: let your other devices control this PC (off until switched on in Settings > Remote control). */
   remoteEnabled?: boolean;
+  /** Remote control's on/off was carried over once from before it saved instantly (0.6.17). */
+  remoteCarried?: boolean;
   myThemes?: { id: string; name: string; look: Pick<Look, "theme" | "overrides" | "radius"> }[];
   subscriptions?: { items: Subscription[]; remindDays: number; reminded?: Record<string, number>; scannedAt?: number };
   memory?: { enabled: boolean; items: MemoryItem[] };
@@ -377,7 +379,7 @@ export function resetState() {
 // ---------- Unsaved changes in Settings (Save / Reset, like Discord) ----------
 // Preference settings edited in Settings show right away but only stick after Save. Actions with their own
 // buttons (adding a key, connecting a service, installing a plugin) still apply immediately.
-export const STAGED_KEYS = ["profile", "look", "distroId", "customDistros", "myThemes", "lastModel", "webTools", "memory", "autoPicks", "pinnedModes", "modes", "remoteEnabled"] as const;
+export const STAGED_KEYS = ["profile", "look", "distroId", "customDistros", "myThemes", "lastModel", "webTools", "memory", "autoPicks", "pinnedModes", "modes"] as const;
 type StagedKey = (typeof STAGED_KEYS)[number];
 let staged: Partial<Pick<State, StagedKey>> | null = null;
 const pick = (s: State) => Object.fromEntries(STAGED_KEYS.map((k) => [k, s[k]])) as Pick<State, StagedKey>;

@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { desktop } from "@/lib/desktop";
 import { joinChannel, subscribed, type Req, type Res } from "@/lib/remote";
 import { createHostHandler, localModels } from "@/lib/remote-host";
-import { useStore } from "@/lib/store";
+import { getState, updateNow, useStore } from "@/lib/store";
 import { supabase, useUser } from "@/lib/supabase/client";
 
 /** Is this session signed in with two-step sign-in? */
@@ -31,6 +31,13 @@ export function RemoteHost() {
     let stop = false;
     const beat = async () => {
       const info = await b.device.info();
+      // Once: before 0.6.17 the switch only stuck after Settings > Save, so an app restart turned it off. Keep it on
+      // if this PC was last listed with remote control on.
+      if (!getState().remoteCarried) {
+        const { data } = await supabase().from("devices").select("remote_enabled").eq("id", info.id).maybeSingle();
+        updateNow((s) => ({ ...s, remoteCarried: true, remoteEnabled: s.remoteEnabled || !!data?.remote_enabled }));
+        if (data?.remote_enabled && !enabled) return;
+      }
       const row = {
         id: info.id,
         user_id: uid,

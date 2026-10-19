@@ -15,4 +15,11 @@ describe("settings save bar", () => {
     update((s) => ({ ...s, lastModel: { ...s.lastModel! } }));
     expect(hasUnsavedChanges()).toBe(false);
   });
+  it("remote control on/off is kept at once (an app restart must not turn it back off)", () => {
+    beginEditing();
+    update((s) => ({ ...s, remoteEnabled: true }));
+    expect(hasUnsavedChanges()).toBe(false);
+    revertEdits();
+    expect(getState().remoteEnabled).toBe(true);
+  });
 });
