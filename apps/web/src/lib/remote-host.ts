@@ -72,9 +72,10 @@ export function createHostHandler(
         await b.remote.allowStream(req.from);
         // Game and music sound as it is: no call-style echo/noise filtering or volume leveling.
         const audio = { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 2 };
-        const stream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 60, max: 60 } }, audio }).catch(async () => {
+        // 30 frames a second is plenty for work and half the effort for this PC; game mode asks for 60.
+        const stream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 30, max: 60 } }, audio }).catch(async () => {
           await b.remote.allowStream(req.from);
-          return navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 60, max: 60 } }, audio: false });
+          return navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 30, max: 60 } }, audio: false });
         });
         stream.getVideoTracks().forEach((t) => (t.contentHint = "detail"));
         stream.getAudioTracks().forEach((t) => (t.contentHint = "music"));
@@ -102,7 +103,10 @@ export function createHostHandler(
               // Game mode asks for smooth motion over sharp text (and back again when it ends).
               if (a.action === "hint") {
                 const motion = a.hint === "motion";
-                stream.getVideoTracks().forEach((t) => (t.contentHint = motion ? "motion" : "detail"));
+                stream.getVideoTracks().forEach((t) => {
+                  t.contentHint = motion ? "motion" : "detail";
+                  t.applyConstraints({ frameRate: { ideal: motion ? 60 : 30, max: 60 } }).catch(() => {});
+                });
                 // Game mode: a bit smaller picture that never stutters (quicker to encode, send and decode).
                 pc.getSenders()
                   .filter((s) => s.track?.kind === "video")

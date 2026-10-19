@@ -2,6 +2,7 @@ import { app, BrowserWindow, clipboard, desktopCapturer, dialog, globalShortcut,
 import { execFile, spawn } from "node:child_process";
 import fs from "node:fs";
 import net from "node:net";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import * as computer from "./computer.mjs";
@@ -324,9 +325,15 @@ handle("remote:audit", () => remote.readAudit());
 const CLAUDE = process.platform === "win32" ? "claude.cmd" : "claude";
 const claudeRuns = new Map();
 // Automated tests don't touch the real Claude Code unless a test asks for it (MOONC_E2E_CLAUDE=1).
+// Checked at most every 10 minutes: each check starts Claude Code, and your devices ask every time they connect.
+let claudeStatus;
 handle("claude:status", () =>
-  testRun && process.env.MOONC_E2E_CLAUDE !== "1" ? { installed: false } : new Promise((done) =>
-    execFile(CLAUDE, ["--version"], { shell: process.platform === "win32", timeout: 20_000, windowsHide: true }, (err, out) => done(err ? { installed: false } : { installed: true, version: String(out).trim() })),
+  testRun && process.env.MOONC_E2E_CLAUDE !== "1" ? { installed: false } : claudeStatus && Date.now() - claudeStatus.at < 600_000 ? claudeStatus.value : new Promise((done) =>
+    execFile(CLAUDE, ["--version"], { shell: process.platform === "win32", timeout: 20_000, windowsHide: true }, (err, out) => {
+      const value = err ? { installed: false } : { installed: true, version: String(out).trim() };
+      claudeStatus = { at: Date.now(), value };
+      done(value);
+    }),
   ),
 );
 handle("claude:run", (e, id, prompt, sessionId, model, effort) => {
@@ -456,7 +463,20 @@ app.on("second-instance", (_e, argv) => {
   if (link) win?.webContents.send("deep-link", link);
 });
 
+// Your work on this PC comes first: MoonlightC runs below normal priority, except while it streams the screen.
+const yieldCpu = () => {
+  const streaming = remote.state().some((s) => s.tiers.includes("view"));
+  const p = streaming ? os.constants.priority.PRIORITY_NORMAL : os.constants.priority.PRIORITY_BELOW_NORMAL;
+  for (const pid of [...app.getAppMetrics().map((m) => m.pid), server?.pid].filter(Boolean))
+    try {
+      os.setPriority(pid, p);
+    } catch {}
+};
+
 app.whenReady().then(async () => {
+  yieldCpu();
+  setInterval(yieldCpu, 30_000);
+  remote.onState(yieldCpu);
   try {
     appURL ??= await startServer();
   } catch (err) {

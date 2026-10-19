@@ -224,7 +224,11 @@ function Screen({ client, control, mini }: { client: RemoteClient; control: bool
     (async () => {
       try {
         pc = new RTCPeerConnection({ iceServers: ICE });
-        pc.addTransceiver("video", { direction: "recvonly" });
+        const vt = pc.addTransceiver("video", { direction: "recvonly" });
+        // H.264 first: most PCs make it on the graphics chip, so streaming barely uses the PC's processor.
+        const codecs = RTCRtpReceiver.getCapabilities?.("video")?.codecs ?? [];
+        const h264 = codecs.filter((c) => c.mimeType === "video/H264");
+        if (h264.length && vt.setCodecPreferences) vt.setCodecPreferences([...h264, ...codecs.filter((c) => c.mimeType !== "video/H264")]);
         pc.addTransceiver("audio", { direction: "recvonly" });
         dc.current = pc.createDataChannel("input");
         moves.current = pc.createDataChannel("moves", { ordered: false, maxRetransmits: 0 });
