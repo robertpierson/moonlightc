@@ -15,6 +15,8 @@ describe("oauth", () => {
     const { state } = makeState("spotify");
     expect(readState(state, "spotify").verifier).toBeTruthy();
     expect(() => readState(state, "google")).toThrow();
-    expect(() => readState(state.replace(/.$/, (c) => (c === "A" ? "B" : "A")), "spotify")).toThrow();
+    const flip = (s: string, i: number) => s.slice(0, i) + (s[i] === "A" ? "B" : "A") + s.slice(i + 1);
+    expect(() => readState(flip(state, 5), "spotify")).toThrow();
+    expect(() => readState(flip(state, state.length - 5), "spotify")).toThrow();
   });
 });
