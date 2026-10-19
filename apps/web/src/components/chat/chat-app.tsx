@@ -23,7 +23,7 @@ const Studio = dynamic(() => import("@/components/studio/studio").then((m) => m.
 const Projects = dynamic(() => import("@/components/desktop/projects").then((m) => m.Projects), { loading: () => <div className="flex-1" /> });
 const Terminals = dynamic(() => import("@/components/desktop/terminals").then((m) => m.Terminals), { ssr: false, loading: () => <div className="flex-1" /> });
 
-import { KeyRound, Menu, MessageSquare } from "lucide-react";
+import { Columns2, KeyRound, Menu, MessageSquare, X } from "lucide-react";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ThemeToggle } from "@/components/theme";
 import { Button } from "@/components/ui/button";
@@ -53,6 +53,9 @@ import type { LaunchRequest } from "@/components/desktop/terminals";
 import { ChatView } from "./chat-view";
 import { KeysDialog } from "./keys-dialog";
 import { ThinkingSelect } from "@/components/chat/thinking-select";
+import { useDevices } from "@/components/remote/your-computers";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { isOnline } from "@/lib/remote";
 import { summarize } from "@/lib/summarize";
 import { syncClaudeCode } from "@/lib/claude-code";
 import { linkHomePcModels } from "@/lib/home-pc";
@@ -163,6 +166,7 @@ function Inner() {
   const [pendingText, setPendingText] = useState<string>();
   const [sideChat, setSideChat] = useState(false);
   const [remoteLive, setRemoteLive] = useState(false);
+  const [remoteDevice2, setRemoteDevice2] = useState<string>();
   const [pip, setPip] = useState({ x: 16, y: 16 });
   const [draftProject, setDraftProject] = useState<string>();
   const projects = useStore((s) => s.projects) ?? [];
@@ -453,7 +457,7 @@ ${summary}
             // Remote control stays connected when you go elsewhere: then it floats as a small picture you can move
             // and resize (watch only), until you come back.
             <div
-              className={view === "remote" ? "relative flex min-h-0 flex-1" : remoteLive ? "fixed z-40 overflow-hidden rounded-xl border bg-card shadow-xl [resize:both]" : "hidden"}
+              className={view === "remote" ? `relative flex min-h-0 flex-1 ${remoteDevice2 ? "flex-col md:flex-row" : ""}` : remoteLive ? "fixed z-40 overflow-hidden rounded-xl border bg-card shadow-xl [resize:both]" : "hidden"}
               style={view === "remote" ? undefined : { right: pip.x, bottom: pip.y, width: 360, height: 240, minWidth: 220, minHeight: 150, maxWidth: "90vw", maxHeight: "80vh" }}
               onPointerDown={(e) => {
                 if (view === "remote" || !(e.target as HTMLElement).closest("[data-pip-handle]") || (e.target as HTMLElement).closest("button")) return;
@@ -480,11 +484,29 @@ ${summary}
                 }}
                 onSetup={() => openSettings("account")}
                 extra={
-                  <Button size="sm" variant="secondary" aria-pressed={sideChat} onClick={() => setSideChat((v) => !v)}>
-                    <MessageSquare /> {sideChat ? "Close chat" : "Chat"}
-                  </Button>
+                  <>
+                    {!remoteDevice2 && <SplitPicker current={remoteDevice} onPick={setRemoteDevice2} />}
+                    <Button size="sm" variant="secondary" aria-pressed={sideChat} onClick={() => setSideChat((v) => !v)}>
+                      <MessageSquare /> {sideChat ? "Close chat" : "Chat"}
+                    </Button>
+                  </>
                 }
               />
+              {/* Split screen: a second PC beside the first, each with its own connection and controls. */}
+              {view === "remote" && remoteDevice2 && (
+                <div className="flex min-h-0 flex-1 border-t md:border-t-0 md:border-l">
+                  <RemoteView
+                    key={`split:${remoteDevice2}`}
+                    deviceId={remoteDevice2}
+                    onSetup={() => openSettings("account")}
+                    extra={
+                      <Button size="sm" variant="secondary" onClick={() => setRemoteDevice2(undefined)}>
+                        <X /> Close split
+                      </Button>
+                    }
+                  />
+                </div>
+              )}
               {view === "remote" && sideChat && (
                 <aside aria-label="Chat beside remote control" className="fixed inset-y-0 right-0 z-30 flex w-full max-w-sm flex-col border-l bg-background md:static md:z-auto md:w-96">
                   <div className="flex justify-end border-b p-1 md:hidden">
@@ -625,5 +647,27 @@ ${summary}
         }}
       />
     </TooltipProvider>
+  );
+}
+
+/** Remote control: open another of your online PCs beside this one. */
+function SplitPicker({ current, onPick }: { current: string; onPick: (id: string) => void }) {
+  const others = useDevices().filter((d) => d.id !== current && d.remote_enabled && isOnline(d));
+  if (!others.length) return null;
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button size="sm" variant="secondary">
+          <Columns2 /> Split screen
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        {others.map((d) => (
+          <DropdownMenuItem key={d.id} onSelect={() => onPick(d.id)}>
+            {d.name}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

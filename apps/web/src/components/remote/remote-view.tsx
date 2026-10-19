@@ -390,12 +390,56 @@ function Screen({ client, control, mini }: { client: RemoteClient; control: bool
   };
   const lastWheel = useRef(0);
   const look = `rounded-lg border bg-black outline-none focus-visible:ring-2 focus-visible:ring-ring ${control ? "cursor-crosshair" : ""}`;
+  // Phones and tablets: tap = click, press and hold = right-click, two fingers up/down = scroll.
+  const touch = useRef<{ timer?: ReturnType<typeof setTimeout>; held?: boolean; x?: number; y?: number; scrollY?: number }>({});
+  const fromTouch = (el: HTMLElement, t: { clientX: number; clientY: number }) => {
+    const r = el.getBoundingClientRect();
+    const clamp = (n: number) => Math.min(1, Math.max(0, n));
+    return { nx: clamp((t.clientX - r.left) / r.width), ny: clamp((t.clientY - r.top) / r.height) };
+  };
+  const phone = typeof matchMedia !== "undefined" && matchMedia("(pointer: coarse)").matches;
   const surface = {
     tabIndex: control ? 0 : -1,
     "aria-label": "Your computer's screen",
-    style: { width: `${zoom * 100}%`, maxWidth: "none", height: "auto" },
+    // While controlling, finger gestures go to the PC (not to scrolling or zooming this page).
+    style: { width: `${zoom * 100}%`, maxWidth: "none", height: "auto", touchAction: control ? "none" : undefined },
+    onTouchStart: (e: React.TouchEvent<HTMLElement>) => {
+      if (!control) return;
+      const t = touch.current;
+      clearTimeout(t.timer);
+      t.held = false;
+      if (e.touches.length === 2) {
+        t.scrollY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+        return;
+      }
+      const el = e.currentTarget;
+      const p = e.touches[0];
+      t.x = p.clientX;
+      t.y = p.clientY;
+      t.timer = setTimeout(() => {
+        t.held = true;
+        input({ action: "right_click", ...fromTouch(el, p) });
+      }, 550);
+    },
+    onTouchMove: (e: React.TouchEvent<HTMLElement>) => {
+      const t = touch.current;
+      if (e.touches.length === 2 && t.scrollY !== undefined) {
+        const y = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+        if (Math.abs(y - t.scrollY) > 30) {
+          input({ action: "scroll", amount: y > t.scrollY ? 3 : -3, ...fromTouch(e.currentTarget, e.touches[0]) });
+          t.scrollY = y;
+        }
+        return;
+      }
+      if (Math.hypot(e.touches[0].clientX - (t.x ?? 0), e.touches[0].clientY - (t.y ?? 0)) > 10) clearTimeout(t.timer);
+    },
+    onTouchEnd: () => {
+      clearTimeout(touch.current.timer);
+      touch.current.scrollY = undefined;
+    },
     onClick: (e: React.MouseEvent<HTMLElement>) => {
       if (!control) return;
+      if (touch.current.held) return void (touch.current.held = false);
       if (game) return capture(e.currentTarget);
       e.currentTarget.focus();
       input({ action: "click", ...at(e) });
@@ -432,7 +476,7 @@ function Screen({ client, control, mini }: { client: RemoteClient; control: bool
           {game && " · Game mode: click the screen to capture the mouse; press Esc twice quickly to leave"}
         </span>
         <span className="flex-1" />
-        {control && (
+        {control && !phone && (
           <>
             <label className="flex items-center gap-2 text-sm" title="Hold keys like WASD, look around with the mouse, and send Escape to the game">
               <Gamepad2 className="size-4" /> Game mode
