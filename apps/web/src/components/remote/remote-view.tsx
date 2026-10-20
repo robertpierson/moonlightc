@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { TwoStepGate } from "@/components/account/two-step-gate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
 import { gathered, hifiAudio, ICE, isOnline, whereAmI, joinChannel, leaveChannel, RemoteClient, subscribed, TIER_LABELS, type Tier } from "@/lib/remote";
 import { desktop } from "@/lib/desktop";
@@ -104,6 +105,7 @@ export function RemoteView({ deviceId, onSetup, extra, mini, onLive, onOpen, onC
           {device && <span className="text-sm text-muted-foreground">{isOnline(device) ? "Online" : `Last seen ${new Date(device.last_seen).toLocaleString()}`}</span>}
           <span className="ml-auto" />
           {extra}
+          {client && tiers.includes("control") && <PowerMenu client={client} />}
           {client && (
             <Button size="sm" variant="destructive" onClick={disconnect}>
               <Power /> Disconnect
@@ -726,5 +728,41 @@ function RemoteChat({ client, models }: { client: RemoteClient; models: string[]
         </Button>
       </form>
     </div>
+  );
+}
+
+const POWER = [
+  ["lock", "Lock", "Lock this PC? Someone has to sign in to Windows to use it again."],
+  ["sleep", "Sleep", "Put this PC to sleep? You can't wake it from here unless Wake-on-LAN or a smart plug is set up (Settings > Remote control on the PC)."],
+  ["restart", "Restart", "Restart this PC in 30 seconds? After it restarts, someone has to sign in to Windows before MoonlightC is back."],
+  ["shutdown", "Shut down", "Shut down this PC in 30 seconds? You can't turn it back on from here unless Wake-on-LAN or a smart plug is set up."],
+] as const;
+
+/** Lock, sleep, restart or shut down the PC (asks first; restart and shut down can be cancelled on the PC). */
+function PowerMenu({ client }: { client: RemoteClient }) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button size="sm" variant="secondary">
+          <Power /> Power
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        {POWER.map(([what, label, ask]) => (
+          <DropdownMenuItem
+            key={what}
+            onSelect={() => {
+              if (!confirm(ask)) return;
+              client
+                .call("power", { what })
+                .then(() => toast.success(what === "lock" ? "Locked." : what === "sleep" ? "Going to sleep." : `${label} in 30 seconds.`))
+                .catch((e: Error) => toast.error(e.message));
+            }}
+          >
+            {label}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

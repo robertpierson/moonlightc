@@ -96,6 +96,7 @@ export function RemoteSettings({ onSetup }: { onSetup: () => void }) {
               <li>In this PC&apos;s BIOS, turn on &quot;Wake on LAN&quot; (and in Windows: Device Manager &gt; network adapter &gt; Power Management &gt; allow it to wake the computer).</li>
               <li>Use your router&apos;s app (many have &quot;Wake-on-LAN&quot; or &quot;Wake device&quot;) with this address: <code className="text-foreground">{mac ?? "unknown"}</code>.</li>
               <li>Or: set the BIOS to &quot;power on after power loss&quot; and plug the PC into a smart plug you can switch from your phone.</li>
+              <li>Or: a Wi-Fi &quot;PC power switch&quot; module (plugs onto the motherboard&apos;s power-button pins, works with a phone app) presses the power button for you from anywhere.</li>
             </ol>
             <p>Then open MoonlightC on start (Settings &gt; General) so it&apos;s ready to connect.</p>
           </div>

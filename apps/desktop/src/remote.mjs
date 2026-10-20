@@ -3,7 +3,7 @@
 // here, and only after the person at this PC approved that device: native prompt, visible frame while connected,
 // Ctrl+Alt+Shift+M ends it, 15 idle minutes end it, and every action is written to an audit log.
 import { app, BrowserWindow, dialog, Notification, screen } from "electron";
-import { exec as runShell } from "node:child_process";
+import { execFile, exec as runShell } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -316,6 +316,26 @@ export function write(clientId, dir, name, data) {
   fs.writeFileSync(real, buf);
   audit("files.upload", { clientId, path: real, bytes: buf.length });
   return { saved: real };
+}
+
+/** Lock, sleep, restart or shut down this PC (needs "use the mouse and keyboard"). Restart and shut down wait 30
+ * seconds, so someone at the PC can cancel with "shutdown /a". */
+export function power(clientId, what) {
+  need(clientId, "control");
+  if (process.platform !== "win32") throw new Error("Power controls work on Windows PCs.");
+  const name = sessions.get(clientId)?.name ?? "another device";
+  const note = `MoonlightC: ${name} asked for this. To cancel, run: shutdown /a`;
+  const cmds = {
+    lock: ["rundll32.exe", ["user32.dll,LockWorkStation"]],
+    sleep: ["powershell.exe", ["-NoProfile", "-Command", "Start-Sleep 2; Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.Application]::SetSuspendState('Suspend', $false, $false)"]],
+    restart: ["shutdown.exe", ["/r", "/t", "30", "/c", note]],
+    shutdown: ["shutdown.exe", ["/s", "/t", "30", "/c", note]],
+  };
+  const c = cmds[what];
+  if (!c) throw new Error("Unknown power action.");
+  audit("power", { clientId, name, what });
+  execFile(c[0], c[1], { windowsHide: true }, () => {});
+  return { ok: true };
 }
 
 /** Run one command (the AI on your other device asked, and you approved it there). Output is capped. */

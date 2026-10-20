@@ -1,4 +1,4 @@
-import { app, BrowserWindow, clipboard, desktopCapturer, dialog, globalShortcut, ipcMain, Menu, nativeImage, Notification, safeStorage, session, shell, Tray } from "electron";
+import { app, BrowserWindow, clipboard, desktopCapturer, dialog, globalShortcut, ipcMain, Menu, nativeImage, Notification, powerSaveBlocker, safeStorage, session, shell, Tray } from "electron";
 import { execFile, spawn } from "node:child_process";
 import fs from "node:fs";
 import net from "node:net";
@@ -320,6 +320,13 @@ handle("remote:state", () => remote.state());
 handle("remote:grants", () => remote.grants());
 handle("remote:revoke", (_e, clientId) => remote.revoke(String(clientId)));
 handle("remote:audit", () => remote.readAudit());
+handle("remote:power", (_e, clientId, what) => remote.power(String(clientId), String(what)));
+// While remote control is on, Windows doesn't put this PC to sleep by itself (you can still sleep it yourself).
+let awake;
+handle("settings:keepAwake", (_e, on) => {
+  if (on && awake === undefined) awake = powerSaveBlocker.start("prevent-app-suspension");
+  if (!on && awake !== undefined) (powerSaveBlocker.stop(awake), (awake = undefined));
+});
 
 // Your own Claude Code on this PC (the CLI you installed and signed in to). Reachable only from this app's window.
 const CLAUDE = process.platform === "win32" ? "claude.cmd" : "claude";

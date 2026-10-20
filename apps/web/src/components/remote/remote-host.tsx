@@ -59,6 +59,17 @@ export function RemoteHost() {
     };
   }, [b, uid, enabled]);
 
+  // Remote control on: this PC stays awake by itself, and MoonlightC starts (hidden) with Windows, so it's
+  // reachable when you're away. Start-with-Windows is set once; you can still turn it off in Settings > General.
+  useEffect(() => {
+    if (!b) return;
+    b.settings.keepAwake(enabled).catch(() => {});
+    if (enabled && !getState().loginSet) {
+      b.settings.setOpenAtLogin(true).catch(() => {});
+      updateNow((s) => ({ ...s, loginSet: true }));
+    }
+  }, [b, enabled]);
+
   // Answer requests while remote control is on.
   useEffect(() => {
     if (!b || !uid || !enabled || !aal2) return;

@@ -130,6 +130,9 @@ export function createHostHandler(
         await gathered(pc);
         return { sdp: pc.localDescription?.sdp };
       }
+      case "power":
+        await need(req, "control");
+        return b.remote.power(req.from, p.what as "lock" | "sleep" | "restart" | "shutdown");
       // Claude Code on this PC, for your other devices (needs "chat with the AI models on this PC").
       case "claude.status":
         await need(req, "chat");

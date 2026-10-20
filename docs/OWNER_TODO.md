@@ -129,3 +129,14 @@ Installers for Windows, Mac and Linux are built and waiting in a **draft** (priv
 3. If you want people to download it now: click the pencil (**Edit**), tick **Set as a pre-release**, click **Publish release**.
    The download page on the website then shows the right button for each visitor automatically.
    (Builds aren't code-signed yet, so Windows/Mac show a warning the first time; the download page explains how to open it.)
+
+## Optional: turn your PC on from anywhere (needs a small part; costs money, your call)
+Software can't start a PC that's off; something has to press the power button. Pick one:
+1. **Wi-Fi PC power switch** (~$15-25, search "WiFi PC power switch module eWeLink"): plugs onto the motherboard's
+   power-button pins inside the case; its phone app presses the button from anywhere (on, off, force off).
+2. **Smart plug** (~$10): in the BIOS set "Restore on AC power loss" to "Power On". Switch the plug off, then on, from
+   its app and the PC boots.
+3. **Router Wake-on-LAN** (free if your router's app has "Wake device"): turn on Wake-on-LAN in BIOS and Windows; the
+   PC's address is in MoonlightC > Settings > Remote control > "Turn this PC on when you're away".
+After it boots, Windows asks for your sign-in before MoonlightC starts. Tell me if you want it to sign in by itself
+(less safe if someone can touch the PC).

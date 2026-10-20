@@ -50,6 +50,7 @@ contextBridge.exposeInMainWorld("moonc", {
   settings: {
     get: () => invoke("settings:get"),
     setOpenAtLogin: (on) => invoke("settings:openAtLogin", on),
+    keepAwake: (on) => invoke("settings:keepAwake", on),
   },
   device: { info: () => invoke("device:info") },
   keys: { scan: () => invoke("keys:scan") },
@@ -83,6 +84,7 @@ contextBridge.exposeInMainWorld("moonc", {
     grants: () => invoke("remote:grants"),
     revoke: (clientId) => invoke("remote:revoke", clientId),
     audit: () => invoke("remote:audit"),
+    power: (clientId, what) => invoke("remote:power", clientId, what),
     onState: (cb) => {
       const fn = (_e, st) => cb(st);
       ipcRenderer.on("remote:state", fn);
