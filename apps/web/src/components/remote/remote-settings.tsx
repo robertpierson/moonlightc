@@ -50,7 +50,7 @@ export function RemoteSettings({ onSetup }: { onSetup: () => void }) {
           <div className="grid gap-0.5">
             <span className="font-medium">Let my other devices control this PC</span>
             <span className="text-sm text-muted-foreground">
-              This PC shows up as <strong>{name || "…"}</strong> under Cowork &gt; Your computers on your phone or other computers. Each new device has to be allowed here first.
+              This PC shows up as <strong>{name || "…"}</strong> under Cowork &gt; Your computers on your phone or other computers. Each new device has to be allowed here first. While this is on, the PC stays awake (screen on, no auto-lock) and MoonlightC starts with Windows.
             </span>
           </div>
           <Switch aria-label="Let my other devices control this PC" checked={enabled} onCheckedChange={(v) => update((s) => ({ ...s, remoteEnabled: v }))} />

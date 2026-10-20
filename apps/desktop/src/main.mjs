@@ -321,10 +321,11 @@ handle("remote:grants", () => remote.grants());
 handle("remote:revoke", (_e, clientId) => remote.revoke(String(clientId)));
 handle("remote:audit", () => remote.readAudit());
 handle("remote:power", (_e, clientId, what) => remote.power(String(clientId), String(what)));
-// While remote control is on, Windows doesn't put this PC to sleep by itself (you can still sleep it yourself).
+// While remote control is on, Windows doesn't sleep, turn the screen off or lock by itself (no fake mouse moves;
+// you can still sleep or lock it yourself).
 let awake;
 handle("settings:keepAwake", (_e, on) => {
-  if (on && awake === undefined) awake = powerSaveBlocker.start("prevent-app-suspension");
+  if (on && awake === undefined) awake = powerSaveBlocker.start("prevent-display-sleep");
   if (!on && awake !== undefined) (powerSaveBlocker.stop(awake), (awake = undefined));
 });
 
