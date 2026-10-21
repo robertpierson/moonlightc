@@ -357,7 +357,7 @@ $p = New-ScheduledTaskPrincipal -UserId $env:USERNAME -RunLevel Highest -LogonTy
 $s = New-ScheduledTaskSettingsSet -ExecutionTimeLimit (New-TimeSpan -Seconds 0) -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
 Register-ScheduledTask -TaskName MoonlightC -Action $a -Trigger $t -Principal $p -Settings $s -Force | Out-Null
 Set-ItemProperty 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\System' -Name PromptOnSecureDesktop -Value 0 -Type DWord
-Start-Process cmd.exe -WindowStyle Hidden -ArgumentList '/c timeout /t 6 /nobreak & schtasks /run /tn MoonlightC'`
+Start-Process powershell.exe -WindowStyle Hidden -ArgumentList '-NoProfile','-Command','Start-Sleep 6; Start-ScheduledTask -TaskName MoonlightC'`
       : `Unregister-ScheduledTask -TaskName MoonlightC -Confirm:$false -ErrorAction SilentlyContinue
 Set-ItemProperty 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\System' -Name PromptOnSecureDesktop -Value 1 -Type DWord`,
   );
