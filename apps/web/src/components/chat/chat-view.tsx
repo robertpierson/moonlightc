@@ -1,7 +1,7 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { HOME_TOOLS, homePcClient, homeToolNeedsOk, runHomeTool } from "@/lib/home-pc";
+import { HOME_TOOLS, homePcClient, homeScreenOn, homeToolNeedsOk, runHomeScreen, runHomeTool } from "@/lib/home-pc";
 import { routeLocal } from "@/lib/local-transport";
 import { activePlugins, activeServers, mcpPayload } from "@/lib/project-tools";
 import { getProvider } from "@moonc/core";
@@ -209,6 +209,7 @@ export function ChatView({
         files: (cowork && !!desktop()) || undefined,
         browser: (cowork && hasExtension()) || undefined,
         homePc: (cowork && !!homePcClient()) || undefined,
+        homeScreen: (cowork && !desktop() && homeScreenOn()) || undefined,
         google: googleTokenRef.current
           ? { accessToken: googleTokenRef.current }
           : undefined,
@@ -286,6 +287,20 @@ export function ChatView({
       lastAssistantMessageIsCompleteWithApprovalResponses(o),
     onToolCall: async ({ toolCall }) => {
       if (toolCall.dynamic) return;
+      if (toolCall.toolName === "computer" && !desktop() && homeScreenOn()) {
+        try {
+          const ci = toolCall.input as { action: string; destructive?: boolean; reason?: string };
+          if (ci.destructive) {
+            const ok = await new Promise<boolean>((decide) => setAsk({ what: ci.reason || `${ci.action} on your home PC`, decide }));
+            setAsk(undefined);
+            if (!ok) return void addToolOutput({ tool: "computer", toolCallId: toolCall.toolCallId, output: { note: "The person said no." } } as never);
+          }
+          addToolOutput({ tool: "computer", toolCallId: toolCall.toolCallId, output: await runHomeScreen(toolCall.input as { action: string }) } as never);
+        } catch (e) {
+          addToolOutput({ tool: "computer", toolCallId: toolCall.toolCallId, output: { error: e instanceof Error ? e.message : String(e) } } as never);
+        }
+        return;
+      }
       if (toolCall.toolName === "computer") {
         const bridge = desktop();
         try {

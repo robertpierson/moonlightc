@@ -130,6 +130,9 @@ export function createHostHandler(
         await gathered(pc);
         return { sdp: pc.localDescription?.sdp };
       }
+      case "status":
+        await need(req, "view");
+        return b.remote.status();
       case "power":
         await need(req, "control");
         return b.remote.power(req.from, p.what as "lock" | "sleep" | "restart" | "shutdown");

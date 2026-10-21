@@ -15,12 +15,27 @@ import { Switch } from "@/components/ui/switch";
 import { fetchMarketplace, fetchPlugin, parseGitHubInput, type ClaudePlugin, type MarketplaceEntry, type PluginMcp, type PluginSource } from "@/lib/claude-plugins";
 import { desktop } from "@/lib/desktop";
 import { beginMcpSignIn } from "@/lib/mcp-auth-client";
-import { update, useStore } from "@/lib/store";
+import { getState, update, useStore } from "@/lib/store";
 
 type Draft = Omit<ClaudePlugin, "id" | "enabled" | "installedAt">;
 const serverId = (pluginId: string, server: string) => `plugin-${pluginId}-${server}`;
 const ghLink = (s: PluginSource) => `https://github.com/${s.repo}${s.path ? `/tree/${s.ref}/${s.path}` : ""}`;
 const count = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+
+// The owner's kit: what he uses in Claude Code, plus a few that make the AI faster and cheaper to run.
+const OFFICIAL = (name: string): PluginSource => ({ repo: "anthropics/claude-plugins-official", ref: "HEAD", path: `plugins/${name}` });
+const KIT: { name: string; what: string; source: PluginSource }[] = [
+  { name: "caveman", what: "Short, to-the-point answers (far fewer tokens)", source: { repo: "JuliusBrussee/caveman", ref: "HEAD", path: "" } },
+  { name: "ponytail", what: "Simplest code that works, no bloat", source: { repo: "DietrichGebert/ponytail", ref: "HEAD", path: "" } },
+  { name: "frontend-design", what: "Distinctive, polished web design", source: OFFICIAL("frontend-design") },
+  { name: "ui-ux-pro-max", what: "Styles, colors, fonts and UX rules", source: { repo: "nextlevelbuilder/ui-ux-pro-max-skill", ref: "HEAD", path: "" } },
+  { name: "code-review", what: "Reviews code for bugs", source: OFFICIAL("code-review") },
+  { name: "code-simplifier", what: "Cleans up and simplifies code", source: OFFICIAL("code-simplifier") },
+  { name: "commit-commands", what: "/commit, push and pull requests", source: OFFICIAL("commit-commands") },
+  { name: "feature-dev", what: "Plans and builds features step by step", source: OFFICIAL("feature-dev") },
+  { name: "context7", what: "Up-to-date docs for any library", source: { repo: "anthropics/claude-plugins-official", ref: "HEAD", path: "external_plugins/context7" } },
+  { name: "skill-creator", what: "Make your own skills", source: OFFICIAL("skill-creator") },
+];
 
 /** Install Claude Code plugins from GitHub and use their skills, commands, agents and connectors here. */
 export function ClaudePlugins() {
@@ -87,6 +102,44 @@ export function ClaudePlugins() {
           Add skills, slash commands, modes and connectors. Plugins made for Claude work here (hooks and command-line tools only work in Claude Code, so each one shows what it can and can&apos;t do before you install it).
         </p>
       </div>
+
+      <section aria-labelledby="kit-h" className="grid gap-3 rounded-xl border border-primary/40 bg-primary/5 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 id="kit-h" className="font-medium">
+            Shawn&apos;s kit
+          </h3>
+          <Button
+            size="sm"
+            disabled={!!busy || KIT.every((k) => installed.some((x) => x.name === k.name))}
+            onClick={() =>
+              run("plugin:the kit", async () => {
+                const failed: string[] = [];
+                for (const k of KIT) {
+                  if (getState().plugins?.some((x) => x.name === k.name)) continue;
+                  try {
+                    const p = await fetchPlugin(k.source, k.name);
+                    update((s) => ({ ...s, plugins: [...(s.plugins ?? []).filter((x) => x.name !== p.name), { ...p, id: crypto.randomUUID(), enabled: true, installedAt: Date.now() }] }));
+                  } catch {
+                    failed.push(k.name);
+                  }
+                }
+                if (failed.length) throw new Error(`Installed the rest; couldn't read ${failed.join(", ")} from GitHub right now. Try again later.`);
+                toast.success("Kit installed.");
+              })
+            }
+          >
+            {KIT.every((k) => installed.some((x) => x.name === k.name)) ? "All installed" : "Install all"}
+          </Button>
+        </div>
+        <ul className="grid gap-1 text-sm sm:grid-cols-2">
+          {KIT.map((k) => (
+            <li key={k.name}>
+              <span className="font-medium">{k.name}</span> <span className="text-muted-foreground">{k.what}</span>
+              {installed.some((x) => x.name === k.name) && <span className="text-emerald-600"> ✓</span>}
+            </li>
+          ))}
+        </ul>
+      </section>
 
       {error && (
         <p role="alert" className="rounded-md bg-destructive/10 p-2 text-sm text-destructive">

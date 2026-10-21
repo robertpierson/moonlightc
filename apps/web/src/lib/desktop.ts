@@ -90,6 +90,8 @@ export interface MooncBridge {
     get(): Promise<{ openAtLogin: boolean }>;
     setOpenAtLogin(on: boolean): Promise<void>;
     keepAwake(on: boolean): Promise<void>;
+    setupWake(): Promise<{ ok: boolean; error?: string }>;
+    setupAutoSignIn(): Promise<{ ok: boolean; error?: string }>;
   };
   device: { info(): Promise<{ id: string; name: string; os: string; version: string; mac?: string }> };
   clipboard: { readKey(): Promise<string | null>; readText(): Promise<string> };
@@ -123,6 +125,7 @@ export interface MooncBridge {
     audit(): Promise<{ at: string; action: string; name?: string; clientId?: string; [k: string]: unknown }[]>;
     onState(cb: (s: RemoteSession[]) => void): () => void;
     power(clientId: string, what: "lock" | "sleep" | "restart" | "shutdown"): Promise<{ ok: true }>;
+    status(): Promise<{ locked: boolean }>;
   };
   computer: {
     /** Native "Let the AI control this PC?" dialog. Resolves true if allowed. */

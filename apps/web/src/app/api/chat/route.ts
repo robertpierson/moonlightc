@@ -26,6 +26,8 @@ interface Body {
   files?: boolean;
   browser?: boolean;
   homePc?: boolean;
+  /** Cowork on another device with the home PC's screen shared: the computer tool runs there. */
+  homeScreen?: boolean;
   computer?: boolean;
   google?: { accessToken?: string };
   accounts?: { spotify?: string; slack?: string; discord?: string; x?: string };
@@ -79,7 +81,7 @@ const computerTool = tool({
       type: "content",
       value: [
         { type: "text", text: `Screenshot ${o.width}x${o.height}.` },
-        { type: "file", mediaType: "image/png", data: { type: "data", data: o.image } },
+        { type: "file", mediaType: o.image.startsWith("/9j/") ? "image/jpeg" : "image/png", data: { type: "data", data: o.image } },
       ],
     };
   },
@@ -137,7 +139,7 @@ export async function POST(req: Request) {
           pc_run_command: tool({ description: "Run a shell command on the home PC (for example to build, test or use git) and get its output. The person approves it first.", inputSchema: jsonSchema({ type: "object", properties: { command: { type: "string" }, cwd: { type: "string", description: "Folder to run in (relative to home)" } }, required: ["command"] }) }),
         }
       : {};
-    const desktopComputer = body.computer && process.env.MOONC_DESKTOP === "1";
+    const desktopComputer = (body.computer && process.env.MOONC_DESKTOP === "1") || body.homeScreen === true;
     // Screenshots must reach the model as images; OpenAI-compatible APIs only accept text in tool results.
     const visionTools = ["anthropic", "openai", "google", "azure", "bedrock"].includes(getProvider(c.providerId).kind) || process.env.MOONC_E2E_AUTO_APPROVE === "1";
     if (desktopComputer && !visionTools) {

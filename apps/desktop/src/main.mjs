@@ -1,4 +1,4 @@
-import { app, BrowserWindow, clipboard, desktopCapturer, dialog, globalShortcut, ipcMain, Menu, nativeImage, Notification, powerSaveBlocker, safeStorage, session, shell, Tray } from "electron";
+import { app, BrowserWindow, clipboard, desktopCapturer, dialog, globalShortcut, ipcMain, Menu, nativeImage, Notification, powerMonitor, powerSaveBlocker, safeStorage, session, shell, Tray } from "electron";
 import { execFile, spawn } from "node:child_process";
 import fs from "node:fs";
 import net from "node:net";
@@ -321,6 +321,30 @@ handle("remote:grants", () => remote.grants());
 handle("remote:revoke", (_e, clientId) => remote.revoke(String(clientId)));
 handle("remote:audit", () => remote.readAudit());
 handle("remote:power", (_e, clientId, what) => remote.power(String(clientId), String(what)));
+handle("remote:status", () => remote.status());
+
+// Windows changes that need administrator rights: one Windows "Yes" prompt, then they run hidden.
+const elevated = (script) =>
+  new Promise((done) => {
+    if (process.platform !== "win32") return done({ ok: false, error: "This works on Windows." });
+    const enc = Buffer.from(script, "utf16le").toString("base64");
+    execFile("powershell.exe", ["-NoProfile", "-Command", `try { Start-Process powershell.exe -Verb RunAs -Wait -WindowStyle Hidden -ArgumentList '-NoProfile','-EncodedCommand','${enc}'; exit 0 } catch { exit 1 }`], { windowsHide: true }, (err) =>
+      done(err ? { ok: false, error: "Windows didn't allow it (the Yes prompt was closed)." } : { ok: true }),
+    );
+  });
+// Wake-on-LAN on the network adapters, and no "fast startup" (it stops a PC that's off from hearing the wake signal).
+handle("setup:wake", () =>
+  elevated(`Get-NetAdapter -Physical | ForEach-Object { Set-NetAdapterPowerManagement -Name $_.Name -WakeOnMagicPacket Enabled -ErrorAction SilentlyContinue; powercfg /deviceenablewake "$($_.InterfaceDescription)" }
+Set-ItemProperty 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Power' -Name HiberbootEnabled -Value 0 -Type DWord`),
+);
+// Sign in to Windows by itself: allows password sign-in again, then opens Windows' own "User Accounts" box where the
+// person unticks "Users must enter a user name and password" and types their password there (never seen by MoonlightC).
+handle("setup:autoSignIn", async () => {
+  const r = await elevated(`New-Item 'HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\PasswordLess\\Device' -Force | Out-Null
+Set-ItemProperty 'HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\PasswordLess\\Device' -Name DevicePasswordLessBuildVersion -Value 0 -Type DWord`);
+  if (r.ok) spawn("netplwiz.exe", [], { detached: true, stdio: "ignore" }).unref();
+  return r;
+});
 // While remote control is on, Windows doesn't sleep, turn the screen off or lock by itself (no fake mouse moves;
 // you can still sleep or lock it yourself).
 let awake;
@@ -482,6 +506,8 @@ const yieldCpu = () => {
 };
 
 app.whenReady().then(async () => {
+  powerMonitor.on("lock-screen", () => remote.setLocked(true));
+  powerMonitor.on("unlock-screen", () => remote.setLocked(false));
   yieldCpu();
   setInterval(yieldCpu, 30_000);
   remote.onState(yieldCpu);

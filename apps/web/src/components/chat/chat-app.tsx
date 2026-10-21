@@ -58,7 +58,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { isOnline } from "@/lib/remote";
 import { summarize } from "@/lib/summarize";
 import { syncClaudeCode } from "@/lib/claude-code";
-import { linkHomePcModels } from "@/lib/home-pc";
+import { connectHomePc, findHomePc, homeScreenOn, linkHomePcModels } from "@/lib/home-pc";
 import { ModelPicker } from "./model-picker";
 import { ModeSelect, ModesDialog, useModes } from "./modes";
 import { CommandPalette } from "./command-palette";
@@ -310,7 +310,7 @@ ${summary}
   const chatView = (
     <ChatView
       key={chat.id}
-      cowork={view === "cowork"}
+      cowork={view === "cowork" || view === "remote"}
       chat={chat}
       model={model}
       mode={mode}
@@ -486,7 +486,16 @@ ${summary}
                 extra={
                   <>
                     {!remoteDevice2 && <SplitPicker current={remoteDevice} onPick={setRemoteDevice2} />}
-                    <Button size="sm" variant="secondary" aria-pressed={sideChat} onClick={() => setSideChat((v) => !v)}>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      aria-pressed={sideChat}
+                      onClick={() => {
+                        // The AI beside the screen works like Cowork: it gets the home PC's screen, files and commands.
+                        if (!sideChat && !homeScreenOn()) findHomePc().then((d) => d && connectHomePc(d)).catch(() => {});
+                        setSideChat((v) => !v);
+                      }}
+                    >
                       <MessageSquare /> {sideChat ? "Close chat" : "Chat"}
                     </Button>
                   </>

@@ -36,7 +36,8 @@ export async function findHomePc(): Promise<Device | undefined> {
   return (data?.[0] as Device | undefined) ?? undefined;
 }
 
-export async function connectHomePc(device: Device, tiers: Tier[] = ["files", "terminal", "chat"], quiet = false) {
+// Cowork gets the screen too, so the AI can look and click (Windows prompts and the sign-in screen are off limits to every app).
+export async function connectHomePc(device: Device, tiers: Tier[] = ["view", "control", "files", "terminal", "chat"], quiet = false) {
   if (!quiet) set({ device, connecting: true, error: undefined });
   if (channel) leaveChannel(channel);
   channel = undefined;
@@ -133,6 +134,19 @@ export async function linkHomePcModels() {
   if (!(await canReachPcs())) return;
   const pc = await findHomePc().catch(() => undefined);
   if (pc && Date.now() - Date.parse(pc.last_seen) < 3 * 60_000) await connectHomePc(pc, ["chat"], true);
+}
+
+/** Cowork on another device may see and use the home PC's screen (it was allowed to). */
+export const homeScreenOn = () => !!state.client && state.tiers.includes("view") && state.tiers.includes("control");
+
+/** The AI's computer tool, run on the home PC: screenshots come back as pictures; clicks use their pixels. */
+export async function runHomeScreen(a: { action: string; ms?: number; [k: string]: unknown }) {
+  const c = state.client;
+  if (!c || !homeScreenOn()) throw new Error("The home PC's screen isn't shared. Connect it at the top of Cowork.");
+  if (a.action === "wait") await new Promise((r) => setTimeout(r, Math.min(5000, Number(a.ms ?? 1000))));
+  else if (a.action !== "screenshot") await c.call("input", a, 30_000);
+  if (a.action !== "screenshot") await new Promise((r) => setTimeout(r, 400));
+  return c.call<{ image: string; width: number; height: number }>("frame", {}, 30_000);
 }
 
 /** Tools the AI gets in Cowork while the home PC is connected. Changes and commands ask the person first. */

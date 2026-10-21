@@ -46,6 +46,52 @@ export function RemoteSettings({ onSetup }: { onSetup: () => void }) {
   return (
     <TwoStepGate onSetup={onSetup}>
       <div className="grid gap-6">
+        <div className="grid gap-3 rounded-xl border border-primary/40 bg-primary/5 p-4">
+          <div className="grid gap-0.5">
+            <span className="font-medium">Set up this PC for when I&apos;m away</span>
+            <span className="text-sm text-muted-foreground">
+              One click: remote control on, this is your home PC, your devices connect without asking, MoonlightC starts with Windows and the PC stays awake. Windows then asks &quot;Yes&quot; once to let a router or Wi-Fi plug wake it.
+            </span>
+          </div>
+          <Button
+            className="justify-self-start"
+            onClick={async () => {
+              update((s) => ({ ...s, remoteEnabled: true }));
+              await b.settings.setOpenAtLogin(true);
+              setTrust(await b.remote.setTrusted(true));
+              if (id) {
+                await supabase().from("devices").update({ is_home: false }).neq("id", id);
+                const { error } = await supabase().from("devices").update({ is_home: true }).eq("id", id);
+                if (!error) setHome(true);
+              }
+              const r = await b.settings.setupWake();
+              if (r.ok) toast.success("This PC is ready for when you're away.");
+              else toast.error(`Everything else is on. Wake-up wasn't set: ${r.error}`);
+            }}
+          >
+            Set up everything
+          </Button>
+        </div>
+
+        <div className="grid gap-3 rounded-xl border p-4">
+          <div className="grid gap-0.5">
+            <span className="font-medium">Sign in to Windows by itself after a restart</span>
+            <span className="text-sm text-muted-foreground">
+              Windows&apos; sign-in screen is the one place no app can type, so after a restart nothing works until someone signs in. With this, it signs in by itself. Anyone who can touch this PC gets in too, so only do it if it&apos;s somewhere safe. Click, say Yes, then in the box that opens untick &quot;Users must enter a user name and password&quot;, click OK and type your Microsoft account password there.
+            </span>
+          </div>
+          <Button
+            variant="secondary"
+            className="justify-self-start"
+            onClick={async () => {
+              const r = await b.settings.setupAutoSignIn();
+              if (!r.ok) toast.error(r.error ?? "Didn't work.");
+            }}
+          >
+            Set up signing in by itself
+          </Button>
+        </div>
+
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4">
           <div className="grid gap-0.5">
             <span className="font-medium">Let my other devices control this PC</span>

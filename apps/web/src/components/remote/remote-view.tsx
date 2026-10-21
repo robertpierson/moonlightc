@@ -14,7 +14,7 @@ import { gathered, hifiAudio, ICE, isOnline, whereAmI, joinChannel, leaveChannel
 import { desktop } from "@/lib/desktop";
 import { useDevices } from "./your-computers";
 
-type Tab = "screen" | "terminal" | "files" | "chat";
+type Tab = "screen" | "terminal" | "files";
 const ALL: Tier[] = ["view", "control", "files", "terminal", "chat"];
 
 /** Control one of your computers from this device. */
@@ -68,7 +68,7 @@ export function RemoteView({ deviceId, onSetup, extra, mini, onLive, onOpen, onC
       if (!r.allowed) throw new Error(r.reason ?? "The person at the PC didn't allow it.");
       setTiers(r.tiers ?? []);
       setClient(c);
-      setTab(r.tiers?.includes("view") ? "screen" : r.tiers?.includes("terminal") ? "terminal" : r.tiers?.includes("files") ? "files" : "chat");
+      setTab(r.tiers?.includes("view") ? "screen" : r.tiers?.includes("terminal") ? "terminal" : "files");
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       if (ch) leaveChannel(ch);
@@ -145,7 +145,6 @@ export function RemoteView({ deviceId, onSetup, extra, mini, onLive, onOpen, onC
                     ["screen", "Screen", "view"],
                     ["terminal", "Terminal", "terminal"],
                     ["files", "Files", "files"],
-                    ["chat", "Chat", "chat"],
                   ] as const
                 )
                   .filter(([, , t]) => tiers.includes(t))
@@ -158,7 +157,6 @@ export function RemoteView({ deviceId, onSetup, extra, mini, onLive, onOpen, onC
               {tab === "screen" && <Screen client={client} control={tiers.includes("control")} />}
               {tab === "terminal" && <RemoteTerminal client={client} />}
               {tab === "files" && <Files client={client} />}
-              {tab === "chat" && <RemoteChat client={client} models={device.local_models} />}
             </div>
           )}
         </TwoStepGate>
@@ -179,6 +177,14 @@ const KEYS: Record<string, string> = { Enter: "enter", Backspace: "backspace", T
 
 function Screen({ client, control, mini }: { client: RemoteClient; control: boolean; mini?: boolean }) {
   const [live, setLive] = useState<Live>("connecting");
+  // Windows' sign-in/lock screen can't be seen or typed on by any app; say so instead of showing a frozen picture.
+  const [locked, setLocked] = useState(false);
+  useEffect(() => {
+    const check = () => client.call<{ locked: boolean }>("status").then((r) => setLocked(!!r.locked)).catch(() => {});
+    check();
+    const t = setInterval(check, 5000);
+    return () => clearInterval(t);
+  }, [client]);
   const [ready, setReady] = useState(false);
   const [text, setText] = useState("");
   const [zoom, setZoom] = useState(1);
@@ -479,6 +485,11 @@ function Screen({ client, control, mini }: { client: RemoteClient; control: bool
 
   return (
     <div ref={box} className={mini ? "h-full bg-black" : full ? "fixed inset-0 z-50 flex flex-col gap-2 bg-black p-2" : "grid gap-2"}>
+      {locked && !mini && (
+        <p role="alert" className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-3 text-sm">
+          Your PC is on the Windows sign-in or lock screen. Windows doesn&apos;t let any app type there, so someone at the PC has to sign in. If &quot;Sign in to Windows by itself&quot; is set up on the PC, Power &gt; Restart brings it back by itself.
+        </p>
+      )}
       <div className={mini ? "hidden" : "flex flex-wrap items-center gap-2"}>
         <span className="text-xs text-muted-foreground" role="status">
           {live === "video" ? "Live video" : live === "pictures" ? "Pictures (this network blocks live video)" : "Connecting…"}
@@ -670,63 +681,6 @@ function Files({ client }: { client: RemoteClient }) {
         ))}
         {listing && !listing.entries.length && <li className="p-3 text-sm text-muted-foreground">Empty folder.</li>}
       </ul>
-    </div>
-  );
-}
-
-function RemoteChat({ client, models }: { client: RemoteClient; models: string[] }) {
-  const [model, setModel] = useState(models[0] ?? "");
-  const [messages, setMessages] = useState<{ role: "user" | "assistant"; content: string }[]>([]);
-  const [input, setInput] = useState("");
-  const [busy, setBusy] = useState(false);
-  if (!models.length) return <p className="text-sm text-muted-foreground">This computer has no local AI models yet. On it, open Settings &gt; Local models and download one.</p>;
-  const send = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || busy) return;
-    const next = [...messages, { role: "user" as const, content: input.trim() }];
-    setMessages([...next, { role: "assistant", content: "" }]);
-    setInput("");
-    setBusy(true);
-    try {
-      // Listen before asking, so no words are missed.
-      const reqId = await new Promise<string>((resolve, reject) => {
-        const id = crypto.randomUUID();
-        const off = client.listenChat(id, (c) => {
-          if (c.delta) setMessages((m) => [...m.slice(0, -1), { role: "assistant", content: m[m.length - 1].content + c.delta }]);
-          if (c.error) toast.error(c.error);
-          if (c.done) {
-            off();
-            setBusy(false);
-          }
-        });
-        client.call("chat", { model, messages: next, reqId: id }, 30_000).then(() => resolve(id), reject);
-      });
-      void reqId;
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
-      setBusy(false);
-    }
-  };
-  return (
-    <div className="grid gap-3">
-      <select aria-label="Model on your computer" className="h-9 w-fit rounded-lg border bg-transparent px-2 text-sm" value={model} onChange={(e) => setModel(e.target.value)}>
-        {models.map((m) => (
-          <option key={m}>{m}</option>
-        ))}
-      </select>
-      <div className="grid gap-2">
-        {messages.map((m, i) => (
-          <p key={i} className={m.role === "user" ? "justify-self-end rounded-2xl bg-muted px-3 py-2 text-sm" : "text-sm whitespace-pre-wrap"}>
-            {m.content || (busy && i === messages.length - 1 ? "…" : "")}
-          </p>
-        ))}
-      </div>
-      <form onSubmit={send} className="flex gap-2">
-        <Input aria-label="Message your computer's model" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask the model on your computer" />
-        <Button type="submit" disabled={busy || !input.trim()}>
-          Send
-        </Button>
-      </form>
     </div>
   );
 }

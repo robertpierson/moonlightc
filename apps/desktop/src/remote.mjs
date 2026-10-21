@@ -18,6 +18,10 @@ const HOLDS = new Set(["key_down", "key_up", "mouse_down", "mouse_up", "move_by"
 const sessions = new Map(); // clientId -> { name, tiers, startedAt, timer }
 let overlay;
 let scale = 1;
+// Windows' sign-in/lock screen: no app can see or type on it (Windows' own rule), so devices are told instead.
+let locked = false;
+export const setLocked = (v) => (locked = !!v);
+export const status = () => ({ locked });
 const listeners = new Set();
 export const onState = (fn) => (listeners.add(fn), () => listeners.delete(fn));
 export const state = () => [...sessions.entries()].map(([id, s]) => ({ clientId: id, name: s.name, tiers: s.tiers, startedAt: s.startedAt }));
@@ -328,7 +332,8 @@ export function power(clientId, what) {
   const cmds = {
     lock: ["rundll32.exe", ["user32.dll,LockWorkStation"]],
     sleep: ["powershell.exe", ["-NoProfile", "-Command", "Start-Sleep 2; Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.Application]::SetSuspendState('Suspend', $false, $false)"]],
-    restart: ["shutdown.exe", ["/r", "/t", "30", "/c", note]],
+    // /g: with "sign in by itself" (or Windows' restart sign-in) on, Windows signs back in after the restart.
+    restart: ["shutdown.exe", ["/g", "/t", "30", "/c", note]],
     shutdown: ["shutdown.exe", ["/s", "/t", "30", "/c", note]],
   };
   const c = cmds[what];
