@@ -274,33 +274,71 @@ function Screen({ client, control, mini }: { client: RemoteClient; control: bool
     };
   }, [client]);
 
-  // Pictures: each one is drawn only once it's fully loaded, so the screen never blanks between them.
+  // Pictures (networks that block live video): sized to this screen, and when zoomed in only the part you can see is
+  // sent, at full detail, so small text stays readable. Two requests in flight; each picture is drawn once loaded.
   useEffect(() => {
     if (live !== "pictures") return;
     let on = true;
-    const loop = async () => {
+    let old = false; // a PC on an older MoonlightC only has whole-screen pictures
+    let full = { w: 16, h: 9 };
+    let seq = 0;
+    let drawn = 0;
+    let fails = 0;
+    const one = async () => {
       while (on) {
+        const c = canvas.current;
         try {
-          const f = await client.call<{ image: string; width: number; height: number }>("frame");
-          const img = new Image();
-          img.src = `data:image/jpeg;base64,${f.image}`;
-          await img.decode();
-          const c = canvas.current;
-          if (!on || !c) break;
-          if (c.width !== f.width || c.height !== f.height) {
-            c.width = f.width;
-            c.height = f.height;
+          if (!c) throw new Error("not ready");
+          if (old) {
+            const f = await client.call<{ image: string; width: number; height: number }>("frame");
+            const img = new Image();
+            img.src = `data:image/jpeg;base64,${f.image}`;
+            await img.decode();
+            if (!on) break;
+            if (c.width !== f.width || c.height !== f.height) [c.width, c.height] = [f.width, f.height];
+            c.getContext("2d")?.drawImage(img, 0, 0);
+            setReady(true);
+            continue;
           }
-          c.getContext("2d")?.drawImage(img, 0, 0);
+          const dpr = Math.min(devicePixelRatio || 1, 2);
+          const r = c.getBoundingClientRect();
+          const W = Math.max(320, Math.min(3840, Math.round((r.width || 960) * dpr)));
+          const H = Math.round((W * full.h) / full.w);
+          if (c.width !== W || c.height !== H) [c.width, c.height] = [W, H];
+          // The visible part of the (possibly zoomed) screen, as fractions.
+          const v = c.parentElement?.getBoundingClientRect() ?? r;
+          const x0 = Math.max(r.left, v.left, 0), x1 = Math.min(r.right, v.right, innerWidth);
+          const y0 = Math.max(r.top, v.top, 0), y1 = Math.min(r.bottom, v.bottom, innerHeight);
+          const rw = r.width || 1, rh = r.height || 1;
+          const crop = x1 > x0 && y1 > y0 ? { x: (x0 - r.left) / rw, y: (y0 - r.top) / rh, w: (x1 - x0) / rw, h: (y1 - y0) / rh } : { x: 0, y: 0, w: 1, h: 1 };
+          const mine = ++seq;
+          const f = await client.call<{ url: string; fullW: number; fullH: number }>("shot", { crop, maxW: Math.round(crop.w * W), q: 0.72 }, 20_000);
+          const img = new Image();
+          img.src = f.url;
+          await img.decode();
+          if (!on) break;
+          if (f.fullW && f.fullH && (f.fullW !== full.w || f.fullH !== full.h)) full = { w: f.fullW, h: f.fullH };
+          if (mine < drawn) continue; // a newer picture is already on screen
+          drawn = mine;
+          fails = 0;
+          if (c.height !== Math.round((c.width * full.h) / full.w)) continue; // size changed; next one fits
+          c.getContext("2d")?.drawImage(img, crop.x * c.width, crop.y * c.height, crop.w * c.width, crop.h * c.height);
           setReady(true);
         } catch (e) {
-          if (on) toast.error(e instanceof Error ? e.message : String(e));
-          await new Promise((r) => setTimeout(r, 2000));
+          if (!on) break;
+          const msg = e instanceof Error ? e.message : String(e);
+          // An older PC app, or the quick capture isn't available there: whole-screen pictures instead.
+          if (!old && (/Unknown request/i.test(msg) || ++fails >= 2)) {
+            old = true;
+            continue;
+          }
+          if (msg !== "not ready") toast.error(msg);
+          await new Promise((res) => setTimeout(res, 2000));
         }
       }
     };
-    loop();
-    setTimeout(loop, 150); // a second request in flight roughly doubles the picture rate
+    one();
+    setTimeout(one, 150);
     return () => {
       on = false;
     };

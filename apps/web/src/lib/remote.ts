@@ -80,8 +80,19 @@ export class RemoteClient {
   ) {
     const c = thisClient();
     this.me = role ? { id: `${c.id}:${role}`, name: c.name } : c;
-    ch.on("broadcast", { event: "res" }, ({ payload }) => {
-      const r = payload as Res;
+    const parts = new Map<string, string[]>();
+    ch.on("broadcast", { event: "part" }, ({ payload }) => {
+      const pt = payload as { id: string; to: string; i: number; n: number; data: string };
+      if (pt.to !== this.me.id || !this.pending.has(pt.id) || !(pt.n > 0 && pt.n <= 200)) return;
+      const got = parts.get(pt.id) ?? Array<string>(pt.n);
+      got[pt.i] = pt.data;
+      parts.set(pt.id, got);
+      if (got.filter((x) => x !== undefined).length < pt.n) return;
+      parts.delete(pt.id);
+      settle(JSON.parse(got.join("")) as Res);
+    });
+    ch.on("broadcast", { event: "res" }, ({ payload }) => settle(payload as Res));
+    const settle = (r: Res) => {
       if (r.to !== this.me.id) return;
       const p = this.pending.get(r.id);
       if (!p) return;
@@ -89,7 +100,7 @@ export class RemoteClient {
       this.pending.delete(r.id);
       if (r.ok) p.resolve(r.result);
       else p.reject(new Error(r.error ?? "Something went wrong on your PC."));
-    });
+    };
     ch.on("broadcast", { event: "term" }, ({ payload }) => {
       const t = payload as { to: string; termId: string; data: string };
       if (t.to === this.me.id) this.onTerm.get(t.termId)?.(t.data);

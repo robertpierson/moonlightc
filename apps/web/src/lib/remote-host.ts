@@ -40,7 +40,35 @@ export function createHostHandler(
   };
   // Live screen video, one per connected device (only for devices allowed to see the screen).
   const rtc = new Map<string, { pc: RTCPeerConnection; stream: MediaStream }>();
+  // Pictures mode (networks that block live video): pictures cut from a live screen capture kept open per device,
+  // which is far quicker than a fresh screenshot each time.
+  const shots = new Map<string, Promise<HTMLVideoElement>>();
+  const shotSource = (id: string) => {
+    let s = shots.get(id);
+    if (!s) {
+      s = (async () => {
+        await b.remote.allowStream(id);
+        const stream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 30 } }, audio: false });
+        const video = document.createElement("video");
+        video.muted = true;
+        video.srcObject = stream;
+        await video.play();
+        return video;
+      })();
+      shots.set(id, s);
+      s.catch(() => shots.delete(id));
+    }
+    return s;
+  };
+  const closeShot = (id: string) => {
+    shots
+      .get(id)
+      ?.then((v) => (v.srcObject as MediaStream | null)?.getTracks().forEach((t) => t.stop()))
+      .catch(() => {});
+    shots.delete(id);
+  };
   const closeRtc = (id: string) => {
+    closeShot(id);
     const r = rtc.get(id);
     if (!r) return;
     r.stream.getTracks().forEach((t) => t.stop());
@@ -169,6 +197,31 @@ export function createHostHandler(
         closeRtc(req.from);
         for (const [id, t] of terms) if (t.owner === req.from) closeTerm(id);
         return b.remote.end(req.from, "disconnected from the other device");
+      case "shot": {
+        await need(req, "view");
+        const video = await shotSource(req.from);
+        const vw = video.videoWidth;
+        const vh = video.videoHeight;
+        const c = (p.crop ?? {}) as { x?: number; y?: number; w?: number; h?: number };
+        const f = (v: unknown, d: number) => (typeof v === "number" && v >= 0 && v <= 1 ? v : d);
+        const cw = Math.max(0.02, f(c.w, 1));
+        const ch = Math.max(0.02, f(c.h, 1));
+        const sx = Math.min(f(c.x, 0), 1 - cw) * vw;
+        const sy = Math.min(f(c.y, 0), 1 - ch) * vh;
+        const sw = cw * vw;
+        const sh = ch * vh;
+        const out = Math.max(64, Math.round(Math.min(Number(p.maxW) || 1280, 1920, sw)));
+        const oh = Math.max(36, Math.round((out * sh) / sw));
+        const canvas = new OffscreenCanvas(out, oh);
+        canvas.getContext("2d")!.drawImage(video, sx, sy, sw, sh, 0, 0, out, oh);
+        const blob = await canvas.convertToBlob({ type: "image/webp", quality: Math.min(0.9, Math.max(0.3, Number(p.q) || 0.72)) });
+        const url = await new Promise<string>((done) => {
+          const r = new FileReader();
+          r.onload = () => done(String(r.result));
+          r.readAsDataURL(blob);
+        });
+        return { url, fullW: vw, fullH: vh };
+      }
       case "frame":
         return b.remote.frame(req.from);
       case "input":
@@ -278,10 +331,12 @@ export function createHostHandler(
   const sessionsChanged = (alive: string[]) => {
     for (const [id, t] of terms) if (!alive.includes(t.owner)) closeTerm(id);
     for (const id of [...rtc.keys()]) if (!alive.includes(id)) closeRtc(id);
+    for (const id of [...shots.keys()]) if (!alive.includes(id)) closeShot(id);
   };
   const closeAll = () => {
     for (const id of [...terms.keys()]) closeTerm(id);
     for (const id of [...rtc.keys()]) closeRtc(id);
+    for (const id of [...shots.keys()]) closeShot(id);
   };
   return { handle, sessionsChanged, closeAll };
 }

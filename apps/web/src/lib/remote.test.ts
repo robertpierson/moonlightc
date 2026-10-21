@@ -128,3 +128,18 @@ describe("shared PC channel", () => {
     expect(calls).toBe(1);
   });
 });
+
+describe("big answers", () => {
+  it("arrive in pieces and are put back together", async () => {
+    const { pc, phone } = wire();
+    const client = new RemoteClient(phone);
+    const big = "x".repeat(350_000);
+    pc.on("broadcast", { event: "req" }, ({ payload }) => {
+      const req = payload as Req;
+      const json = JSON.stringify({ id: req.id, to: req.from, ok: true, result: { url: big } } satisfies Res);
+      for (let i = 0, n = Math.ceil(json.length / 100_000); i < n; i++) pc.send({ type: "broadcast", event: "part", payload: { id: req.id, to: req.from, i, n, data: json.slice(i * 100_000, (i + 1) * 100_000) } });
+    });
+    const r = await client.call<{ url: string }>("shot");
+    expect(r.url.length).toBe(350_000);
+  });
+});

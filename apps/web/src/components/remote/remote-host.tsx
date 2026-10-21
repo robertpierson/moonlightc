@@ -99,7 +99,9 @@ export function RemoteHost() {
             error: e instanceof Error ? e.message : String(e),
           };
         }
-        send("res", res);
+        const json = JSON.stringify(res);
+        if (json.length <= 120_000) send("res", res);
+        else for (let i = 0, n = Math.ceil(json.length / 100_000); i < n; i++) send("part", { id: res.id, to: res.to, i, n, data: json.slice(i * 100_000, (i + 1) * 100_000) });
       });
       if (closed) return;
       await subscribed(ch).catch(() => {});
