@@ -103,7 +103,7 @@ export function ClaudePlugins() {
         </p>
       </div>
 
-      <section aria-labelledby="kit-h" className="grid gap-3 rounded-xl border border-primary/40 bg-primary/5 p-4">
+      <section aria-labelledby="kit-h" className="grid gap-3 rounded-xl border border-primary/40 p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 id="kit-h" className="font-medium">
             Shawn&apos;s kit

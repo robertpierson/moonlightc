@@ -46,7 +46,7 @@ export function RemoteSettings({ onSetup }: { onSetup: () => void }) {
   return (
     <TwoStepGate onSetup={onSetup}>
       <div className="grid gap-6">
-        <div className="grid gap-3 rounded-xl border border-primary/40 bg-primary/5 p-4">
+        <div className="grid gap-3 rounded-xl border border-primary/40 p-4">
           <div className="grid gap-0.5">
             <span className="font-medium">Set up this PC for when I&apos;m away</span>
             <span className="text-sm text-muted-foreground">
