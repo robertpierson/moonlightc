@@ -140,3 +140,10 @@ Software can't start a PC that's off; something has to press the power button. P
    PC's address is in MoonlightC > Settings > Remote control > "Turn this PC on when you're away".
 After it boots, Windows asks for your sign-in before MoonlightC starts. Tell me if you want it to sign in by itself
 (less safe if someone can touch the PC).
+
+## Try this (0.6.22)
+1. On the PC: MoonlightC > Settings > Remote control > **Set up everything** > click Yes on the Windows prompt.
+2. Optional, same page: **Set up signing in by itself** > Yes > untick "Users must enter a user name and password" > OK > type your Microsoft password.
+3. On the Chromebook: Cowork > Home PC > Connect. Ask: "take a screenshot of my PC and tell me what's open".
+4. In remote control, click **Chat**: that's Cowork with your PC's screen, files and commands. Pick a Claude/GPT/Gemini model with a key.
+5. Settings > Plugins & mods > Shawn's kit > **Install all**.
