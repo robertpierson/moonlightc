@@ -556,7 +556,7 @@ async function listenForSecondCopy() {
     });
     sock.on("error", () => {});
   });
-  srv.listen(0, "127.0.0.1", () => fs.writeFileSync(relayFile(), JSON.stringify({ port: srv.address().port, token }), { mode: 0o600 }));
+  srv.listen(0, "127.0.0.1", () => fs.writeFileSync(relayFile(), JSON.stringify({ port: /** @type {import("node:net").AddressInfo} */ (srv.address()).port, token }), { mode: 0o600 }));
 }
 
 // Your work on this PC comes first: MoonlightC runs below normal priority, except while it streams the screen.
