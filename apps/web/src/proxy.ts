@@ -41,6 +41,10 @@ async function refreshSession(req: NextRequest) {
     },
   });
   await sb.auth.getClaims().catch(() => null);
+  // Re-save the sign-in from the server on every visit: browsers (Safari above all) wipe sign-ins a page saved itself
+  // after 7 days, but keep ones the server sets.
+  for (const c of req.cookies.getAll())
+    if (c.name.startsWith("sb-") && !res.cookies.get(c.name)) res.cookies.set(c.name, c.value, { path: "/", sameSite: "lax", secure: req.nextUrl.protocol === "https:", maxAge: 400 * 86_400 });
   return res;
 }
 

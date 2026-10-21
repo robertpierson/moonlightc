@@ -87,8 +87,9 @@ export function SettingsButton({ active, onClick, onProfile }: { active: boolean
     <div className="flex items-center gap-1 border-t p-2">
       {accountsEnabled && user === null ? (
         <Link href="/signin?next=/app" title="Sign in to sync your chats" className="flex min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 py-1.5 text-sm hover:bg-accent">
-          <Avatar />
-          <span className="truncate">{name || "Sign in to sync"}</span>
+          {/* Signed out in a browser: nothing personal shows (the desktop app is your own PC). */}
+          <Avatar anon={!desktop()} />
+          <span className="truncate">{(desktop() && name) || "Sign in"}</span>
         </Link>
       ) : (
         <button onClick={onProfile} className="flex min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 py-1.5 text-sm hover:bg-accent">

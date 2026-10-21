@@ -4,8 +4,10 @@ import { UserRound } from "lucide-react";
 import { useStore } from "@/lib/store";
 
 /** The person's picture, or their initial, or a person icon. */
-export function Avatar({ size = "size-8" }: { size?: string }) {
-  const profile = useStore((s) => s.profile);
+/** anon: signed out, so nothing personal shows. */
+export function Avatar({ size = "size-8", anon }: { size?: string; anon?: boolean }) {
+  const saved = useStore((s) => s.profile);
+  const profile = anon ? undefined : saved;
   const initial = profile?.name?.trim()[0]?.toUpperCase();
   return profile?.avatar ? (
     // eslint-disable-next-line @next/next/no-img-element -- a small data URL from this device

@@ -12,6 +12,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { authRedirect } from "@/lib/supabase/auth";
 import { SUPABASE_URL, supabase, useUser } from "@/lib/supabase/client";
+import { desktop } from "@/lib/desktop";
+import { resetState } from "@/lib/store";
 
 const NAMES: Record<string, string> = { google: "Google", github: "GitHub", apple: "Apple", discord: "Discord", azure: "Microsoft", email: "Email and password" };
 const LINKABLE = ["google", "github", "apple", "discord", "azure"] as const;
@@ -268,6 +270,12 @@ function Data() {
           variant="outline"
           onClick={async () => {
             await supabase().auth.signOut();
+            // This browser forgets your name, picture, chats and keys (they're in your account and come back when you
+            // sign in). The desktop app keeps its copy: it's your own PC and holds its remote-control settings.
+            if (!desktop()) {
+              resetState();
+              Object.keys(localStorage).filter((k) => k.startsWith("moonc:sync:")).forEach((k) => localStorage.removeItem(k));
+            }
             location.reload();
           }}
         >
