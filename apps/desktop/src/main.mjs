@@ -26,7 +26,21 @@ let quitting = false;
 // They also run without a visible window or tray icon, so they never look like a second MoonlightC on the screen.
 const testRun = !app.isPackaged && !!process.env.MOONC_E2E_USER_DATA;
 if (testRun) app.setPath("userData", process.env.MOONC_E2E_USER_DATA);
-if (!app.requestSingleInstanceLock() || process.argv.includes("--quit")) app.quit();
+// Admin mode: Windows doesn't pass the usual "already running" message from a normal program to MoonlightC running as
+// administrator, so that copy also listens on this PC (random port + secret, in a file in your own app folder).
+const relayFile = () => path.join(app.getPath("userData"), "instance.json");
+const secondCopy = !app.requestSingleInstanceLock();
+if (secondCopy) {
+  try {
+    const { port, token } = JSON.parse(fs.readFileSync(relayFile(), "utf8"));
+    const s = net.connect(port, "127.0.0.1", () => s.end(JSON.stringify({ token, argv: process.argv })));
+    s.on("error", () => app.quit());
+    s.on("close", () => app.quit());
+  } catch {
+    app.quit();
+  }
+  setTimeout(() => app.quit(), 3000);
+} else if (process.argv.includes("--quit")) app.quit();
 app.setAsDefaultProtocolClient("moonlightc");
 
 const freePort = () =>
@@ -517,7 +531,8 @@ app.on("open-url", (e, url) => {
   if (win) win.webContents.send("deep-link", url);
   else pendingLink = url;
 });
-app.on("second-instance", (_e, argv) => {
+app.on("second-instance", (_e, argv) => onSecondCopy(argv));
+function onSecondCopy(argv) {
   // "MoonlightC.exe --quit": close cleanly (used by updates) so nothing in memory is lost.
   if (argv.includes("--quit")) return app.quit();
   if (argv.includes("--hidden")) return;
@@ -525,7 +540,24 @@ app.on("second-instance", (_e, argv) => {
   win?.focus();
   const link = argv.find((a) => a.startsWith("moonlightc://"));
   if (link) win?.webContents.send("deep-link", link);
-});
+}
+
+async function listenForSecondCopy() {
+  if (!(await isAdmin())) return fs.rmSync(relayFile(), { force: true });
+  const token = crypto.randomUUID();
+  const srv = net.createServer((sock) => {
+    let data = "";
+    sock.on("data", (d) => (data += d).length > 65_536 && sock.destroy());
+    sock.on("end", () => {
+      try {
+        const m = JSON.parse(data);
+        if (m.token === token && Array.isArray(m.argv)) onSecondCopy(m.argv.map(String));
+      } catch {}
+    });
+    sock.on("error", () => {});
+  });
+  srv.listen(0, "127.0.0.1", () => fs.writeFileSync(relayFile(), JSON.stringify({ port: srv.address().port, token }), { mode: 0o600 }));
+}
 
 // Your work on this PC comes first: MoonlightC runs below normal priority, except while it streams the screen.
 const yieldCpu = () => {
@@ -538,6 +570,8 @@ const yieldCpu = () => {
 };
 
 app.whenReady().then(async () => {
+  if (secondCopy) return;
+  listenForSecondCopy().catch(() => {});
   powerMonitor.on("lock-screen", () => remote.setLocked(true));
   powerMonitor.on("unlock-screen", () => remote.setLocked(false));
   yieldCpu();
