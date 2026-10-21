@@ -21,6 +21,7 @@ export function RemoteSettings({ onSetup }: { onSetup: () => void }) {
   const [mac, setMac] = useState<string>();
   const [home, setHome] = useState(false);
   const [trust, setTrust] = useState(false);
+  const [admin, setAdmin] = useState(false);
   const [sessions, setSessions] = useState<RemoteSession[]>([]);
   const [grants, setGrants] = useState<{ clientId: string; name: string; tiers: string[] }[]>([]);
   const [log, setLog] = useState<{ at: string; action: string; name?: string }[]>([]);
@@ -35,6 +36,7 @@ export function RemoteSettings({ onSetup }: { onSetup: () => void }) {
     b.remote.state().then(setSessions);
     b.remote.grants().then(setGrants);
     b.remote.trusted().then(setTrust);
+    b.settings.adminStatus().then((r) => setAdmin(r.admin));
     b.remote.audit().then(setLog);
     return b.remote.onState((s) => {
       setSessions(s);
@@ -50,7 +52,7 @@ export function RemoteSettings({ onSetup }: { onSetup: () => void }) {
           <div className="grid gap-0.5">
             <span className="font-medium">Set up this PC for when I&apos;m away</span>
             <span className="text-sm text-muted-foreground">
-              One click: remote control on, this is your home PC, your devices connect without asking, MoonlightC starts with Windows and the PC stays awake. Windows then asks &quot;Yes&quot; once to let a router or Wi-Fi plug wake it.
+              One click: remote control on, this is your home PC, your devices connect without asking, MoonlightC starts with Windows and the PC stays awake. Windows then asks &quot;Yes&quot; once to let a router or Wi-Fi plug wake it and to stop Windows Update from restarting the PC by itself.
             </span>
           </div>
           <Button
@@ -89,6 +91,26 @@ export function RemoteSettings({ onSetup }: { onSetup: () => void }) {
             }}
           >
             Set up signing in by itself
+          </Button>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4">
+          <div className="grid gap-0.5">
+            <span className="font-medium">Admin mode {admin && <span className="text-sm font-normal text-emerald-600">(on: MoonlightC has administrator rights)</span>}</span>
+            <span className="text-sm text-muted-foreground">
+              Lets you answer Windows&apos; &quot;Yes&quot; and PIN prompts from your other devices (you type your own PIN), and the remote terminal runs as administrator. MoonlightC starts with administrator rights when you sign in, and those prompts show on the normal screen. Anyone who gets into your MoonlightC account and two-step sign-in could then change anything on this PC. Windows asks &quot;Yes&quot; once; MoonlightC restarts.
+            </span>
+          </div>
+          <Button
+            variant={admin ? "outline" : "secondary"}
+            onClick={async () => {
+              const r = await b.settings.setAdmin(!admin);
+              if (!r.ok) return toast.error(r.error ?? "Didn't work.");
+              if (admin) toast.success("Admin mode is off after you restart the PC or sign out of Windows.");
+              else toast.success("Admin mode is on. MoonlightC is restarting with administrator rights.");
+            }}
+          >
+            {admin ? "Turn off admin mode" : "Turn on admin mode"}
           </Button>
         </div>
 

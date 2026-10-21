@@ -335,8 +335,39 @@ const elevated = (script) =>
 // Wake-on-LAN on the network adapters, and no "fast startup" (it stops a PC that's off from hearing the wake signal).
 handle("setup:wake", () =>
   elevated(`Get-NetAdapter -Physical | ForEach-Object { Set-NetAdapterPowerManagement -Name $_.Name -WakeOnMagicPacket Enabled -ErrorAction SilentlyContinue; powercfg /deviceenablewake "$($_.InterfaceDescription)" }
-Set-ItemProperty 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Power' -Name HiberbootEnabled -Value 0 -Type DWord`),
+Set-ItemProperty 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Power' -Name HiberbootEnabled -Value 0 -Type DWord
+New-Item 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate\\AU' -Force | Out-Null
+Set-ItemProperty 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate\\AU' -Name NoAutoRebootWithLoggedOnUsers -Value 1 -Type DWord
+Set-ItemProperty 'HKLM:\\SOFTWARE\\Microsoft\\WindowsUpdate\\UX\\Settings' -Name ActiveHoursStart -Value 6 -Type DWord
+Set-ItemProperty 'HKLM:\\SOFTWARE\\Microsoft\\WindowsUpdate\\UX\\Settings' -Name ActiveHoursEnd -Value 0 -Type DWord`),
 );
+
+// Admin mode (opt-in): MoonlightC starts with administrator rights at sign-in (a scheduled task, no prompt), and Windows'
+// "Yes"/PIN prompts show on the normal screen instead of the locked-off secure one. Then a remote session can see those
+// prompts and answer them (you type your own PIN), and the terminal runs as administrator.
+const isAdmin = () => new Promise((done) => (process.platform !== "win32" ? done(false) : execFile("net.exe", ["session"], { windowsHide: true }, (err) => done(!err))));
+handle("setup:adminStatus", async () => ({ admin: await isAdmin() }));
+handle("setup:admin", async (_e, on) => {
+  const exe = process.execPath;
+  const r = await elevated(
+    on
+      ? `$a = New-ScheduledTaskAction -Execute '${exe}' -Argument '--hidden'
+$t = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
+$p = New-ScheduledTaskPrincipal -UserId $env:USERNAME -RunLevel Highest -LogonType Interactive
+$s = New-ScheduledTaskSettingsSet -ExecutionTimeLimit (New-TimeSpan -Seconds 0) -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
+Register-ScheduledTask -TaskName MoonlightC -Action $a -Trigger $t -Principal $p -Settings $s -Force | Out-Null
+Set-ItemProperty 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\System' -Name PromptOnSecureDesktop -Value 0 -Type DWord
+Start-Process cmd.exe -WindowStyle Hidden -ArgumentList '/c timeout /t 6 /nobreak & schtasks /run /tn MoonlightC'`
+      : `Unregister-ScheduledTask -TaskName MoonlightC -Confirm:$false -ErrorAction SilentlyContinue
+Set-ItemProperty 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\System' -Name PromptOnSecureDesktop -Value 1 -Type DWord`,
+  );
+  if (!r.ok) return r;
+  // The scheduled task starts MoonlightC instead (with admin rights); Windows' normal startup entry would start a second copy.
+  app.setLoginItemSettings({ openAtLogin: !on, args: ["--hidden"] });
+  if (on) setTimeout(() => (quitting = true, app.quit()), 500);
+  return r;
+});
+
 // Sign in to Windows by itself: allows password sign-in again, then opens Windows' own "User Accounts" box where the
 // person unticks "Users must enter a user name and password" and types their password there (never seen by MoonlightC).
 handle("setup:autoSignIn", async () => {
@@ -456,7 +487,8 @@ handle("secrets:set", (_e, key, value) => {
   fs.writeFileSync(secretsFile(), JSON.stringify(all), { mode: 0o600 });
 });
 handle("settings:get", () => ({ openAtLogin: app.getLoginItemSettings().openAtLogin }));
-handle("settings:openAtLogin", (_e, on) => app.setLoginItemSettings({ openAtLogin: !!on, args: ["--hidden"] }));
+// In admin mode a scheduled task starts MoonlightC; the normal startup entry would start a second copy without admin rights.
+handle("settings:openAtLogin", async (_e, on) => (on && (await isAdmin()) ? undefined : app.setLoginItemSettings({ openAtLogin: !!on, args: ["--hidden"] })));
 handle("open-external", (_e, url) => {
   if (!/^https:\/\//.test(url)) throw new Error("Only https links can be opened.");
   return shell.openExternal(url);

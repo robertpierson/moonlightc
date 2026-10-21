@@ -92,6 +92,8 @@ export interface MooncBridge {
     keepAwake(on: boolean): Promise<void>;
     setupWake(): Promise<{ ok: boolean; error?: string }>;
     setupAutoSignIn(): Promise<{ ok: boolean; error?: string }>;
+    adminStatus(): Promise<{ admin: boolean }>;
+    setAdmin(on: boolean): Promise<{ ok: boolean; error?: string }>;
   };
   device: { info(): Promise<{ id: string; name: string; os: string; version: string; mac?: string }> };
   clipboard: { readKey(): Promise<string | null>; readText(): Promise<string> };

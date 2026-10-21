@@ -53,6 +53,8 @@ contextBridge.exposeInMainWorld("moonc", {
     keepAwake: (on) => invoke("settings:keepAwake", on),
     setupWake: () => invoke("setup:wake"),
     setupAutoSignIn: () => invoke("setup:autoSignIn"),
+    adminStatus: () => invoke("setup:adminStatus"),
+    setAdmin: (on) => invoke("setup:admin", on),
   },
   device: { info: () => invoke("device:info") },
   keys: { scan: () => invoke("keys:scan") },

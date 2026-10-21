@@ -118,3 +118,13 @@ Why: a password in the code would be public on GitHub; the owner's account with 
 ## PC access without the code, and allowed places (2026-10-18)
 What: an account switch (off by default) lets signed-in devices reach the owner's PCs without two-step sign-in; turning it on needs the code once, off needs nothing. Separately, a PC can allow remote control only from chosen networks/countries, using location notes signed by the website (HMAC, 5-minute expiry) and checked by the PC.
 Why: the owner asked for code-free access in emergencies and for a location lock. The trade-off (password alone reaches the PC) is stated next to the switch.
+
+## 2026-10-21: Admin mode for remote control (opt-in, off by default)
+- **What:** a scheduled task starts MoonlightC elevated at logon, and UAC prompts move off the secure desktop
+  (PromptOnSecureDesktop=0). Remote sessions can then see and answer UAC/PIN prompts (the owner types his own PIN),
+  and the remote terminal is admin. One UAC "Yes" to turn it on or off; a warning is shown first.
+- **Why:** the owner was locked out remotely by Windows prompts that no non-elevated app can see or answer.
+- **Alternatives:** a SYSTEM service that injects input on the secure desktop and the sign-in screen (the TeamViewer
+  model): more power and much more attack surface, not built. Turning UAC off entirely: rejected.
+- **Not covered:** the Windows sign-in screen after a restart. The fix for that is "sign in by itself" (netplwiz), where
+  the owner types the password himself.
