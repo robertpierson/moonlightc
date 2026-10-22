@@ -56,18 +56,24 @@ try {
 } catch {}
 
 async function runSelftest() {
-  const out = { at: new Date().toISOString(), switches: selftest.switches ?? {}, admin: await isAdmin(), results: {} };
+  const out = { at: new Date().toISOString(), switches: selftest.switches ?? {}, admin: await isAdmin(), steps: [], results: {} };
+  const save = () => fs.writeFileSync(path.join(app.getPath("userData"), "selftest-result.json"), JSON.stringify(out, null, 2));
+  const step = (m) => (out.steps.push(m), save());
+  const within = (ms, pr) => Promise.race([pr, new Promise((_, no) => setTimeout(() => no(new Error(`no answer in ${ms / 1000} s`)), ms))]);
   try {
+    step("start");
     const ses = session.fromPartition("selftest");
     ses.setDisplayMediaRequestHandler((req, cb) =>
       desktopCapturer.getSources({ types: ["screen"] }).then(([s]) => cb(s ? { video: s, ...(req.audioRequested && process.platform === "win32" ? { audio: "loopback" } : {}) } : {}), () => cb({})),
     );
-    const [src] = await desktopCapturer.getSources({ types: ["screen"] });
+    const [src] = await within(15000, desktopCapturer.getSources({ types: ["screen"] }));
+    step(`sources: ${src ? src.id : "none"}`);
     const page = path.join(app.getPath("userData"), "selftest.html");
     fs.writeFileSync(page, "<p>test</p>");
     const w = new BrowserWindow({ show: false, webPreferences: { session: ses, backgroundThrottling: false } });
-    await w.loadFile(page);
-    out.results = await w.webContents.executeJavaScript(`(async () => {
+    await within(15000, w.loadFile(page));
+    step("page loaded");
+    out.results = await within(90000, w.webContents.executeJavaScript(`(async () => {
       const r = {};
       const frames = async (s) => {
         const a = new RTCPeerConnection(), b = new RTCPeerConnection();
@@ -82,8 +88,9 @@ async function runSelftest() {
         let f = 0; (await b.getStats()).forEach((x) => { if (x.type === "inbound-rtp" && x.kind === "video") f = x.framesDecoded; });
         a.close(); b.close(); return f;
       };
+      const within = (ms, p) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Error("no answer in " + ms / 1000 + " s")), ms))]);
       const tryIt = async (name, get) => {
-        try { const s = await get(); r[name] = "ok, " + (await frames(s)) + " frames in 2.5 s"; s.getTracks().forEach((t) => t.stop()); }
+        try { const s = await within(10000, get()); r[name] = "ok, " + (await within(10000, frames(s))) + " frames in 2.5 s"; s.getTracks().forEach((t) => t.stop()); }
         catch (e) { r[name] = "FAIL " + e.name + ": " + e.message; }
         await new Promise((res) => setTimeout(res, 800));
       };
@@ -91,12 +98,13 @@ async function runSelftest() {
       await tryIt("displayMedia+sound", () => navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 30 } }, audio: true }));
       await tryIt("desktopSource", () => navigator.mediaDevices.getUserMedia({ audio: false, video: { mandatory: { chromeMediaSource: "desktop", chromeMediaSourceId: ${JSON.stringify(src?.id ?? "")} } } }));
       return r;
-    })()`);
+    })()`));
+    step("done");
     w.destroy();
   } catch (e) {
     out.error = String(e?.message ?? e);
   }
-  fs.writeFileSync(path.join(app.getPath("userData"), "selftest-result.json"), JSON.stringify(out, null, 2));
+  save();
 }
 
 const freePort = () =>
