@@ -1,4 +1,4 @@
-STATUS: BUILDING
+STATUS: WAITING_ON_OWNER
 
 # MoonlightC progress
 
@@ -171,6 +171,23 @@ STATUS: BUILDING
 ## Owner steps completed
 - 2026-10-14: Owner confirmed remote control from Chromebook works end to end (0.6.0).
 (none yet)
+
+## Parked by the owner (2026-10-22, "some other day"): ask before starting any of these
+Current version everywhere: 0.6.34 (desktop installed, web live, extension zip). Remote control: live video works
+(normal rights), Shortcuts menu, Shift/Ctrl/Alt holds, Power menu (Sleep/Restart/Shut down; Lock removed).
+1. **Owner click (important):** PC > Settings > Remote control > Turn off admin mode > Yes. Until then the elevated
+   "MoonlightC" scheduled task starts the app as admin at Windows sign-in, which breaks screen capture (live video and
+   pictures). Turning it off also restores PromptOnSecureDesktop=1 and the normal startup entry.
+2. **"Stop the popup" switch (owner decision):** ConsentPromptBehaviorAdmin=0 so admin-approval boxes never appear
+   (avoids getting stuck remotely). Lowers protection against malware; ~10 min to build. Explained, not built.
+3. **Top-level background service** (like TeamViewer/Chrome Remote Desktop) to see/answer the sign-in screen and UAC/PIN
+   boxes remotely: ~1-2 days + 2-3 owner-at-PC tests, secure screens choppier at first; security risk (account takeover
+   = full PC control; owner turned off the authenticator requirement). Owner said not worth it for now.
+4. **TURN relay** for networks that block live video (60 fps there instead of pictures): owner sign-up, check price first.
+5. **Watch-only screen sharing from any browser** (no app; phones can't share their screen): offered, not chosen.
+6. **Power on from anywhere:** needs hardware the owner buys (Wi-Fi PC power switch / smart plug / router WoL); see
+   OWNER_TODO. Auto sign-in, Windows Update no-auto-restart, fast startup off: done.
+7. Self-test harness exists (`MoonlightC.exe --selftest` -> selftest-result.json) for screen-capture problems.
 
 ## Known issues
 - Claude Code CLI default model (Fable) needs usage credits on the owner's plan; the panel defaults to Sonnet.
