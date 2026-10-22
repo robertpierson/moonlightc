@@ -105,7 +105,8 @@ export function createHostHandler(
           // Game and music sound as it is: no call-style echo/noise filtering or volume leveling.
           const audio = { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 2 };
           // 30 frames a second is plenty for work and half the effort for this PC; game mode asks for 60.
-          const stream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 30, max: 60 } }, audio }).catch(async () => {
+          const stream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 30, max: 60 } }, audio: p.noAudio ? false : audio }).catch(async (err) => {
+            void b.remote.note(req.from, `screen capture with sound failed: ${err instanceof Error ? err.message : String(err)}`);
             await b.remote.allowStream(req.from);
             return navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 30, max: 60 } }, audio: false });
           });
@@ -167,12 +168,17 @@ export function createHostHandler(
         } catch (e) {
           const m = `PC ${step}: ${e instanceof Error ? e.message : String(e)}`;
           reportError(m);
+          void b.remote.note(req.from, m);
           throw new Error(m);
         }
       }
       case "status":
         await need(req, "view");
         return b.remote.status();
+      // The viewer's own errors, written to this PC's activity log (so a broken live video can be fixed).
+      case "note":
+        await need(req, "view");
+        return b.remote.note(req.from, String(p.text ?? "").slice(0, 500));
       case "power":
         await need(req, "control");
         return b.remote.power(req.from, p.what as "lock" | "sleep" | "restart" | "shutdown");

@@ -258,6 +258,13 @@ export async function input(clientId, a) {
 // Live video of the screen: the app may open one screen stream within a few seconds of a device with "see the
 // screen" asking for it. Nothing else can start a capture.
 let streamGrant = 0;
+/** A problem report (e.g. why live video didn't start), kept in this PC's activity log. */
+export function note(clientId, text) {
+  need(clientId, "view");
+  audit("note", { clientId, text: String(text ?? "").slice(0, 500) });
+  return true;
+}
+
 export function allowStream(clientId) {
   need(clientId, "view");
   streamGrant = Date.now();

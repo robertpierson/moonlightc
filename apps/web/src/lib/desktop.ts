@@ -93,6 +93,7 @@ export interface MooncBridge {
     setupWake(): Promise<{ ok: boolean; error?: string }>;
     setupAutoSignIn(): Promise<{ ok: boolean; error?: string }>;
     adminStatus(): Promise<{ admin: boolean }>;
+    setupStatus(): Promise<{ away: boolean; autoSignIn: boolean }>;
     setAdmin(on: boolean): Promise<{ ok: boolean; error?: string }>;
   };
   device: { info(): Promise<{ id: string; name: string; os: string; version: string; mac?: string }> };
@@ -128,6 +129,7 @@ export interface MooncBridge {
     onState(cb: (s: RemoteSession[]) => void): () => void;
     power(clientId: string, what: "lock" | "sleep" | "restart" | "shutdown"): Promise<{ ok: true }>;
     status(): Promise<{ locked: boolean }>;
+    note(clientId: string, text: string): Promise<boolean>;
   };
   computer: {
     /** Native "Let the AI control this PC?" dialog. Resolves true if allowed. */

@@ -11,7 +11,6 @@ import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
 import { gathered, hifiAudio, ICE, isOnline, whereAmI, joinChannel, leaveChannel, RemoteClient, subscribed, TIER_LABELS, type Tier } from "@/lib/remote";
-import { reportError } from "@/lib/analytics";
 import { desktop } from "@/lib/desktop";
 import { useDevices } from "./your-computers";
 
@@ -226,52 +225,65 @@ function Screen({ client, control, mini }: { client: RemoteClient; control: bool
     }
   };
 
-  // Live video straight from the PC (smooth). If the network won't allow it, pictures instead.
+  // Live video straight from the PC (smooth). If that fails, once more the simplest way (no sound, default video
+  // format); only then pictures.
   useEffect(() => {
     let pc: RTCPeerConnection | undefined;
     let done = false;
     const timeout = (ms: number) => new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout")), ms));
+    const start = async (simple: boolean) => {
+      pc?.close();
+      pc = new RTCPeerConnection({ iceServers: ICE });
+      const vt = pc.addTransceiver("video", { direction: "recvonly" });
+      // H.264 first: most PCs make it on the graphics chip, so streaming barely uses the PC's processor.
+      const codecs = RTCRtpReceiver.getCapabilities?.("video")?.codecs ?? [];
+      const h264 = codecs.filter((c) => c.mimeType === "video/H264");
+      if (!simple && h264.length && vt.setCodecPreferences) vt.setCodecPreferences([...h264, ...codecs.filter((c) => c.mimeType !== "video/H264")]);
+      if (!simple) pc.addTransceiver("audio", { direction: "recvonly" });
+      dc.current = pc.createDataChannel("input");
+      moves.current = pc.createDataChannel("moves", { ordered: false, maxRetransmits: 0 });
+      const conn = pc;
+      conn.addEventListener("track", (e) => e.track.kind === "audio" && setHasAudio(true));
+      const track = new Promise<MediaStream>((resolve) => conn.addEventListener("track", (e) => e.track.kind === "video" && resolve(e.streams[0] ?? new MediaStream([e.track]))));
+      const offer = await conn.createOffer();
+      await conn.setLocalDescription({ type: "offer", sdp: simple ? offer.sdp : hifiAudio(offer.sdp) });
+      await gathered(conn);
+      const r = await client.call<{ sdp: string }>("rtc.offer", { sdp: conn.localDescription?.sdp, noAudio: simple }, 30_000);
+      await conn.setRemoteDescription({ type: "answer", sdp: r.sdp });
+      // Show frames as soon as they arrive (no extra buffering), for the lowest delay.
+      conn.getReceivers().forEach((rc) => {
+        (rc as RTCRtpReceiver & { jitterBufferTarget?: number | null; playoutDelayHint?: number }).jitterBufferTarget = 0;
+        (rc as RTCRtpReceiver & { playoutDelayHint?: number }).playoutDelayHint = 0;
+      });
+      const v = video.current!;
+      v.srcObject = await Promise.race([track, timeout(10_000)]);
+      await Promise.race([new Promise((resolve) => v.addEventListener("loadeddata", resolve, { once: true })), timeout(10_000)]);
+    };
+    const why = (e: unknown) => `${e instanceof Error ? e.message : String(e)} (${pc?.connectionState ?? "no connection"}, ice ${pc?.iceConnectionState ?? "-"})`;
     (async () => {
-      try {
-        pc = new RTCPeerConnection({ iceServers: ICE });
-        const vt = pc.addTransceiver("video", { direction: "recvonly" });
-        // H.264 first: most PCs make it on the graphics chip, so streaming barely uses the PC's processor.
-        const codecs = RTCRtpReceiver.getCapabilities?.("video")?.codecs ?? [];
-        const h264 = codecs.filter((c) => c.mimeType === "video/H264");
-        if (h264.length && vt.setCodecPreferences) vt.setCodecPreferences([...h264, ...codecs.filter((c) => c.mimeType !== "video/H264")]);
-        pc.addTransceiver("audio", { direction: "recvonly" });
-        dc.current = pc.createDataChannel("input");
-        moves.current = pc.createDataChannel("moves", { ordered: false, maxRetransmits: 0 });
-        pc.addEventListener("track", (e) => e.track.kind === "audio" && setHasAudio(true));
-        const track = new Promise<MediaStream>((resolve) => pc!.addEventListener("track", (e) => resolve(e.streams[0] ?? new MediaStream([e.track]))));
-        const offer = await pc.createOffer();
-        await pc.setLocalDescription({ type: "offer", sdp: hifiAudio(offer.sdp) });
-        await gathered(pc);
-        const r = await client.call<{ sdp: string }>("rtc.offer", { sdp: pc.localDescription?.sdp }, 30_000);
-        await pc.setRemoteDescription({ type: "answer", sdp: r.sdp });
-        // Show frames as soon as they arrive (no extra buffering), for the lowest delay.
-        pc.getReceivers().forEach((rc) => {
-          (rc as RTCRtpReceiver & { jitterBufferTarget?: number | null; playoutDelayHint?: number }).jitterBufferTarget = 0;
-          (rc as RTCRtpReceiver & { playoutDelayHint?: number }).playoutDelayHint = 0;
-        });
-        const v = video.current!;
-        v.srcObject = await Promise.race([track, timeout(10_000)]);
-        await Promise.race([new Promise((resolve) => v.addEventListener("loadeddata", resolve, { once: true })), timeout(10_000)]);
-        if (done) return;
-        setLive("video");
-        setReady(true);
-        pc.addEventListener("connectionstatechange", () => {
-          if (!done && pc?.connectionState === "failed") setLive("pictures");
-        });
-      } catch (e) {
-        pc?.close();
-        client.call("rtc.stop").catch(() => {});
-        // Say (and log) why, so a failure that isn't the network can be fixed.
-        const why = `${e instanceof Error ? e.message : String(e)} (${pc?.connectionState ?? "no connection"}, ice ${pc?.iceConnectionState ?? "-"})`;
-        reportError(`live video: ${why}`);
-        if (!done) {
-          setWhy(why);
-          setLive("pictures");
+      let first = "";
+      for (const simple of [false, true]) {
+        try {
+          await start(simple);
+          if (done) return;
+          setLive("video");
+          setReady(true);
+          pc!.addEventListener("connectionstatechange", () => {
+            if (!done && pc?.connectionState === "failed") setLive("pictures");
+          });
+          return;
+        } catch (e) {
+          client.call("rtc.stop").catch(() => {});
+          // Say (and log on the PC) why, so a failure that isn't the network can be fixed.
+          const w = why(e);
+          client.call("note", { text: `live video ${simple ? "retry" : "first try"} failed on the viewer: ${w}` }).catch(() => {});
+          if (!simple) first = w;
+          if (done) return;
+          if (simple) {
+            pc?.close();
+            setWhy(first === w ? w : `${first}; then ${w}`);
+            setLive("pictures");
+          }
         }
       }
     })();

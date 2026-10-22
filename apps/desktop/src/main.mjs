@@ -336,6 +336,7 @@ handle("remote:revoke", (_e, clientId) => remote.revoke(String(clientId)));
 handle("remote:audit", () => remote.readAudit());
 handle("remote:power", (_e, clientId, what) => remote.power(String(clientId), String(what)));
 handle("remote:status", () => remote.status());
+handle("remote:note", (_e, clientId, text) => remote.note(String(clientId), text));
 
 // Windows changes that need administrator rights: one Windows "Yes" prompt, then they run hidden.
 const elevated = (script) =>
@@ -361,6 +362,15 @@ Set-ItemProperty 'HKLM:\\SOFTWARE\\Microsoft\\WindowsUpdate\\UX\\Settings' -Name
 // prompts and answer them (you type your own PIN), and the terminal runs as administrator.
 const isAdmin = () => new Promise((done) => (process.platform !== "win32" ? done(false) : execFile("net.exe", ["session"], { windowsHide: true }, (err) => done(!err))));
 handle("setup:adminStatus", async () => ({ admin: await isAdmin() }));
+// What's already set up (reading these needs no administrator rights).
+const regValue = (key, name) =>
+  new Promise((done) =>
+    process.platform !== "win32" ? done("") : execFile("reg.exe", ["query", key, "/v", name], { windowsHide: true }, (err, out) => done(err ? "" : (String(out).match(/REG_\w+\s+(\S+)/)?.[1] ?? ""))),
+  );
+handle("setup:status", async () => ({
+  away: (await regValue("HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate\\AU", "NoAutoRebootWithLoggedOnUsers")) === "0x1",
+  autoSignIn: (await regValue("HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon", "AutoAdminLogon")) === "1",
+}));
 handle("setup:admin", async (_e, on) => {
   const exe = process.execPath;
   const r = await elevated(

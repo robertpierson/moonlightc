@@ -22,6 +22,7 @@ export function RemoteSettings({ onSetup }: { onSetup: () => void }) {
   const [home, setHome] = useState(false);
   const [trust, setTrust] = useState(false);
   const [admin, setAdmin] = useState(false);
+  const [done, setDone] = useState({ away: false, autoSignIn: false });
   const [sessions, setSessions] = useState<RemoteSession[]>([]);
   const [grants, setGrants] = useState<{ clientId: string; name: string; tiers: string[] }[]>([]);
   const [log, setLog] = useState<{ at: string; action: string; name?: string }[]>([]);
@@ -37,6 +38,7 @@ export function RemoteSettings({ onSetup }: { onSetup: () => void }) {
     b.remote.grants().then(setGrants);
     b.remote.trusted().then(setTrust);
     b.settings.adminStatus().then((r) => setAdmin(r.admin));
+    b.settings.setupStatus().then(setDone).catch(() => {});
     b.remote.audit().then(setLog);
     return b.remote.onState((s) => {
       setSessions(s);
@@ -50,7 +52,7 @@ export function RemoteSettings({ onSetup }: { onSetup: () => void }) {
       <div className="grid gap-6">
         <div className="grid gap-3 rounded-xl border border-primary/40 p-4">
           <div className="grid gap-0.5">
-            <span className="font-medium">Set up this PC for when I&apos;m away</span>
+            <span className="font-medium">Set up this PC for when I&apos;m away {done.away && <span className="text-sm font-normal text-emerald-600">(done)</span>}</span>
             <span className="text-sm text-muted-foreground">
               One click: remote control on, this is your home PC, your devices connect without asking, MoonlightC starts with Windows and the PC stays awake. Windows then asks &quot;Yes&quot; once to let a router or Wi-Fi plug wake it and to stop Windows Update from restarting the PC by itself.
             </span>
@@ -69,6 +71,7 @@ export function RemoteSettings({ onSetup }: { onSetup: () => void }) {
               const r = await b.settings.setupWake();
               if (r.ok) toast.success("This PC is ready for when you're away.");
               else toast.error(`Everything else is on. Wake-up wasn't set: ${r.error}`);
+              b.settings.setupStatus().then(setDone).catch(() => {});
             }}
           >
             Set up everything
@@ -77,7 +80,7 @@ export function RemoteSettings({ onSetup }: { onSetup: () => void }) {
 
         <div className="grid gap-3 rounded-xl border p-4">
           <div className="grid gap-0.5">
-            <span className="font-medium">Sign in to Windows by itself after a restart</span>
+            <span className="font-medium">Sign in to Windows by itself after a restart {done.autoSignIn && <span className="text-sm font-normal text-emerald-600">(on)</span>}</span>
             <span className="text-sm text-muted-foreground">
               Windows&apos; sign-in screen is the one place no app can type, so after a restart nothing works until someone signs in. With this, it signs in by itself. Anyone who can touch this PC gets in too, so only do it if it&apos;s somewhere safe. Click, say Yes, then in the box that opens untick &quot;Users must enter a user name and password&quot;, click OK and type your Microsoft account password there.
             </span>
