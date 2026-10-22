@@ -41,18 +41,38 @@ export function createHostHandler(
   };
   // Live screen video, one per connected device (only for devices allowed to see the screen).
   const rtc = new Map<string, { pc: RTCPeerConnection; stream: MediaStream }>();
-  // Pictures mode (networks that block live video): pictures cut from a live screen capture kept open per device,
-  // which is far quicker than a fresh screenshot each time.
+  // One screen capture per connected device, shared by live video and pictures: Windows may refuse a second capture
+  // in the same app (with administrator rights it does). Sound if the system allows it, otherwise video only.
+  const audio = { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 2 };
+  const captures = new Map<string, Promise<MediaStream>>();
+  const capture = (id: string) => {
+    let c = captures.get(id);
+    if (!c) {
+      c = (async () => {
+        await b.remote.allowStream(id);
+        try {
+          return await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 30 } }, audio });
+        } catch (err) {
+          void b.remote.note(id, `screen capture with sound failed: ${err instanceof Error ? err.message : String(err)}`);
+          await new Promise((r) => setTimeout(r, 600)); // let Windows let go of the failed capture
+          await b.remote.allowStream(id);
+          return navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 30 } }, audio: false });
+        }
+      })();
+      captures.set(id, c);
+      c.catch(() => captures.delete(id));
+    }
+    return c;
+  };
+  // Pictures mode (networks that block live video): cut from that live capture, far quicker than fresh screenshots.
   const shots = new Map<string, Promise<HTMLVideoElement>>();
   const shotSource = (id: string) => {
     let s = shots.get(id);
     if (!s) {
       s = (async () => {
-        await b.remote.allowStream(id);
-        const stream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 30 } }, audio: false });
         const video = document.createElement("video");
         video.muted = true;
-        video.srcObject = stream;
+        video.srcObject = new MediaStream((await capture(id)).getVideoTracks());
         await video.play();
         return video;
       })();
@@ -61,20 +81,22 @@ export function createHostHandler(
     }
     return s;
   };
-  const closeShot = (id: string) => {
-    shots
-      .get(id)
-      ?.then((v) => (v.srcObject as MediaStream | null)?.getTracks().forEach((t) => t.stop()))
-      .catch(() => {});
-    shots.delete(id);
-  };
   const closeRtc = (id: string) => {
-    closeShot(id);
     const r = rtc.get(id);
     if (!r) return;
-    r.stream.getTracks().forEach((t) => t.stop());
+    r.stream.getTracks().forEach((t) => t.stop()); // its own copies; the capture stays for pictures
     r.pc.close();
     rtc.delete(id);
+  };
+  // The device disconnected: stop capturing the screen for it.
+  const closeShot = (id: string) => {
+    closeRtc(id);
+    shots.delete(id);
+    captures
+      .get(id)
+      ?.then((st) => st.getTracks().forEach((t) => t.stop()))
+      .catch(() => {});
+    captures.delete(id);
   };
   const need = async (req: Req, tier: string) => {
     if (!(await b.remote.allowed(req.from, tier)))
@@ -100,16 +122,9 @@ export function createHostHandler(
           await need(req, "view");
           closeRtc(req.from);
           step = "screen capture";
-          // With the PC's sound where the system allows it; video only otherwise.
-          await b.remote.allowStream(req.from);
-          // Game and music sound as it is: no call-style echo/noise filtering or volume leveling.
-          const audio = { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 2 };
-          // 30 frames a second is plenty for work and half the effort for this PC; game mode asks for 60.
-          const stream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 30, max: 60 } }, audio: p.noAudio ? false : audio }).catch(async (err) => {
-            void b.remote.note(req.from, `screen capture with sound failed: ${err instanceof Error ? err.message : String(err)}`);
-            await b.remote.allowStream(req.from);
-            return navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 30, max: 60 } }, audio: false });
-          });
+          // Copies of the shared capture (30 frames a second; game mode asks for 60). Sound only on the first try.
+          const shared = await capture(req.from);
+          const stream = new MediaStream((p.noAudio ? shared.getVideoTracks() : shared.getTracks()).map((t) => t.clone()));
           stream.getVideoTracks().forEach((t) => (t.contentHint = "detail"));
           stream.getAudioTracks().forEach((t) => (t.contentHint = "music"));
           step = "video connection";
@@ -139,7 +154,7 @@ export function createHostHandler(
                   const motion = a.hint === "motion";
                   stream.getVideoTracks().forEach((t) => {
                     t.contentHint = motion ? "motion" : "detail";
-                    t.applyConstraints({ frameRate: { ideal: motion ? 60 : 30, max: 60 } }).catch(() => {});
+                    t.applyConstraints({ frameRate: { ideal: motion ? 60 : 30 } }).catch(() => {});
                   });
                   // Game mode: a bit smaller picture that never stutters (quicker to encode, send and decode).
                   pc.getSenders()
@@ -349,12 +364,12 @@ export function createHostHandler(
   const sessionsChanged = (alive: string[]) => {
     for (const [id, t] of terms) if (!alive.includes(t.owner)) closeTerm(id);
     for (const id of [...rtc.keys()]) if (!alive.includes(id)) closeRtc(id);
-    for (const id of [...shots.keys()]) if (!alive.includes(id)) closeShot(id);
+    for (const id of [...captures.keys()]) if (!alive.includes(id)) closeShot(id);
   };
   const closeAll = () => {
     for (const id of [...terms.keys()]) closeTerm(id);
     for (const id of [...rtc.keys()]) closeRtc(id);
-    for (const id of [...shots.keys()]) closeShot(id);
+    for (const id of [...captures.keys()]) closeShot(id);
   };
   return { handle, sessionsChanged, closeAll };
 }
