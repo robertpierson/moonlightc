@@ -173,6 +173,16 @@ const CODES = (code: string) =>
   : /^Digit\d$/.test(code) ? code.slice(5)
   : /^F\d{1,2}$/.test(code) ? code.toLowerCase()
   : ({ Space: "space", Enter: "enter", Escape: "escape", Tab: "tab", Backspace: "backspace", ShiftLeft: "shift", ShiftRight: "shift", ControlLeft: "control", ControlRight: "control", AltLeft: "alt", AltRight: "alt", ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right" } as Record<string, string>)[code];
+const SHORTCUTS = [
+  ["Close window (Alt+F4)", "alt+f4"],
+  ["Switch window (Alt+Tab)", "alt+tab"],
+  ["Task Manager (Ctrl+Shift+Esc)", "control+shift+escape"],
+  ["Show desktop (Win+D)", "command+d"],
+  ["Start menu (Win)", "command"],
+  ["Close tab (Ctrl+W)", "control+w"],
+  ["Copy (Ctrl+C)", "control+c"],
+  ["Paste (Ctrl+V)", "control+v"],
+] as const;
 const MODS: Record<string, string> = { Shift: "shift", Control: "control", Alt: "alt" };
 const KEYS: Record<string, string> = { Enter: "enter", Backspace: "backspace", Tab: "tab", Escape: "escape", Delete: "delete", ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right", Home: "home", End: "end", PageUp: "pageup", PageDown: "pagedown" };
 
@@ -644,6 +654,21 @@ function Screen({ client, control, mini }: { client: RemoteClient; control: bool
               {k}
             </Button>
           ))}
+          {/* Keys a Chromebook or phone can't send (or keeps for itself). */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="outline">
+                Shortcuts
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {SHORTCUTS.map(([label, keys]) => (
+                <DropdownMenuItem key={keys} onSelect={() => input({ action: "key", keys })}>
+                  {label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button size="icon-sm" variant="outline" aria-label="Scroll up" onClick={() => input({ action: "scroll", amount: 3 })}>
             <ArrowUp />
           </Button>

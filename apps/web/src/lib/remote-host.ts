@@ -51,12 +51,12 @@ export function createHostHandler(
       c = (async () => {
         await b.remote.allowStream(id);
         try {
-          return await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 30 } }, audio });
+          return await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 60 } }, audio });
         } catch (err) {
           void b.remote.note(id, `screen capture with sound failed: ${err instanceof Error ? err.message : String(err)}`);
           await new Promise((r) => setTimeout(r, 600)); // let Windows let go of the failed capture
           await b.remote.allowStream(id);
-          return navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 30 } }, audio: false });
+          return navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 60 } }, audio: false });
         }
       })();
       captures.set(id, c);
@@ -122,7 +122,7 @@ export function createHostHandler(
           await need(req, "view");
           closeRtc(req.from);
           step = "screen capture";
-          // Copies of the shared capture (30 frames a second; game mode asks for 60). Sound only on the first try.
+          // Copies of the shared capture (60 frames a second; the graphics chip encodes it). Sound only on the first try.
           const shared = await capture(req.from);
           const stream = new MediaStream((p.noAudio ? shared.getVideoTracks() : shared.getTracks()).map((t) => t.clone()));
           stream.getVideoTracks().forEach((t) => (t.contentHint = "detail"));
@@ -154,7 +154,7 @@ export function createHostHandler(
                   const motion = a.hint === "motion";
                   stream.getVideoTracks().forEach((t) => {
                     t.contentHint = motion ? "motion" : "detail";
-                    t.applyConstraints({ frameRate: { ideal: motion ? 60 : 30 } }).catch(() => {});
+                    t.applyConstraints({ frameRate: { ideal: 60 } }).catch(() => {});
                   });
                   // Game mode: a bit smaller picture that never stutters (quicker to encode, send and decode).
                   pc.getSenders()
