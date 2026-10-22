@@ -128,3 +128,8 @@ Why: the owner asked for code-free access in emergencies and for a location lock
   model): more power and much more attack surface, not built. Turning UAC off entirely: rejected.
 - **Not covered:** the Windows sign-in screen after a restart. The fix for that is "sign in by itself" (netplwiz), where
   the owner types the password himself.
+
+## 2026-10-22: Admin mode retired
+- **What:** admin mode can no longer be turned on; Settings only offers turning it off, which restarts MoonlightC with normal rights.
+- **Why:** a self-test on the owner's PC showed Windows refuses every live screen capture (getDisplayMedia, desktop source) for the app running elevated ("Could not start video source"), while the same calls work at normal rights. That forced slow pictures for remote control.
+- **Instead:** "sign in by itself" covers the post-restart sign-in screen; UAC prompts can be avoided rather than answered remotely.
