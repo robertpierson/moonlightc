@@ -175,9 +175,7 @@ STATUS: WAITING_ON_OWNER
 ## Parked by the owner (2026-10-22, "some other day"): ask before starting any of these
 Current version everywhere: 0.6.34 (desktop installed, web live, extension zip). Remote control: live video works
 (normal rights), Shortcuts menu, Shift/Ctrl/Alt holds, Power menu (Sleep/Restart/Shut down; Lock removed).
-1. **Owner click (important):** PC > Settings > Remote control > Turn off admin mode > Yes. Until then the elevated
-   "MoonlightC" scheduled task starts the app as admin at Windows sign-in, which breaks screen capture (live video and
-   pictures). Turning it off also restores PromptOnSecureDesktop=1 and the normal startup entry.
+1. Done 2026-10-22: admin mode is off (task gone, PromptOnSecureDesktop=1, normal startup entry back).
 2. **"Stop the popup" switch (owner decision):** ConsentPromptBehaviorAdmin=0 so admin-approval boxes never appear
    (avoids getting stuck remotely). Lowers protection against malware; ~10 min to build. Explained, not built.
 3. **Top-level background service** (like TeamViewer/Chrome Remote Desktop) to see/answer the sign-in screen and UAC/PIN
