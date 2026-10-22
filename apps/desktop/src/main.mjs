@@ -430,7 +430,9 @@ Set-ItemProperty 'HKLM:\\SOFTWARE\\Microsoft\\WindowsUpdate\\UX\\Settings' -Name
 // "Yes"/PIN prompts show on the normal screen instead of the locked-off secure one. Then a remote session can see those
 // prompts and answer them (you type your own PIN), and the terminal runs as administrator.
 const isAdmin = () => new Promise((done) => (process.platform !== "win32" ? done(false) : execFile("net.exe", ["session"], { windowsHide: true }, (err) => done(!err))));
-handle("setup:adminStatus", async () => ({ admin: await isAdmin() }));
+// On while the start-as-administrator task exists (even if this copy happens to run normally).
+const adminTask = () => new Promise((done) => (process.platform !== "win32" ? done(false) : execFile("schtasks.exe", ["/query", "/tn", "MoonlightC"], { windowsHide: true }, (err) => done(!err))));
+handle("setup:adminStatus", async () => ({ admin: (await isAdmin()) || (await adminTask()) }));
 // What's already set up (reading these needs no administrator rights).
 const regValue = (key, name) =>
   new Promise((done) =>
@@ -458,6 +460,11 @@ Set-ItemProperty 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\
   // The scheduled task starts MoonlightC instead (with admin rights); Windows' normal startup entry would start a second copy.
   app.setLoginItemSettings({ openAtLogin: !on, args: ["--hidden"] });
   if (on) setTimeout(() => (quitting = true, app.quit()), 500);
+  // Back to normal rights now: Explorer starts the new copy (as you, not as administrator) once this one has closed.
+  else {
+    spawn("powershell.exe", ["-NoProfile", "-WindowStyle", "Hidden", "-Command", `Start-Sleep 3; Start-Process explorer.exe -ArgumentList '"${exe}"'`], { detached: true, stdio: "ignore", windowsHide: true }).unref();
+    setTimeout(() => ((quitting = true), app.quit()), 500);
+  }
   return r;
 });
 

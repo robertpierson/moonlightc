@@ -97,25 +97,24 @@ export function RemoteSettings({ onSetup }: { onSetup: () => void }) {
           </Button>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4">
-          <div className="grid gap-0.5">
-            <span className="font-medium">Admin mode {admin && <span className="text-sm font-normal text-emerald-600">(on: MoonlightC has administrator rights)</span>}</span>
-            <span className="text-sm text-muted-foreground">
-              Lets you answer Windows&apos; &quot;Yes&quot; and PIN prompts from your other devices (you type your own PIN), and the remote terminal runs as administrator. MoonlightC starts with administrator rights when you sign in, and those prompts show on the normal screen. Anyone who gets into your MoonlightC account and two-step sign-in could then change anything on this PC. Windows asks &quot;Yes&quot; once; MoonlightC restarts.
-            </span>
+        {/* Admin mode is retired: Windows won't let an app with administrator rights capture the screen, so live video
+            and pictures stopped working. Only the way out is shown. */}
+        {admin && (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-500/50 p-4">
+            <div className="grid gap-0.5">
+              <span className="font-medium">Admin mode is on, and it stops remote video</span>
+              <span className="text-sm text-muted-foreground">Windows doesn&apos;t let an app running as administrator capture the screen, so remote control only gets slow pictures. Turn it off: Windows asks &quot;Yes&quot; once, then MoonlightC restarts normally.</span>
+            </div>
+            <Button
+              onClick={async () => {
+                const r = await b.settings.setAdmin(false);
+                if (!r.ok) toast.error(r.error ?? "Didn't work.");
+              }}
+            >
+              Turn off admin mode
+            </Button>
           </div>
-          <Button
-            variant={admin ? "outline" : "secondary"}
-            onClick={async () => {
-              const r = await b.settings.setAdmin(!admin);
-              if (!r.ok) return toast.error(r.error ?? "Didn't work.");
-              if (admin) toast.success("Admin mode is off after you restart the PC or sign out of Windows.");
-              else toast.success("Admin mode is on. MoonlightC is restarting with administrator rights.");
-            }}
-          >
-            {admin ? "Turn off admin mode" : "Turn on admin mode"}
-          </Button>
-        </div>
+        )}
 
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4">
           <div className="grid gap-0.5">
