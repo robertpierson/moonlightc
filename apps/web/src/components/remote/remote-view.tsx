@@ -173,11 +173,13 @@ const CODES = (code: string) =>
   : /^Digit\d$/.test(code) ? code.slice(5)
   : /^F\d{1,2}$/.test(code) ? code.toLowerCase()
   : ({ Space: "space", Enter: "enter", Escape: "escape", Tab: "tab", Backspace: "backspace", ShiftLeft: "shift", ShiftRight: "shift", ControlLeft: "control", ControlRight: "control", AltLeft: "alt", AltRight: "alt", ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right" } as Record<string, string>)[code];
+const MODS: Record<string, string> = { Shift: "shift", Control: "control", Alt: "alt" };
 const KEYS: Record<string, string> = { Enter: "enter", Backspace: "backspace", Tab: "tab", Escape: "escape", Delete: "delete", ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right", Home: "home", End: "end", PageUp: "pageup", PageDown: "pagedown" };
 
 function Screen({ client, control, mini }: { client: RemoteClient; control: boolean; mini?: boolean }) {
   const [live, setLive] = useState<Live>("connecting");
   const [why, setWhy] = useState("");
+  const heldMods = useRef(new Set<string>());
   // Windows' sign-in/lock screen can't be seen or typed on by any app; say so instead of showing a frozen picture.
   const [locked, setLocked] = useState(false);
   useEffect(() => {
@@ -533,11 +535,32 @@ function Screen({ client, control, mini }: { client: RemoteClient; control: bool
     // Typing while the screen is selected goes straight to the PC.
     onKeyDown: (e: React.KeyboardEvent) => {
       if (!control || game) return;
+      // Shift, Ctrl and Alt are held down on the PC while you hold them (Shift+click, selecting with Shift, etc.).
+      const mod = MODS[e.key];
+      if (mod) {
+        e.preventDefault();
+        if (!e.repeat && !heldMods.current.has(mod)) {
+          heldMods.current.add(mod);
+          input({ action: "key_down", key: mod });
+        }
+        return;
+      }
       const mods = [e.ctrlKey && "control", e.altKey && "alt", e.shiftKey && e.key.length > 1 && "shift"].filter(Boolean) as string[];
       if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) input({ action: "type", text: e.key });
       else if (KEYS[e.key] || (e.key.length === 1 && (e.ctrlKey || e.altKey))) input({ action: "key", keys: [...mods, KEYS[e.key] ?? e.key.toLowerCase()].join("+") });
       else return;
       e.preventDefault();
+    },
+    onKeyUp: (e: React.KeyboardEvent) => {
+      const mod = MODS[e.key];
+      if (!mod || !heldMods.current.delete(mod)) return;
+      e.preventDefault();
+      input({ action: "key_up", key: mod });
+    },
+    // Leaving the screen lets go of any held Shift/Ctrl/Alt, so none gets stuck on the PC.
+    onBlur: () => {
+      for (const m of heldMods.current) input({ action: "key_up", key: m });
+      heldMods.current.clear();
     },
   };
 
@@ -744,7 +767,6 @@ function Files({ client }: { client: RemoteClient }) {
 }
 
 const POWER = [
-  ["lock", "Lock", "Lock this PC? Someone has to sign in to Windows to use it again."],
   ["sleep", "Sleep", "Put this PC to sleep? You can't wake it from here unless Wake-on-LAN or a smart plug is set up (Settings > Remote control on the PC)."],
   ["restart", "Restart", "Restart this PC in 30 seconds? After it restarts, someone has to sign in to Windows before MoonlightC is back."],
   ["shutdown", "Shut down", "Shut down this PC in 30 seconds? You can't turn it back on from here unless Wake-on-LAN or a smart plug is set up."],
@@ -767,7 +789,7 @@ function PowerMenu({ client }: { client: RemoteClient }) {
               if (!confirm(ask)) return;
               client
                 .call("power", { what })
-                .then(() => toast.success(what === "lock" ? "Locked." : what === "sleep" ? "Going to sleep." : `${label} in 30 seconds.`))
+                .then(() => toast.success(what === "sleep" ? "Going to sleep." : `${label} in 30 seconds.`))
                 .catch((e: Error) => toast.error(e.message));
             }}
           >
