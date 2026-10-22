@@ -53,7 +53,12 @@ try {
   // Only feature on/off switches: this app may run with administrator rights, and other switches can run programs.
   for (const [k, v] of Object.entries(selftest.switches ?? {}))
     if ((k === "enable-features" || k === "disable-features") && /^[A-Za-z0-9,]{1,300}$/.test(String(v))) app.commandLine.appendSwitch(k, String(v));
-} catch {}
+} catch (e) {
+  // Startup note for the self-test (what the app saw), next to it.
+  try {
+    fs.writeFileSync(path.join(app.getPath("userData"), "selftest-boot.txt"), `${new Date().toISOString()} ${selftestFile}: ${e?.code ?? e?.message ?? e}`);
+  } catch {}
+}
 
 async function runSelftest() {
   const out = { at: new Date().toISOString(), switches: selftest.switches ?? {}, admin: await isAdmin(), steps: [], results: {} };
@@ -609,6 +614,8 @@ app.on("second-instance", (_e, argv) => onSecondCopy(argv));
 function onSecondCopy(argv) {
   // "MoonlightC.exe --quit": close cleanly (used by updates) so nothing in memory is lost.
   if (argv.includes("--quit")) return app.quit();
+  // "MoonlightC.exe --selftest": run the screen-capture self-test now (results in selftest-result.json).
+  if (argv.includes("--selftest")) return void ((selftest ??= {}), runSelftest().catch(() => {}));
   if (argv.includes("--hidden")) return;
   win?.show();
   win?.focus();
