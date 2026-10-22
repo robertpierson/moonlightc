@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
 import { gathered, hifiAudio, ICE, isOnline, whereAmI, joinChannel, leaveChannel, RemoteClient, subscribed, TIER_LABELS, type Tier } from "@/lib/remote";
+import { reportError } from "@/lib/analytics";
 import { desktop } from "@/lib/desktop";
 import { useDevices } from "./your-computers";
 
@@ -177,6 +178,7 @@ const KEYS: Record<string, string> = { Enter: "enter", Backspace: "backspace", T
 
 function Screen({ client, control, mini }: { client: RemoteClient; control: boolean; mini?: boolean }) {
   const [live, setLive] = useState<Live>("connecting");
+  const [why, setWhy] = useState("");
   // Windows' sign-in/lock screen can't be seen or typed on by any app; say so instead of showing a frozen picture.
   const [locked, setLocked] = useState(false);
   useEffect(() => {
@@ -261,10 +263,16 @@ function Screen({ client, control, mini }: { client: RemoteClient; control: bool
         pc.addEventListener("connectionstatechange", () => {
           if (!done && pc?.connectionState === "failed") setLive("pictures");
         });
-      } catch {
+      } catch (e) {
         pc?.close();
         client.call("rtc.stop").catch(() => {});
-        if (!done) setLive("pictures");
+        // Say (and log) why, so a failure that isn't the network can be fixed.
+        const why = `${e instanceof Error ? e.message : String(e)} (${pc?.connectionState ?? "no connection"}, ice ${pc?.iceConnectionState ?? "-"})`;
+        reportError(`live video: ${why}`);
+        if (!done) {
+          setWhy(why);
+          setLive("pictures");
+        }
       }
     })();
     return () => {
@@ -530,7 +538,7 @@ function Screen({ client, control, mini }: { client: RemoteClient; control: bool
       )}
       <div className={mini ? "hidden" : "flex flex-wrap items-center gap-2"}>
         <span className="text-xs text-muted-foreground" role="status">
-          {live === "video" ? "Live video" : live === "pictures" ? "Pictures (this network blocks live video)" : "Connecting…"}
+          {live === "video" ? "Live video" : live === "pictures" ? `Pictures (live video didn't start${why ? `: ${why}` : ""})` : "Connecting…"}
           {game && " · Game mode: click the screen to capture the mouse; press Esc twice quickly to leave"}
         </span>
         <span className="flex-1" />

@@ -1,5 +1,6 @@
 "use client";
 
+import { reportError } from "./analytics";
 import type { MooncBridge } from "./desktop";
 import { gathered, hifiAudio, ICE, type Req } from "./remote";
 
@@ -94,69 +95,80 @@ export function createHostHandler(
           p.where,
         );
       case "rtc.offer": {
-        await need(req, "view");
-        closeRtc(req.from);
-        // With the PC's sound where the system allows it; video only otherwise.
-        await b.remote.allowStream(req.from);
-        // Game and music sound as it is: no call-style echo/noise filtering or volume leveling.
-        const audio = { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 2 };
-        // 30 frames a second is plenty for work and half the effort for this PC; game mode asks for 60.
-        const stream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 30, max: 60 } }, audio }).catch(async () => {
+        let step = "permission";
+        try {
+          await need(req, "view");
+          closeRtc(req.from);
+          step = "screen capture";
+          // With the PC's sound where the system allows it; video only otherwise.
           await b.remote.allowStream(req.from);
-          return navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 30, max: 60 } }, audio: false });
-        });
-        stream.getVideoTracks().forEach((t) => (t.contentHint = "detail"));
-        stream.getAudioTracks().forEach((t) => (t.contentHint = "music"));
-        const pc = new RTCPeerConnection({ iceServers: ICE });
-        rtc.set(req.from, { pc, stream });
-        stream.getTracks().forEach((t) => pc.addTrack(t, stream));
-        // Room for sharp, smooth video and clear sound on a good connection (WebRTC lowers it when the network is slow).
-        const tune = () =>
-          pc.getSenders().forEach((s) => {
-            const p = s.getParameters();
-            if (!p.encodings?.length) return;
-            p.encodings[0].maxBitrate = s.track?.kind === "audio" ? 192_000 : 8_000_000;
-            if (s.track?.kind === "video") p.encodings[0].maxFramerate = 60;
-            s.setParameters(p).catch(() => {});
+          // Game and music sound as it is: no call-style echo/noise filtering or volume leveling.
+          const audio = { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 2 };
+          // 30 frames a second is plenty for work and half the effort for this PC; game mode asks for 60.
+          const stream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 30, max: 60 } }, audio }).catch(async () => {
+            await b.remote.allowStream(req.from);
+            return navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 30, max: 60 } }, audio: false });
           });
-        pc.addEventListener("connectionstatechange", () => {
-          if (pc.connectionState === "failed" || pc.connectionState === "closed") closeRtc(req.from);
-        });
-        // Mouse and keyboard over the same direct connection (much faster than the server channel);
-        // every event is still checked by the desktop app ("use the mouse and keyboard" must be allowed).
-        pc.addEventListener("datachannel", (e) =>
-          e.channel.addEventListener("message", (m) => {
-            try {
-              const a = JSON.parse(String(m.data));
-              // Game mode asks for smooth motion over sharp text (and back again when it ends).
-              if (a.action === "hint") {
-                const motion = a.hint === "motion";
-                stream.getVideoTracks().forEach((t) => {
-                  t.contentHint = motion ? "motion" : "detail";
-                  t.applyConstraints({ frameRate: { ideal: motion ? 60 : 30, max: 60 } }).catch(() => {});
-                });
-                // Game mode: a bit smaller picture that never stutters (quicker to encode, send and decode).
-                pc.getSenders()
-                  .filter((s) => s.track?.kind === "video")
-                  .forEach((s) => {
-                    const p = s.getParameters();
-                    if (!p.encodings?.length) return;
-                    p.encodings[0].scaleResolutionDownBy = motion ? 1.5 : 1;
-                    (p as RTCRtpSendParameters & { degradationPreference?: string }).degradationPreference = motion ? "maintain-framerate" : "balanced";
-                    s.setParameters(p).catch(() => {});
+          stream.getVideoTracks().forEach((t) => (t.contentHint = "detail"));
+          stream.getAudioTracks().forEach((t) => (t.contentHint = "music"));
+          step = "video connection";
+          const pc = new RTCPeerConnection({ iceServers: ICE });
+          rtc.set(req.from, { pc, stream });
+          stream.getTracks().forEach((t) => pc.addTrack(t, stream));
+          // Room for sharp, smooth video and clear sound on a good connection (WebRTC lowers it when the network is slow).
+          const tune = () =>
+            pc.getSenders().forEach((s) => {
+              const p = s.getParameters();
+              if (!p.encodings?.length) return;
+              p.encodings[0].maxBitrate = s.track?.kind === "audio" ? 192_000 : 8_000_000;
+              if (s.track?.kind === "video") p.encodings[0].maxFramerate = 60;
+              s.setParameters(p).catch(() => {});
+            });
+          pc.addEventListener("connectionstatechange", () => {
+            if (pc.connectionState === "failed" || pc.connectionState === "closed") closeRtc(req.from);
+          });
+          // Mouse and keyboard over the same direct connection (much faster than the server channel);
+          // every event is still checked by the desktop app ("use the mouse and keyboard" must be allowed).
+          pc.addEventListener("datachannel", (e) =>
+            e.channel.addEventListener("message", (m) => {
+              try {
+                const a = JSON.parse(String(m.data));
+                // Game mode asks for smooth motion over sharp text (and back again when it ends).
+                if (a.action === "hint") {
+                  const motion = a.hint === "motion";
+                  stream.getVideoTracks().forEach((t) => {
+                    t.contentHint = motion ? "motion" : "detail";
+                    t.applyConstraints({ frameRate: { ideal: motion ? 60 : 30, max: 60 } }).catch(() => {});
                   });
-                return;
-              }
-              b.remote.input(req.from, a).catch(() => {});
-            } catch {}
-          }),
-        );
-        await pc.setRemoteDescription({ type: "offer", sdp: String(p.sdp ?? "") });
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription({ type: "answer", sdp: hifiAudio(answer.sdp) });
-        tune();
-        await gathered(pc);
-        return { sdp: pc.localDescription?.sdp };
+                  // Game mode: a bit smaller picture that never stutters (quicker to encode, send and decode).
+                  pc.getSenders()
+                    .filter((s) => s.track?.kind === "video")
+                    .forEach((s) => {
+                      const p = s.getParameters();
+                      if (!p.encodings?.length) return;
+                      p.encodings[0].scaleResolutionDownBy = motion ? 1.5 : 1;
+                      (p as RTCRtpSendParameters & { degradationPreference?: string }).degradationPreference = motion ? "maintain-framerate" : "balanced";
+                      s.setParameters(p).catch(() => {});
+                    });
+                  return;
+                }
+                b.remote.input(req.from, a).catch(() => {});
+              } catch {}
+            }),
+          );
+          step = "video setup";
+          await pc.setRemoteDescription({ type: "offer", sdp: String(p.sdp ?? "") });
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription({ type: "answer", sdp: hifiAudio(answer.sdp) });
+          tune();
+          step = "network check";
+          await gathered(pc);
+          return { sdp: pc.localDescription?.sdp };
+        } catch (e) {
+          const m = `PC ${step}: ${e instanceof Error ? e.message : String(e)}`;
+          reportError(m);
+          throw new Error(m);
+        }
       }
       case "status":
         await need(req, "view");
