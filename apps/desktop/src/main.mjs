@@ -43,6 +43,62 @@ if (secondCopy) {
 } else if (process.argv.includes("--quit")) app.quit();
 app.setAsDefaultProtocolClient("moonlightc");
 
+// Diagnostics: selftest.json in the app folder asks for a one-time screen-capture test at the next start (optionally
+// with extra Chromium switches); results go to selftest-result.json. Only someone who can write to this folder can ask.
+const selftestFile = path.join(app.getPath("userData"), "selftest.json");
+let selftest;
+try {
+  selftest = JSON.parse(fs.readFileSync(selftestFile, "utf8"));
+  fs.rmSync(selftestFile, { force: true });
+  // Only feature on/off switches: this app may run with administrator rights, and other switches can run programs.
+  for (const [k, v] of Object.entries(selftest.switches ?? {}))
+    if ((k === "enable-features" || k === "disable-features") && /^[A-Za-z0-9,]{1,300}$/.test(String(v))) app.commandLine.appendSwitch(k, String(v));
+} catch {}
+
+async function runSelftest() {
+  const out = { at: new Date().toISOString(), switches: selftest.switches ?? {}, admin: await isAdmin(), results: {} };
+  try {
+    const ses = session.fromPartition("selftest");
+    ses.setDisplayMediaRequestHandler((req, cb) =>
+      desktopCapturer.getSources({ types: ["screen"] }).then(([s]) => cb(s ? { video: s, ...(req.audioRequested && process.platform === "win32" ? { audio: "loopback" } : {}) } : {}), () => cb({})),
+    );
+    const [src] = await desktopCapturer.getSources({ types: ["screen"] });
+    const page = path.join(app.getPath("userData"), "selftest.html");
+    fs.writeFileSync(page, "<p>test</p>");
+    const w = new BrowserWindow({ show: false, webPreferences: { session: ses, backgroundThrottling: false } });
+    await w.loadFile(page);
+    out.results = await w.webContents.executeJavaScript(`(async () => {
+      const r = {};
+      const frames = async (s) => {
+        const a = new RTCPeerConnection(), b = new RTCPeerConnection();
+        a.onicecandidate = (e) => e.candidate && b.addIceCandidate(e.candidate);
+        b.onicecandidate = (e) => e.candidate && a.addIceCandidate(e.candidate);
+        b.addTransceiver("video", { direction: "recvonly" });
+        const got = new Promise((res) => (b.ontrack = res));
+        const o = await b.createOffer(); await b.setLocalDescription(o); await a.setRemoteDescription(o);
+        s.getVideoTracks().forEach((t) => a.addTrack(t, s));
+        const ans = await a.createAnswer(); await a.setLocalDescription(ans); await b.setRemoteDescription(ans);
+        await got; await new Promise((res) => setTimeout(res, 2500));
+        let f = 0; (await b.getStats()).forEach((x) => { if (x.type === "inbound-rtp" && x.kind === "video") f = x.framesDecoded; });
+        a.close(); b.close(); return f;
+      };
+      const tryIt = async (name, get) => {
+        try { const s = await get(); r[name] = "ok, " + (await frames(s)) + " frames in 2.5 s"; s.getTracks().forEach((t) => t.stop()); }
+        catch (e) { r[name] = "FAIL " + e.name + ": " + e.message; }
+        await new Promise((res) => setTimeout(res, 800));
+      };
+      await tryIt("displayMedia", () => navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 30 } }, audio: false }));
+      await tryIt("displayMedia+sound", () => navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 30 } }, audio: true }));
+      await tryIt("desktopSource", () => navigator.mediaDevices.getUserMedia({ audio: false, video: { mandatory: { chromeMediaSource: "desktop", chromeMediaSourceId: ${JSON.stringify(src?.id ?? "")} } } }));
+      return r;
+    })()`);
+    w.destroy();
+  } catch (e) {
+    out.error = String(e?.message ?? e);
+  }
+  fs.writeFileSync(path.join(app.getPath("userData"), "selftest-result.json"), JSON.stringify(out, null, 2));
+}
+
 const freePort = () =>
   new Promise((resolve, reject) => {
     const s = net.createServer();
@@ -582,6 +638,7 @@ const yieldCpu = () => {
 app.whenReady().then(async () => {
   if (secondCopy) return;
   listenForSecondCopy().catch(() => {});
+  if (selftest) runSelftest().catch(() => {});
   powerMonitor.on("lock-screen", () => remote.setLocked(true));
   powerMonitor.on("unlock-screen", () => remote.setLocked(false));
   yieldCpu();
