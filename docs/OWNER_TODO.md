@@ -148,7 +148,7 @@ After it boots, Windows asks for your sign-in before MoonlightC starts. Tell me 
 4. In remote control, click **Chat**: that's Cowork with your PC's screen, files and commands. Pick a Claude/GPT/Gemini model with a key.
 5. Settings > Plugins & mods > Shawn's kit > **Install all**.
 
-## Try this (0.6.41)
+## Try this (0.6.48)
 1. Settings > Appearance > Background: pick a picture, GIF or video; try Lanterns or Rain; drag "Show through the app", Hue and Blur.
 2. Settings > Privacy & data > Import chats: pick the export zip from ChatGPT or Claude (Settings > Data controls > Export there).
 3. On the Chromebook in Chrome, the sound-wave button next to the mic: Talk hands-free; tap again to stop.
@@ -159,3 +159,7 @@ After it boots, Windows asks for your sign-in before MoonlightC starts. Tell me 
 ## Optional: block leaked passwords (security, maybe needs a paid Supabase plan)
 1. Open https://supabase.com/dashboard/project/znkusjdspjssmwohrbzl/auth/providers?provider=Email
 2. Turn on **Prevent use of leaked passwords**, then **Save**. (If it says it needs the Pro plan, skip it; it's optional.)
+7. Remote control: Ctrl+C on the PC / Ctrl+V into the PC carry text both ways; drag a file onto the screen to put it in the PC's Downloads; the Search key works as the Windows key; the top shows fps and delay.
+8. Any chat's menu > Lock chat: pick a PIN; it disappears from your list until All chats > Locked.
+9. Settings > General > Tell me when a reply finishes (for long Cowork/Code tasks in another tab).
+10. Ask Claude Code (from the Chromebook too) to change a file: you'll see each step it takes. Settings > Code permission controls how free it is.
