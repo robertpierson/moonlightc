@@ -185,7 +185,7 @@ export function createHostHandler(
           return { sdp: pc.localDescription?.sdp };
         } catch (e) {
           const m = `PC ${step}: ${e instanceof Error ? e.message : String(e)}`;
-          reportError(m);
+          reportError(m, "remote");
           void b.remote.note(req.from, m);
           throw new Error(m);
         }

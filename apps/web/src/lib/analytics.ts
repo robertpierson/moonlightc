@@ -32,17 +32,31 @@ export function trackSessionStart() {
   track("session.start");
 }
 
-/** Errors in the app, for the staff panel's "what's breaking" list: a short message, the page and the version only. */
+/**
+ * What kind of error, without any of its text (which could quote someone's words): a crash's type and place in the
+ * code, or for an error message a fixed category.
+ */
+export function errorKind(e: unknown, where = "app") {
+  if (e instanceof Error) {
+    const at = /([\w-]+\.js):(\d+):\d+/.exec(e.stack ?? "");
+    return `${where}:${e.name}${at ? `@${at[1]}:${at[2]}` : ""}`.replace(/[^\w.:/@-]/g, "").slice(0, 40);
+  }
+  const m = String(e);
+  const cat = /credit|quota|billing/i.test(m) ? "credit" : /plan\b/i.test(m) ? "plan" : /rate|too many/i.test(m) ? "rate-limit" : /network|fetch|connect|offline|timeout/i.test(m) ? "network" : /\bkey\b|auth|401|403|sign in/i.test(m) ? "auth" : /model/i.test(m) ? "model" : "other";
+  return `${where}:${cat}`;
+}
+
+/** Errors in the app, for the staff panel's "what's breaking" list: their kind, the page and the version only. */
 let reported = 0;
 const seen = new Set<string>();
-export function reportError(message: string) {
-  const m = String(message || "Unknown error").slice(0, 200);
-  if (seen.has(m) || reported >= 20) return;
-  seen.add(m);
+export function reportError(e: unknown, where = "app") {
+  const kind = errorKind(e, where);
+  if (seen.has(kind) || reported >= 20) return;
+  seen.add(kind);
   reported++;
-  track("app.error", { message: m, path: location.pathname, version: pkg.version });
+  track("app.error", { kind, path: location.pathname, version: pkg.version });
 }
 export function watchErrors() {
-  addEventListener("error", (e) => reportError(e.message));
-  addEventListener("unhandledrejection", (e) => reportError(e.reason instanceof Error ? e.reason.message : String(e.reason)));
+  addEventListener("error", (e) => reportError(e.error ?? e.message));
+  addEventListener("unhandledrejection", (e) => reportError(e.reason));
 }
