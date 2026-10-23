@@ -258,6 +258,7 @@ function Profile() {
 }
 
 function General() {
+  const notifyDone = useStore((s) => s.notifyDone);
   const { theme, setTheme } = useTheme();
   const lastModel = useStore((s) => s.lastModel);
   const hasModels = useStore((s) => s.connections.some((c) => c.models.length > 0));
@@ -316,6 +317,18 @@ function General() {
         <Row label="Web tools" hint="Let the AI search the web and read pages (needs a search key in Models & API keys).">
           <Switch aria-label="Web tools" checked={webTools} onCheckedChange={(v) => update((s) => ({ ...s, webTools: v }))} />
         </Row>
+        {typeof Notification !== "undefined" && (
+          <Row label="Tell me when a reply finishes" hint="A notification when the AI finishes while you're in another tab or app.">
+            <Switch
+              aria-label="Tell me when a reply finishes"
+              checked={!!notifyDone}
+              onCheckedChange={async (v) => {
+                if (v && Notification.permission !== "granted" && (await Notification.requestPermission()) !== "granted") return toast.error("Allow notifications for MoonlightC in your browser first.");
+                updateNow((s) => ({ ...s, notifyDone: v }));
+              }}
+            />
+          </Row>
+        )}
         <Row label="Memory" hint="Let the AI remember facts you tell it, across chats. Manage them in Settings > Memory.">
           <Switch aria-label="Memory" checked={memory} onCheckedChange={(v) => update((s) => ({ ...s, memory: { enabled: v, items: s.memory?.items ?? [] } }))} />
         </Row>

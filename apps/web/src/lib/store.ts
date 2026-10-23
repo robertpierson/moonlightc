@@ -187,6 +187,8 @@ export interface State {
   remoteEnabled?: boolean;
   /** Remote control's on/off was carried over once from before it saved instantly (0.6.17). */
   remoteCarried?: boolean;
+  /** A notification when a reply finishes while MoonlightC isn't in front. */
+  notifyDone?: boolean;
   /** Start-with-Windows was switched on once for remote control. */
   loginSet?: boolean;
   myThemes?: { id: string; name: string; look: Pick<Look, "theme" | "overrides" | "radius"> }[];

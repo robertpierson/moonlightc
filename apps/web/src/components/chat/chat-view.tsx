@@ -542,6 +542,21 @@ export function ChatView({
 
   const lastAssistant = messages.findLastIndex((m) => m.role === "assistant");
 
+  // A reply finished while you were elsewhere: a notification (Settings > General), clicking it comes back here.
+  const wasStreaming = useRef(false);
+  useEffect(() => {
+    const finished = wasStreaming.current && !streaming;
+    wasStreaming.current = streaming;
+    if (!finished || !document.hidden || !getState().notifyDone || typeof Notification === "undefined" || Notification.permission !== "granted") return;
+    const m = messages.at(-1);
+    const text = m?.role === "assistant" ? m.parts.flatMap((p) => (p.type === "text" ? [p.text] : [])).join(" ").trim() : "";
+    const n = new Notification(chat.title || "MoonlightC", { body: text ? `${text.slice(0, 140)}${text.length > 140 ? "…" : ""}` : "The reply is ready.", tag: chat.id });
+    n.onclick = () => {
+      window.focus();
+      n.close();
+    };
+  }, [streaming, messages, chat.id, chat.title]);
+
   return (
     <div
       className="relative flex min-h-0 flex-1 flex-col"
