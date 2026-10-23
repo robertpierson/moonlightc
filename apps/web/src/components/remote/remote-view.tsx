@@ -377,7 +377,7 @@ function Screen({ client, control, mini }: { client: RemoteClient; control: bool
   }, [live, client]);
 
   const input = (a: Record<string, unknown>) => {
-    if (a.action === "move_by" && moves.current?.readyState === "open") return void moves.current.send(JSON.stringify(a));
+    if ((a.action === "move_by" || a.action === "move") && moves.current?.readyState === "open") return void moves.current.send(JSON.stringify(a));
     if (dc.current?.readyState === "open") return void dc.current.send(JSON.stringify(a));
     client.call("input", a).catch((e: Error) => toast.error(e.message));
   };
@@ -476,7 +476,19 @@ function Screen({ client, control, mini }: { client: RemoteClient; control: bool
   const lastWheel = useRef(0);
   const look = `rounded-lg border bg-black outline-none focus-visible:ring-2 focus-visible:ring-ring ${control ? "cursor-crosshair" : ""}`;
   // Phones and tablets: tap = click, press and hold = right-click, two fingers up/down = scroll.
-  const touch = useRef<{ timer?: ReturnType<typeof setTimeout>; held?: boolean; x?: number; y?: number; scrollY?: number }>({});
+  const touch = useRef<{ timer?: ReturnType<typeof setTimeout>; held?: boolean; x?: number; y?: number; scrollY?: number; last?: number }>({});
+  // A mouse (not a finger): hovering moves the PC's pointer; press, move, release drags; the PC itself sees clicks
+  // and double-clicks from the presses. Moves are sent at most once a frame.
+  const fromFinger = () => Date.now() - (touch.current.last ?? 0) < 1000;
+  const pointer = useRef<{ raf?: number; at?: { nx: number; ny: number }; down?: boolean }>({});
+  const moveTo = (p: { nx: number; ny: number }) => {
+    pointer.current.at = p;
+    if (pointer.current.raf) return;
+    pointer.current.raf = requestAnimationFrame(() => {
+      pointer.current.raf = undefined;
+      if (pointer.current.at) input({ action: "move", ...pointer.current.at });
+    });
+  };
   const fromTouch = (el: HTMLElement, t: { clientX: number; clientY: number }) => {
     const r = el.getBoundingClientRect();
     const clamp = (n: number) => Math.min(1, Math.max(0, n));
@@ -491,6 +503,7 @@ function Screen({ client, control, mini }: { client: RemoteClient; control: bool
     onTouchStart: (e: React.TouchEvent<HTMLElement>) => {
       if (!control) return;
       const t = touch.current;
+      t.last = Date.now();
       clearTimeout(t.timer);
       t.held = false;
       if (e.touches.length === 2) {
@@ -522,15 +535,33 @@ function Screen({ client, control, mini }: { client: RemoteClient; control: bool
       clearTimeout(touch.current.timer);
       touch.current.scrollY = undefined;
     },
+    // Fingers: a tap is a click (a mouse uses the press and release below).
     onClick: (e: React.MouseEvent<HTMLElement>) => {
       if (!control) return;
       if (touch.current.held) return void (touch.current.held = false);
       if (game) return capture(e.currentTarget);
       e.currentTarget.focus();
-      input({ action: "click", ...at(e) });
+      if (fromFinger()) input({ action: "click", ...at(e) });
     },
-    onDoubleClick: (e: React.MouseEvent) => {
-      if (control && !game) input({ action: "double_click", ...at(e) });
+    onMouseMove: (e: React.MouseEvent) => {
+      if (control && !game && !fromFinger()) moveTo(at(e));
+    },
+    onMouseDown: (e: React.MouseEvent<HTMLElement>) => {
+      if (!control || game || fromFinger() || e.button !== 0) return;
+      e.currentTarget.focus();
+      pointer.current.down = true;
+      input({ action: "mouse_down", ...at(e) });
+    },
+    onMouseUp: (e: React.MouseEvent) => {
+      if (!pointer.current.down || e.button !== 0) return;
+      pointer.current.down = false;
+      input({ action: "mouse_up", ...at(e) });
+    },
+    // Letting go outside the picture still lets go on the PC (nothing stays held).
+    onMouseLeave: (e: React.MouseEvent) => {
+      if (!pointer.current.down) return;
+      pointer.current.down = false;
+      input({ action: "mouse_up", ...at(e) });
     },
     onContextMenu: (e: React.MouseEvent) => {
       if (!control || game) return;

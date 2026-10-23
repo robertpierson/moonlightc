@@ -238,14 +238,23 @@ export async function frame(clientId) {
 export async function input(clientId, a) {
   need(clientId, "control");
   if (!a || !INPUTS.has(a.action)) throw new Error("Unknown action.");
-  // Game mode sends many small events; they skip the activity log (one "game input" entry per session would be noise).
-  if (HOLDS.has(a.action)) return (hold(a), { ok: true });
   // Positions can come as fractions of the screen (0-1), which works at any size the other device shows it.
   const frac = (v) => typeof v === "number" && v >= 0 && v <= 1;
-  if (frac(a.nx) && frac(a.ny)) {
+  const px = () => {
     const s = screenPixels();
-    a = { ...a, x: Math.round(a.nx * (s.width - 1)), y: Math.round(a.ny * (s.height - 1)) };
-    audit("input", { clientId, action: a.action, x: a.x, y: a.y, keys: a.keys, chars: a.text ? String(a.text).length : undefined });
+    return { x: Math.round(a.nx * (s.width - 1)), y: Math.round(a.ny * (s.height - 1)) };
+  };
+  // Game mode and dragging send many small events; they skip the activity log (it would be noise). A press or
+  // release with a position happens there (press, move, release = dragging).
+  if (HOLDS.has(a.action)) {
+    if ((a.action === "mouse_down" || a.action === "mouse_up") && frac(a.nx) && frac(a.ny)) await runAction({ action: "move", ...px() }, 1);
+    if (a.action === "mouse_down") audit("input", { clientId, action: "press", ...(frac(a.nx) && frac(a.ny) ? px() : {}) });
+    return (hold(a), { ok: true });
+  }
+  if (frac(a.nx) && frac(a.ny)) {
+    a = { ...a, ...px() };
+    // Hovering moves the pointer constantly; only clicks, keys and the like go in the log.
+    if (a.action !== "move") audit("input", { clientId, action: a.action, x: a.x, y: a.y, keys: a.keys, chars: a.text ? String(a.text).length : undefined });
     if (a.action === "scroll") await runAction({ action: "move", x: a.x, y: a.y }, 1);
     await runAction(a, 1);
     return { ok: true };

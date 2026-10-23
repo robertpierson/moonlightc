@@ -465,6 +465,30 @@ test("game mode input: held keys, mouse buttons and relative mouse moves (CI onl
   expect(r.bad).toBe("ignored");
 });
 
+test("hover and drag: moves follow the pointer, a press with a position goes there first; hovering isn't logged (CI only)", async () => {
+  test.skip(!process.env.CI, "moves the real mouse");
+  const robot = (await import("@jitsi/robotjs")).default;
+  robot.moveMouse(10, 10);
+  const r = await page.evaluate(async () => {
+    const b = window.moonc.remote;
+    await b.connect({ id: "drag-test", name: "Drag test" }, ["view", "control"]);
+    await b.input("drag-test", { action: "move", nx: 0.5, ny: 0.5 });
+    const afterMove = (await b.audit()).filter((e) => e.clientId === "drag-test" && e.action === "input").length;
+    await b.input("drag-test", { action: "mouse_down", nx: 0.25, ny: 0.25 });
+    await b.input("drag-test", { action: "mouse_up", nx: 0.3, ny: 0.3 });
+    const presses = (await b.audit()).filter((e) => e.clientId === "drag-test" && e.action === "input" && e.action !== "move").length;
+    await b.end("drag-test", "test done");
+    return { afterMove, presses };
+  });
+  const s = robot.getScreenSize();
+  const p = robot.getMousePos();
+  // Released at 30% across, 30% down.
+  expect(Math.abs(p.x - Math.round(0.3 * (s.width - 1)))).toBeLessThan(3);
+  expect(Math.abs(p.y - Math.round(0.3 * (s.height - 1)))).toBeLessThan(3);
+  expect(r.afterMove).toBe(0);
+  expect(r.presses).toBe(1);
+});
+
 test("allowed places: with the setting on, remote control from elsewhere is refused and listed", async () => {
   const r = await page.evaluate(async () => {
     const b = window.moonc.remote;
