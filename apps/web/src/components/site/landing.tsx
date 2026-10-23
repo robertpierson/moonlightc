@@ -130,11 +130,11 @@ const FAQ = [
   ],
   [
     "Where are my keys stored?",
-    "Right now, in your browser on your device. When you send a message, the key travels with that one request to the provider through our server and is never saved or logged there.",
+    "In your browser on your device, and if you sign in, synced to your account stored encrypted. When you send a message, the key travels with that one request to the provider through our server and is never logged there.",
   ],
   [
     "Can I use my Claude Pro or ChatGPT Plus subscription?",
-    "No. Those providers don't allow other apps to use subscription logins. Use an API key, or one OpenRouter key for hundreds of models.",
+    "Not directly: those providers don't allow other apps to use subscription logins. Use an API key, or one OpenRouter key for hundreds of models. If you use Claude Code on your PC, the MoonlightC desktop app can run it for you, with your own sign-in on your own PC.",
   ],
   [
     "Which models work?",
