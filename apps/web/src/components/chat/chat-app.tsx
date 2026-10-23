@@ -258,6 +258,18 @@ ${summary}
     watchErrors();
     const query = new URLSearchParams(location.search);
     if (query.has("keys")) history.replaceState(null, "", location.pathname);
+    // The app icon's "Remote control my PC" shortcut.
+    if (query.get("open") === "remote") {
+      history.replaceState(null, "", location.pathname);
+      if (accountsEnabled)
+        findHomePc()
+          .then((pc) => {
+            if (!pc) return toast("Set a home PC first: on the PC, Settings > Remote control > Make this my home PC.");
+            setRemoteDevice(pc.id);
+            go("remote");
+          })
+          .catch(() => {});
+    }
     if (isOpenRouterReturn(query)) {
       history.replaceState(null, "", location.pathname);
       finishOpenRouter(query);

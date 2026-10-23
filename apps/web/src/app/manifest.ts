@@ -16,5 +16,10 @@ export default function manifest(): MetadataRoute.Manifest {
       { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
       { src: "/icons/maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
     ],
+    // Long-press (or right-click) the installed app's icon.
+    shortcuts: [
+      { name: "Remote control my PC", short_name: "Remote control", url: "/app?open=remote", icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }] },
+      { name: "New chat", short_name: "New chat", url: "/app", icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }] },
+    ],
   };
 }
