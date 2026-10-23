@@ -806,7 +806,8 @@ function Screen({ client, control, mini, files }: { client: RemoteClient; contro
               </Button>
             )}
           </form>
-          {["Enter", "Backspace", "Tab", "Escape"].map((k) => (
+          {/* Phones and tablets have no keys for these; a keyboard and touchpad don't need them. */}
+          {(phone ? ["Enter", "Backspace", "Tab", "Escape"] : []).map((k) => (
             <Button key={k} size="sm" variant="outline" onClick={() => input({ action: "key", keys: k.toLowerCase() })}>
               {k}
             </Button>
@@ -828,12 +829,16 @@ function Screen({ client, control, mini, files }: { client: RemoteClient; contro
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button size="icon-sm" variant="outline" aria-label="Scroll up" onClick={() => input({ action: "scroll", amount: 3 })}>
-            <ArrowUp />
-          </Button>
-          <Button size="icon-sm" variant="outline" aria-label="Scroll down" onClick={() => input({ action: "scroll", amount: -3 })}>
-            <ArrowDown />
-          </Button>
+          {phone && (
+            <>
+              <Button size="icon-sm" variant="outline" aria-label="Scroll up" onClick={() => input({ action: "scroll", amount: 3 })}>
+                <ArrowUp />
+              </Button>
+              <Button size="icon-sm" variant="outline" aria-label="Scroll down" onClick={() => input({ action: "scroll", amount: -3 })}>
+                <ArrowDown />
+              </Button>
+            </>
+          )}
         </div>
       )}
     </div>
