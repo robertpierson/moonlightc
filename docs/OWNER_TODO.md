@@ -155,3 +155,7 @@ After it boots, Windows asks for your sign-in before MoonlightC starts. Tell me 
 4. On school Wi-Fi, remote control should now say "Live video" (the relay kicks in by itself).
 5. Any chat's menu (the … next to it) > Share link: paste it to a friend; Settings > Privacy & data lists your links.
 6. Remote control: hover menus and dragging now work; on the PC app, Settings > Appearance > Use my desktop wallpaper.
+
+## Optional: block leaked passwords (security, maybe needs a paid Supabase plan)
+1. Open https://supabase.com/dashboard/project/znkusjdspjssmwohrbzl/auth/providers?provider=Email
+2. Turn on **Prevent use of leaked passwords**, then **Save**. (If it says it needs the Pro plan, skip it; it's optional.)
