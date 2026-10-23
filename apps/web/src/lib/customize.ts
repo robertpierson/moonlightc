@@ -31,6 +31,17 @@ export const LookSchema = z.object({
   radius: z.number().min(0).max(1.5).optional(),
   wallpaper: wallpaper.optional(),
   wallpaperTint: z.number().min(0).max(0.95).default(0.6),
+  // Background picture/video look and effects (Customize > Background).
+  backdrop: z
+    .object({
+      blur: z.number().min(0).max(30).default(0),
+      hue: z.number().min(-180).max(180).default(0),
+      saturate: z.number().min(0).max(2).default(1),
+      brightness: z.number().min(0.3).max(1.5).default(1),
+      effect: z.enum(["none", "rain", "snow", "lanterns", "fireflies", "stars"]).default("none"),
+      amount: z.number().min(0.2).max(2).default(1),
+    })
+    .default({ blur: 0, hue: 0, saturate: 1, brightness: 1, effect: "none", amount: 1 }),
   density: z.enum(["comfortable", "compact"]).default("comfortable"),
   bigInput: z.boolean().default(false),
   hidden: z.array(z.enum(VIEWS)).default([]),

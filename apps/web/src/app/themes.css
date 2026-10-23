@@ -102,9 +102,15 @@
 :root[data-theme="contrast"] * {
   outline-color: #ffe000;
 }
-/* Wallpaper (theme editor): shown behind the chat area. */
-body[data-wallpaper] main {
-  background: linear-gradient(var(--wallpaper-tint, transparent), var(--wallpaper-tint, transparent)), var(--wallpaper) center / cover no-repeat;
+/* Your background (Customize > Background) sits behind the app; the chat area lets it show through. */
+html[data-backdrop] {
+  background: var(--background);
+}
+html[data-backdrop] body {
+  background: transparent;
+}
+html[data-backdrop] main {
+  background: var(--wallpaper-tint, transparent);
 }
 /* Density for the "Command" distro. */
 :root[data-density="compact"] {

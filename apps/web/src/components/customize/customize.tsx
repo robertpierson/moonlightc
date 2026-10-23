@@ -1,8 +1,10 @@
 "use client";
 
 import { Check, Download, Link2, Save, Trash2, Upload } from "lucide-react";
-import { useState } from "react";
-import { applyDistro, setLook, useLook } from "./look";
+import { useEffect, useState } from "react";
+import { applyDistro, BACKDROP_EVENT, setLook, useLook } from "./look";
+import { EFFECTS } from "./effects";
+import { clearBackdrop, loadBackdrop, MAX_BACKDROP, saveBackdrop } from "@/lib/backdrop-file";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +21,7 @@ import {
   shortcutFromEvent,
   THEMES,
   type Distro,
+  type Look,
   type ViewId,
 } from "@/lib/customize";
 import { update, useStore } from "@/lib/store";
@@ -224,40 +227,6 @@ export function Customize({ availableViews }: { availableViews: ViewId[] }) {
                 Corner roundness
                 <input type="range" min={0} max={1.5} step={0.05} value={look.radius ?? 0.625} onChange={(e) => setLook({ radius: Number(e.target.value) })} className="accent-primary" />
               </label>
-              <div className="grid gap-2 text-sm">
-                <span>Wallpaper</span>
-                <div className="flex flex-wrap gap-2">
-                  <Button size="sm" variant="outline" asChild>
-                    <label>
-                      <Upload /> Choose image
-                      <input
-                        type="file"
-                        accept="image/png,image/jpeg,image/webp"
-                        hidden
-                        onChange={(e) => {
-                          const f = e.target.files?.[0];
-                          if (!f) return;
-                          if (f.size > 1_400_000) return toast.error("Pick an image under 1.4 MB.");
-                          const r = new FileReader();
-                          r.onload = () => setLook({ wallpaper: r.result as string });
-                          r.readAsDataURL(f);
-                        }}
-                      />
-                    </label>
-                  </Button>
-                  {look.wallpaper && (
-                    <Button size="sm" variant="ghost" onClick={() => setLook({ wallpaper: undefined })}>
-                      Remove wallpaper
-                    </Button>
-                  )}
-                </div>
-                {look.wallpaper && (
-                  <label className="grid gap-1">
-                    Readability tint
-                    <input type="range" min={0} max={0.95} step={0.05} value={look.wallpaperTint} onChange={(e) => setLook({ wallpaperTint: Number(e.target.value) })} className="accent-primary" />
-                  </label>
-                )}
-              </div>
               <form
                 className="flex flex-wrap gap-2"
                 onSubmit={(e) => {
@@ -274,11 +243,20 @@ export function Customize({ availableViews }: { availableViews: ViewId[] }) {
                   <Save /> Save as my theme
                 </Button>
               </form>
-              <Button variant="ghost" className="justify-self-start" onClick={() => setLook({ overrides: {}, radius: undefined, wallpaper: undefined })}>
+              <Button variant="ghost" className="justify-self-start" onClick={() => setLook({ overrides: {}, radius: undefined })}>
                 Reset theme edits
               </Button>
             </div>
           </details>
+        </section>
+
+        <section aria-labelledby="bg-h" className="grid gap-3">
+          <h2 id="bg-h" className="text-lg font-semibold">
+            Background
+          </h2>
+          <div className="rounded-xl border p-4">
+            <BackgroundControls look={look} />
+          </div>
         </section>
 
         <section aria-labelledby="layout-h" className="grid gap-3">
@@ -322,3 +300,93 @@ export function Customize({ availableViews }: { availableViews: ViewId[] }) {
   );
 }
 
+
+/** Background: your own picture, GIF or video (kept on this device), how much shows through, colour and an effect. */
+function BackgroundControls({ look }: { look: Look }) {
+  const b = look.backdrop ?? { blur: 0, hue: 0, saturate: 1, brightness: 1, effect: "none" as const, amount: 1 };
+  const setB = (patch: Partial<typeof b>) => setLook({ backdrop: { ...b, ...patch } });
+  const [hasFile, setHasFile] = useState(false);
+  useEffect(() => {
+    const check = () => loadBackdrop().then((f) => setHasFile(!!f));
+    check();
+    addEventListener(BACKDROP_EVENT, check);
+    return () => removeEventListener(BACKDROP_EVENT, check);
+  }, []);
+  const on = hasFile || !!look.wallpaper || b.effect !== "none";
+  const slider = (label: string, value: number, min: number, max: number, step: number, set: (v: number) => void, shown: string) => (
+    <label className="grid gap-1">
+      <span className="flex justify-between">
+        {label} <span className="tabular-nums text-muted-foreground">{shown}</span>
+      </span>
+      <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => set(Number(e.target.value))} className="accent-primary" />
+    </label>
+  );
+  return (
+    <div className="grid gap-3 text-sm">
+      <div className="flex flex-wrap gap-2">
+        <Button size="sm" variant="outline" asChild>
+          <label>
+            <Upload /> Choose picture, GIF or video
+            <input
+              type="file"
+              accept="image/*,video/mp4,video/webm"
+              hidden
+              onChange={async (e) => {
+                const f = e.target.files?.[0];
+                e.target.value = "";
+                if (!f) return;
+                if (f.size > MAX_BACKDROP) return toast.error("Pick a file under 200 MB.");
+                await saveBackdrop(f);
+                setLook({ wallpaper: undefined });
+                dispatchEvent(new Event(BACKDROP_EVENT));
+                toast.success("Background set on this device.");
+              }}
+            />
+          </label>
+        </Button>
+        {(hasFile || look.wallpaper) && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={async () => {
+              await clearBackdrop();
+              setLook({ wallpaper: undefined });
+              dispatchEvent(new Event(BACKDROP_EVENT));
+            }}
+          >
+            Remove picture
+          </Button>
+        )}
+      </div>
+      <div className="grid gap-1">
+        <span>Effect</span>
+        <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Background effect">
+          {EFFECTS.map((e) => (
+            <Button key={e.id} size="sm" variant={b.effect === e.id ? "secondary" : "outline"} role="radio" aria-checked={b.effect === e.id} onClick={() => setB({ effect: e.id })}>
+              {e.name}
+            </Button>
+          ))}
+        </div>
+      </div>
+      {b.effect !== "none" && slider("Effect amount", b.amount, 0.2, 2, 0.1, (v) => setB({ amount: v }), `${Math.round(b.amount * 100)}%`)}
+      {on && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {slider("Show through the app", 0.95 - look.wallpaperTint, 0, 0.95, 0.05, (v) => setLook({ wallpaperTint: Math.round((0.95 - v) * 100) / 100 }), `${Math.round(((0.95 - look.wallpaperTint) / 0.95) * 100)}%`)}
+          {(hasFile || look.wallpaper) && (
+            <>
+              {slider("Blur", b.blur, 0, 30, 1, (v) => setB({ blur: v }), `${b.blur}px`)}
+              {slider("Hue", b.hue, -180, 180, 5, (v) => setB({ hue: v }), `${b.hue}°`)}
+              {slider("Color strength", b.saturate, 0, 2, 0.05, (v) => setB({ saturate: v }), `${Math.round(b.saturate * 100)}%`)}
+              {slider("Brightness", b.brightness, 0.3, 1.5, 0.05, (v) => setB({ brightness: v }), `${Math.round(b.brightness * 100)}%`)}
+            </>
+          )}
+        </div>
+      )}
+      {on && (
+        <Button size="sm" variant="ghost" className="justify-self-start" onClick={() => setLook({ wallpaperTint: 0.6, backdrop: { blur: 0, hue: 0, saturate: 1, brightness: 1, effect: b.effect, amount: 1 } })}>
+          Reset background look
+        </Button>
+      )}
+    </div>
+  );
+}
