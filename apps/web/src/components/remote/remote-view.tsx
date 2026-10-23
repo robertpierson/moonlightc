@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
-import { gathered, hifiAudio, ICE, isOnline, whereAmI, joinChannel, leaveChannel, RemoteClient, subscribed, TIER_LABELS, type Tier } from "@/lib/remote";
+import { gathered, hifiAudio, iceServers, isOnline, whereAmI, joinChannel, leaveChannel, RemoteClient, subscribed, TIER_LABELS, type Tier } from "@/lib/remote";
 import { desktop } from "@/lib/desktop";
 import { useDevices } from "./your-computers";
 
@@ -245,7 +245,7 @@ function Screen({ client, control, mini }: { client: RemoteClient; control: bool
     const timeout = (ms: number) => new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout")), ms));
     const start = async (simple: boolean) => {
       pc?.close();
-      pc = new RTCPeerConnection({ iceServers: ICE });
+      pc = new RTCPeerConnection({ iceServers: await iceServers() });
       const vt = pc.addTransceiver("video", { direction: "recvonly" });
       // H.264 first: most PCs make it on the graphics chip, so streaming barely uses the PC's processor.
       const codecs = RTCRtpReceiver.getCapabilities?.("video")?.codecs ?? [];

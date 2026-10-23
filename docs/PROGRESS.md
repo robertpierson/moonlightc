@@ -181,10 +181,8 @@ Current version everywhere: 0.6.34 (desktop installed, web live, extension zip).
 3. **Top-level background service** (like TeamViewer/Chrome Remote Desktop) to see/answer the sign-in screen and UAC/PIN
    boxes remotely: ~1-2 days + 2-3 owner-at-PC tests, secure screens choppier at first; security risk (account takeover
    = full PC control; owner turned off the authenticator requirement). Owner said not worth it for now.
-4. **TURN relay** for networks that block live video (60 fps there instead of pictures): owner sign-up, check price first.
+4. **TURN relay** (Cloudflare, 1,000 GB/month free, then $0.05/GB): code in /api/turn + iceServers(); waiting for the owner's TURN key (Vercel env TURN_KEY_ID, TURN_KEY_API_TOKEN).
 5. **Watch-only screen sharing from any browser** (no app; phones can't share their screen): offered, not chosen.
-6. **Power on from anywhere:** needs hardware the owner buys (Wi-Fi PC power switch / smart plug / router WoL); see
-   OWNER_TODO. Auto sign-in, Windows Update no-auto-restart, fast startup off: done.
 7. Self-test harness exists (`MoonlightC.exe --selftest` -> selftest-result.json) for screen-capture problems.
 
 ## Known issues

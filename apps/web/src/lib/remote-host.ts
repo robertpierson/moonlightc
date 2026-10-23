@@ -2,7 +2,7 @@
 
 import { reportError } from "./analytics";
 import type { MooncBridge } from "./desktop";
-import { gathered, hifiAudio, ICE, type Req } from "./remote";
+import { gathered, hifiAudio, iceServers, type Req } from "./remote";
 
 const OLLAMA = "http://127.0.0.1:11434";
 
@@ -128,7 +128,7 @@ export function createHostHandler(
           stream.getVideoTracks().forEach((t) => (t.contentHint = "detail"));
           stream.getAudioTracks().forEach((t) => (t.contentHint = "music"));
           step = "video connection";
-          const pc = new RTCPeerConnection({ iceServers: ICE });
+          const pc = new RTCPeerConnection({ iceServers: await iceServers() });
           rtc.set(req.from, { pc, stream });
           stream.getTracks().forEach((t) => pc.addTrack(t, stream));
           // Room for sharp, smooth video and clear sound on a good connection (WebRTC lowers it when the network is slow).

@@ -135,6 +135,21 @@ export class RemoteClient {
 /** Public servers that only tell each side its own internet address, so the two can stream video directly. */
 export const ICE: RTCIceServer[] = [{ urls: ["stun:stun.l.google.com:19302", "stun:stun.cloudflare.com:3478"] }];
 
+/** ICE servers plus a relay (when the server has one) for networks that block direct video. Cached for an hour. */
+let relay: { at: number; list: RTCIceServer[] } | undefined;
+export async function iceServers(): Promise<RTCIceServer[]> {
+  if (relay && Date.now() - relay.at < 3_600_000) return [...ICE, ...relay.list];
+  try {
+    const { data } = await supabase().auth.getSession();
+    const r = await fetch("/api/turn", { headers: data.session ? { authorization: `Bearer ${data.session.access_token}` } : {}, cache: "no-store" });
+    const list = r.ok ? (((await r.json()) as { iceServers?: RTCIceServer[] }).iceServers ?? []) : [];
+    relay = { at: Date.now(), list };
+    return [...ICE, ...list];
+  } catch {
+    return ICE;
+  }
+}
+
 /** Opus at music quality in stereo (the default is tuned for voices on calls). */
 export const hifiAudio = (sdp?: string) => (sdp ?? "").replace(/useinbandfec=1/g, "useinbandfec=1;stereo=1;sprop-stereo=1;maxaveragebitrate=192000");
 
