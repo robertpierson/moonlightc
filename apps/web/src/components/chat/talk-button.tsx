@@ -4,6 +4,7 @@ import { AudioLines } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { desktop } from "@/lib/desktop";
 
 type Recognition = { start(): void; abort(): void; onstart: (() => void) | null; lang: string; interimResults: boolean; continuous: boolean; onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null; onend: (() => void) | null; onerror: ((e: { error: string }) => void) | null };
 const Recognizer = () =>
@@ -33,7 +34,8 @@ export function TalkButton({ busy, replyId, replyText, onSay }: { busy: boolean;
     say.current = onSay;
     text.current = replyText;
   }, [onSay, replyText]);
-  const supported = !!Recognizer() && typeof speechSynthesis !== "undefined";
+  // The desktop app has the speech objects but no speech service behind them.
+  const supported = !!Recognizer() && typeof speechSynthesis !== "undefined" && !desktop();
 
   useEffect(() => {
     if (!on) return;
