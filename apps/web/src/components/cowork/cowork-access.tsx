@@ -17,6 +17,13 @@ export function CoworkAccess({ onOpenSettings, onOpenScreen }: { onOpenSettings:
   const b = desktop();
   const [folders, setFolders] = useState<string[]>([]);
   const [ext] = useState(hasExtension);
+  const home = useHomePc();
+  const homeScreen = !!home.client && home.tiers.includes("view") && home.tiers.includes("control");
+  const getApp = (
+    <Button size="xs" variant="outline" asChild>
+      <a href="/download">Get the app</a>
+    </Button>
+  );
   useEffect(() => {
     b?.files.grants().then(setFolders);
   }, [b]);
@@ -36,12 +43,18 @@ export function CoworkAccess({ onOpenSettings, onOpenScreen }: { onOpenSettings:
         ) : accountsEnabled ? (
           <HomePcChip onSetup={() => onOpenSettings("account")} onOpenScreen={onOpenScreen} />
         ) : (
-          <span className="text-muted-foreground">Your files: needs the desktop app</span>
+          <>
+            <span className="min-w-0 flex-1 truncate text-muted-foreground">Your files: needs the desktop app</span>
+            {getApp}
+          </>
         )}
       </div>
       <div className={chip}>
         <Monitor />
-        <span className="min-w-0 flex-1 text-muted-foreground">{b ? "Screen: turn on Use this PC below (you approve each session)" : "Your screen: needs the desktop app"}</span>
+        <span className="min-w-0 flex-1 truncate text-muted-foreground">
+          {b ? "Screen: turn on Use this PC below (you approve each session)" : homeScreen ? "Screen: the AI can see and use your home PC" : accountsEnabled ? "Screen: connect your home PC to let the AI use it" : "Your screen: needs the desktop app"}
+        </span>
+        {!b && !accountsEnabled && getApp}
       </div>
       <div className={chip}>
         <Globe />
