@@ -56,7 +56,7 @@ test("the AI reads a shared tab, clicks, and risky clicks wait for the person", 
   }, SHOP);
 
   await send(app, "read my tab");
-  await slow(app.getByText("Read a shared tab")).toBeVisible();
+  await slow(app.getByText("Read a shared tab").first()).toBeVisible();
   await slow(app.locator('[data-role="assistant"]').last()).toContainText("Moon Shop");
 
   await send(app, "click say hi");
