@@ -4,6 +4,7 @@ import { AudioLines } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { utterance } from "@/lib/voice";
 import { desktop } from "@/lib/desktop";
 
 type Recognition = { start(): void; abort(): void; onstart: (() => void) | null; lang: string; interimResults: boolean; continuous: boolean; onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null; onend: (() => void) | null; onerror: ((e: { error: string }) => void) | null };
@@ -73,7 +74,7 @@ export function TalkButton({ busy, replyId, replyText, onSay }: { busy: boolean;
     } else if (replyId && replyId !== spoken.current) {
       // The new reply, read aloud; then listen again.
       spoken.current = replyId;
-      const u = new SpeechSynthesisUtterance(speakable(text.current()));
+      const u = utterance(speakable(text.current()));
       u.onstart = () => setPhase("speaking");
       u.onend = u.onerror = () => listen();
       speechSynthesis.cancel();

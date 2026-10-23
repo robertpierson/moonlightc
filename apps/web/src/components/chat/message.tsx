@@ -5,6 +5,7 @@ import { AppWindow, Brain, Check, MousePointerClick, Copy, FileText, GitBranch, 
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
+import { utterance } from "@/lib/voice";
 import { Textarea } from "@/components/ui/textarea";
 import { extractArtifacts, type Artifact } from "@/lib/artifacts";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -210,7 +211,7 @@ export function Message({
       setSpeaking(false);
       return;
     }
-    const u = new SpeechSynthesisUtterance(text);
+    const u = utterance(text);
     u.onend = u.onerror = () => setSpeaking(false);
     speechSynthesis.cancel();
     speechSynthesis.speak(u);
