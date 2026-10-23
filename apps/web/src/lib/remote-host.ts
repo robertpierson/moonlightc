@@ -289,11 +289,13 @@ export function createHostHandler(
         const i = Number(p.i);
         const n = Number(p.n);
         if (!id || !(n > 0 && n <= 200) || !(i >= 0 && i < n)) throw new Error("Bad upload.");
+        for (const [k, u] of uploads) if (Date.now() - u.at > 10 * 60_000) uploads.delete(k);
+        // A few uploads at a time per PC is plenty; more would just fill memory.
+        if (!uploads.has(id) && uploads.size >= 4) throw new Error("Too many files sending at once. Wait for one to finish.");
         const got = uploads.get(id) ?? { from: req.from, parts: Array<string>(n), at: Date.now() };
         if (got.from !== req.from) throw new Error("Bad upload.");
         got.parts[i] = String(p.data ?? "");
         uploads.set(id, got);
-        for (const [k, u] of uploads) if (Date.now() - u.at > 10 * 60_000) uploads.delete(k);
         if (got.parts.filter((x) => typeof x === "string").length < n) return { ok: true }; // (filter skips missing pieces)
         uploads.delete(id);
         return b.remote.write(req.from, String(p.dir ?? ""), String(p.name ?? ""), got.parts.join(""));
