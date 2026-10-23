@@ -148,13 +148,17 @@ After it boots, Windows asks for your sign-in before MoonlightC starts. Tell me 
 4. In remote control, click **Chat**: that's Cowork with your PC's screen, files and commands. Pick a Claude/GPT/Gemini model with a key.
 5. Settings > Plugins & mods > Shawn's kit > **Install all**.
 
-## Try this (0.6.48)
+## Try this (0.6.52)
 1. Settings > Appearance > Background: pick a picture, GIF or video; try Lanterns or Rain; drag "Show through the app", Hue and Blur.
 2. Settings > Privacy & data > Import chats: pick the export zip from ChatGPT or Claude (Settings > Data controls > Export there).
 3. On the Chromebook in Chrome, the sound-wave button next to the mic: Talk hands-free; tap again to stop.
 4. On school Wi-Fi, remote control should now say "Live video" (the relay kicks in by itself).
 5. Any chat's menu (the … next to it) > Share link: paste it to a friend; Settings > Privacy & data lists your links.
 6. Remote control: hover menus and dragging now work; on the PC app, Settings > Appearance > Use my desktop wallpaper.
+11. Remote control full screen on the Chromebook: Alt+F4, Alt+Tab and Search now go to the PC (hold Esc to leave). F1-F12 work too (Search + top row).
+12. Remote control: scrolling is smooth now; paste a link in "Type on the computer" and press Open on PC.
+13. Long-press the installed MoonlightC icon (Chromebook/phone): "Remote control my PC" jumps straight in.
+14. Esc stops a reply mid-answer.
 
 ## Optional: block leaked passwords (security, maybe needs a paid Supabase plan)
 1. Open https://supabase.com/dashboard/project/znkusjdspjssmwohrbzl/auth/providers?provider=Email
