@@ -217,6 +217,7 @@ function Screen({ client, control, mini, files }: { client: RemoteClient; contro
   }, [live]);
   const heldMods = useRef(new Set<string>());
   const winKey = useRef({ down: false, used: false });
+  const wheel = useRef<{ acc: number; raf?: number }>({ acc: 0 });
   // Copy and paste between this device and the PC (text).
   const pasteToPc = async () => {
     const text = await navigator.clipboard.readText().catch(() => undefined);
@@ -529,7 +530,6 @@ function Screen({ client, control, mini, files }: { client: RemoteClient; contro
     const clamp = (n: number) => Math.min(1, Math.max(0, n));
     return { nx: clamp((e.clientX - r.left) / r.width), ny: clamp((e.clientY - r.top) / r.height) };
   };
-  const lastWheel = useRef(0);
   const look = `rounded-lg border bg-black outline-none focus-visible:ring-2 focus-visible:ring-ring ${control ? "cursor-crosshair" : ""}`;
   // Phones and tablets: tap = click, press and hold = right-click, two fingers up/down = scroll.
   const touch = useRef<{ timer?: ReturnType<typeof setTimeout>; held?: boolean; x?: number; y?: number; scrollY?: number; last?: number }>({});
@@ -634,10 +634,18 @@ function Screen({ client, control, mini, files }: { client: RemoteClient; contro
       for (const f of Array.from(e.dataTransfer.files))
         toast.promise(uploadToPc(client, "Downloads", f), { loading: `Sending ${f.name}…`, success: `${f.name} is in Downloads on your PC.`, error: (err: Error) => err.message });
     },
+    // Scrolling follows the wheel or touchpad exactly (about 100 pixels = one wheel click), sent once a frame.
     onWheel: (e: React.WheelEvent) => {
-      if (!control || game || Date.now() - lastWheel.current < 120) return;
-      lastWheel.current = Date.now();
-      input({ action: "scroll", amount: e.deltaY > 0 ? -3 : 3, ...at(e) });
+      if (!control || game) return;
+      moveTo(at(e));
+      wheel.current.acc -= (e.deltaMode === 1 ? e.deltaY * 33 : e.deltaMode === 2 ? e.deltaY * 800 : e.deltaY) / 100;
+      if (wheel.current.raf) return;
+      wheel.current.raf = requestAnimationFrame(() => {
+        wheel.current.raf = undefined;
+        const amount = Math.round(wheel.current.acc * 100) / 100;
+        wheel.current.acc = 0;
+        if (amount) input({ action: "wheel", amount });
+      });
     },
     // Typing while the screen is selected goes straight to the PC.
     onKeyDown: (e: React.KeyboardEvent) => {

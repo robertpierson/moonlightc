@@ -173,7 +173,9 @@ export function hold(a) {
       robot.moveMouse(p.x + clamp(a.dx), p.y + clamp(a.dy));
     }
   } else if (a.action === "wheel") {
-    robot.scrollMouse(0, Math.sign(Number(a.amount) || 0) * 120);
+    // In notches (1 = one click of a mouse wheel); fractions scroll smoothly (touchpads), capped at 10 a step.
+    const n = Math.max(-1200, Math.min(1200, Math.round((Number(a.amount) || 0) * 120)));
+    if (n) robot.scrollMouse(0, n);
   }
 }
 /** Let go of everything (when a session ends), so no key stays stuck down. */
