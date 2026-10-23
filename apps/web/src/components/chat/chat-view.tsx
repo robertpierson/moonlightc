@@ -62,7 +62,7 @@ import {
   readAttachment,
   type Attachment,
 } from "@/lib/attachments";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -77,6 +77,7 @@ import {
   type Mode,
   type ModelRef,
 } from "@/lib/store";
+import { firstModel } from "@/lib/openrouter-auth";
 import { summarize } from "@/lib/summarize";
 import { reportError } from "@/lib/analytics";
 import { Message, textOf, type Usage } from "./message";
@@ -542,6 +543,21 @@ export function ChatView({
 
   const lastAssistant = messages.findLastIndex((m) => m.role === "assistant");
 
+  // Out of credit on OpenRouter: one click to a free model there, and the reply is tried again.
+  const freeModel = useMemo(() => {
+    const conn = model && !isAuto(model) ? getState().connections.find((c) => c.id === model.connectionId) : undefined;
+    if (!conn || !conn.models.some((m) => m.id.endsWith(":free"))) return undefined;
+    return { connectionId: conn.id, modelId: firstModel(conn.models) };
+  }, [model]);
+  const retryOnSwitch = useRef(false);
+  useEffect(() => {
+    if (!retryOnSwitch.current) return;
+    retryOnSwitch.current = false;
+    clearError();
+    regenerate(request());
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, right after the model changed
+  }, [model]);
+
   // A reply finished while you were elsewhere: a notification (Settings > General), clicking it comes back here.
   const wasStreaming = useRef(false);
   useEffect(() => {
@@ -667,6 +683,17 @@ export function ChatView({
               {MODEL_PROBLEM.test(error.message) && (
                 <Button size="sm" variant="outline" onClick={() => document.getElementById("composer-model")?.click()}>
                   Choose another model
+                </Button>
+              )}
+              {/credit/.test(error.message) && freeModel && (
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    retryOnSwitch.current = true;
+                    patchChat(chat.id, { model: freeModel });
+                  }}
+                >
+                  Use a free model
                 </Button>
               )}
               <Button
