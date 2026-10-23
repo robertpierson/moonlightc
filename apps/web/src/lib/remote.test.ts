@@ -36,6 +36,8 @@ function fakeBridge() {
         if (!sessions.get(id)?.includes("view")) throw new Error("not allowed");
         return { image: "jpg", width: 10, height: 5 };
       },
+      clipboardGet: async () => ({ text: "from the PC" }),
+      clipboardSet: async () => ({ ok: true }),
       input: async (id: string) => {
         if (!sessions.get(id)?.includes("control")) throw new Error("This device wasn't allowed to use the mouse and keyboard.");
         return { ok: true };
@@ -83,6 +85,15 @@ describe("remote control protocol", () => {
     expect(await client.call("frame")).toMatchObject({ image: "jpg", width: 10 });
     await expect(client.call("input", { action: "click", x: 1, y: 1 })).rejects.toThrow("mouse and keyboard");
     await expect(client.call("models")).rejects.toThrow("isn't allowed");
+  });
+
+  it("copy and paste need the mouse-and-keyboard permission", async () => {
+    const { client } = connectPair();
+    await client.call("connect", { tiers: ["view"] });
+    await expect(client.call("clipboard.get")).rejects.toThrow("isn't allowed");
+    await expect(client.call("clipboard.set", { text: "x" })).rejects.toThrow("isn't allowed");
+    await client.call("connect", { tiers: ["view", "control"] });
+    expect(await client.call("clipboard.get")).toEqual({ text: "from the PC" });
   });
 
   it("terminal output flows back, and terminals close when the session ends", async () => {

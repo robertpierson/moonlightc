@@ -131,6 +131,8 @@ export interface MooncBridge {
     power(clientId: string, what: "lock" | "sleep" | "restart" | "shutdown"): Promise<{ ok: true }>;
     status(): Promise<{ locked: boolean }>;
     note(clientId: string, text: string): Promise<boolean>;
+    clipboardGet(clientId: string): Promise<{ text: string }>;
+    clipboardSet(clientId: string, text: string): Promise<{ ok: true }>;
   };
   computer: {
     /** Native "Let the AI control this PC?" dialog. Resolves true if allowed. */

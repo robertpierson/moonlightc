@@ -180,8 +180,6 @@ const SHORTCUTS = [
   ["Show desktop (Win+D)", "command+d"],
   ["Start menu (Win)", "command"],
   ["Close tab (Ctrl+W)", "control+w"],
-  ["Copy (Ctrl+C)", "control+c"],
-  ["Paste (Ctrl+V)", "control+v"],
 ] as const;
 const MODS: Record<string, string> = { Shift: "shift", Control: "control", Alt: "alt" };
 const KEYS: Record<string, string> = { Enter: "enter", Backspace: "backspace", Tab: "tab", Escape: "escape", Delete: "delete", ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right", Home: "home", End: "end", PageUp: "pageup", PageDown: "pagedown" };
@@ -190,6 +188,21 @@ function Screen({ client, control, mini }: { client: RemoteClient; control: bool
   const [live, setLive] = useState<Live>("connecting");
   const [why, setWhy] = useState("");
   const heldMods = useRef(new Set<string>());
+  // Copy and paste between this device and the PC (text).
+  const pasteToPc = async () => {
+    const text = await navigator.clipboard.readText().catch(() => undefined);
+    if (text === undefined) return toast.error("Allow clipboard access to paste on the PC.");
+    await client.call("clipboard.set", { text }).catch((e: Error) => toast.error(e.message));
+    input({ action: "key", keys: "control+v" });
+  };
+  const copyFromPc = async (quiet = false) => {
+    const r = await client.call<{ text: string }>("clipboard.get").catch(() => undefined);
+    if (!r) return;
+    await navigator.clipboard.writeText(r.text).then(
+      () => !quiet && toast.success("Copied from the PC."),
+      () => !quiet && toast.error("Allow clipboard access to copy here."),
+    );
+  };
   // Windows' sign-in/lock screen can't be seen or typed on by any app; say so instead of showing a frozen picture.
   const [locked, setLocked] = useState(false);
   useEffect(() => {
@@ -577,6 +590,16 @@ function Screen({ client, control, mini }: { client: RemoteClient; control: bool
     onKeyDown: (e: React.KeyboardEvent) => {
       if (!control || game) return;
       // Shift, Ctrl and Alt are held down on the PC while you hold them (Shift+click, selecting with Shift, etc.).
+      // Ctrl+V pastes what this device copied; Ctrl+C on the PC also lands on this device.
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && (e.key === "v" || e.key === "V")) {
+        e.preventDefault();
+        return void pasteToPc();
+      }
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && (e.key === "c" || e.key === "C" || e.key === "x" || e.key === "X")) {
+        e.preventDefault();
+        input({ action: "key", keys: `control+${e.key.toLowerCase()}` });
+        return void setTimeout(() => copyFromPc(true), 350);
+      }
       const mod = MODS[e.key];
       if (mod) {
         e.preventDefault();
@@ -693,6 +716,8 @@ function Screen({ client, control, mini }: { client: RemoteClient; control: bool
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <DropdownMenuItem onSelect={() => void pasteToPc()}>Paste from this device</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => void copyFromPc()}>Copy the PC&apos;s clipboard here</DropdownMenuItem>
               {SHORTCUTS.map(([label, keys]) => (
                 <DropdownMenuItem key={keys} onSelect={() => input({ action: "key", keys })}>
                   {label}

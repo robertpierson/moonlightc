@@ -2,7 +2,7 @@
 // a private channel only the signed-in owner can join (with two-step sign-in). Everything that touches this PC runs
 // here, and only after the person at this PC approved that device: native prompt, visible frame while connected,
 // Ctrl+Alt+Shift+M ends it, 15 idle minutes end it, and every action is written to an audit log.
-import { app, BrowserWindow, dialog, Notification, screen } from "electron";
+import { app, BrowserWindow, clipboard, dialog, Notification, screen } from "electron";
 import { execFile, exec as runShell } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
@@ -267,6 +267,20 @@ export async function input(clientId, a) {
 // Live video of the screen: the app may open one screen stream within a few seconds of a device with "see the
 // screen" asking for it. Nothing else can start a capture.
 let streamGrant = 0;
+/** Copy and paste between your device and this PC (needs "use the mouse and keyboard"). Text only. */
+export async function clipboardGet(clientId) {
+  need(clientId, "control");
+  audit("clipboard.copy", { clientId });
+  return { text: String((await clipboard.readText()) ?? "").slice(0, 1_000_000) };
+}
+export async function clipboardSet(clientId, text) {
+  need(clientId, "control");
+  const t = String(text ?? "").slice(0, 1_000_000);
+  audit("clipboard.paste", { clientId, chars: t.length });
+  await clipboard.writeText(t);
+  return { ok: true };
+}
+
 /** A problem report (e.g. why live video didn't start), kept in this PC's activity log. */
 export function note(clientId, text) {
   need(clientId, "view");

@@ -187,6 +187,12 @@ export function createHostHandler(
           throw new Error(m);
         }
       }
+      case "clipboard.get":
+        await need(req, "control");
+        return b.remote.clipboardGet(req.from);
+      case "clipboard.set":
+        await need(req, "control");
+        return b.remote.clipboardSet(req.from, String(p.text ?? ""));
       case "status":
         await need(req, "view");
         return b.remote.status();
