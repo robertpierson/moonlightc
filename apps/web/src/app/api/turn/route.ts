@@ -3,9 +3,8 @@ import { NextResponse } from "next/server";
 import { accountsEnabled, serverSupabase } from "@/lib/supabase/server";
 
 // Relay passes for remote control on networks that block direct video (Cloudflare TURN). Short-lived credentials are
-// made here from the secret key, only for signed-in people; the key itself never leaves the server.
-export const dynamic = "force-dynamic";
-
+// made here, only for signed-in people: from their own key (Settings > Account), or for the owner account from the
+// server's key. Keys never reach the browser.
 const KEY_ID = process.env.TURN_KEY_ID;
 const KEY_TOKEN = process.env.TURN_KEY_API_TOKEN;
 const SITE = "https://moonlightc.vercel.app";
@@ -15,18 +14,26 @@ export async function GET(req: Request) {
   const auth = req.headers.get("authorization") ?? "";
   const bearer = /^Bearer (\S+)$/.exec(auth)?.[1];
   // The desktop app's own server has no relay key: it asks the website, with the same sign-in.
-  if (!KEY_ID || !KEY_TOKEN) {
-    if (process.env.MOONC_DESKTOP !== "1" || !bearer) return none();
+  // The desktop app's own server has no relay key: it asks the website, with the same sign-in.
+  if (process.env.MOONC_DESKTOP === "1") {
+    if (!bearer) return none();
     const r = await fetch(`${SITE}/api/turn`, { headers: { authorization: auth }, cache: "no-store" }).catch(() => undefined);
     return r?.ok ? NextResponse.json(await r.json(), { headers: { "cache-control": "no-store" } }) : none();
   }
   if (!accountsEnabled) return none();
-  const sb = bearer ? createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!) : await serverSupabase();
+  const sb = bearer
+    ? createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!, { global: { headers: { authorization: auth } }, auth: { persistSession: false } })
+    : await serverSupabase();
   const { data } = await (bearer ? sb.auth.getUser(bearer) : sb.auth.getUser());
   if (!data.user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
-  const r = await fetch(`https://rtc.live.cloudflare.com/v1/turn/keys/${KEY_ID}/credentials/generate-ice-servers`, {
+  // Their own key first; the server's key only for the owner account.
+  const own = (await sb.rpc("get_my_relay_key")).data as { key_id: string; token: string } | null;
+  const owner = !own && !!(await sb.from("profiles").select("is_admin").eq("id", data.user.id).maybeSingle()).data?.is_admin;
+  const key = own ? { id: own.key_id, token: own.token } : owner && KEY_ID && KEY_TOKEN ? { id: KEY_ID, token: KEY_TOKEN } : undefined;
+  if (!key) return none();
+  const r = await fetch(`https://rtc.live.cloudflare.com/v1/turn/keys/${key.id}/credentials/generate-ice-servers`, {
     method: "POST",
-    headers: { authorization: `Bearer ${KEY_TOKEN}`, "content-type": "application/json" },
+    headers: { authorization: `Bearer ${key.token}`, "content-type": "application/json" },
     body: JSON.stringify({ ttl: 86_400 }),
   }).catch(() => undefined);
   if (!r?.ok) return none();

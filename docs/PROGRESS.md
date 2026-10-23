@@ -1,4 +1,4 @@
-STATUS: WAITING_ON_OWNER
+STATUS: BUILDING
 
 # MoonlightC progress
 

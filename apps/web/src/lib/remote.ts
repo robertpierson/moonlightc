@@ -137,6 +137,7 @@ export const ICE: RTCIceServer[] = [{ urls: ["stun:stun.l.google.com:19302", "st
 
 /** ICE servers plus a relay (when the server has one) for networks that block direct video. Cached for an hour. */
 let relay: { at: number; list: RTCIceServer[] } | undefined;
+export const forgetRelay = () => void (relay = undefined);
 export async function iceServers(): Promise<RTCIceServer[]> {
   if (relay && Date.now() - relay.at < 3_600_000) return [...ICE, ...relay.list];
   try {

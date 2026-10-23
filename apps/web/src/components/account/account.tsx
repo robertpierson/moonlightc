@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { authRedirect } from "@/lib/supabase/auth";
 import { SUPABASE_URL, supabase, useUser } from "@/lib/supabase/client";
 import { desktop } from "@/lib/desktop";
+import { forgetRelay } from "@/lib/remote";
 import { resetState } from "@/lib/store";
 
 const NAMES: Record<string, string> = { google: "Google", github: "GitHub", apple: "Apple", discord: "Discord", azure: "Microsoft", email: "Email and password" };
@@ -40,6 +41,7 @@ export function AccountPanel() {
       <Identities />
       <TwoStep />
       <QuickAccess />
+      <RelayKey />
       <Data />
     </div>
   );
@@ -229,6 +231,87 @@ function QuickAccess() {
       <label className="flex items-center gap-2 text-sm">
         <Switch aria-label="Connect to my PCs without the code" checked={on} disabled={busy} onCheckedChange={set} /> {on ? "On" : "Off"}
       </label>
+    </section>
+  );
+}
+
+/** Remote control on networks that block direct video: each person's own free Cloudflare relay key. */
+function RelayKey() {
+  const [saved, setSaved] = useState<string | null>();
+  const [owner, setOwner] = useState(false);
+  const [id, setId] = useState("");
+  const [token, setToken] = useState("");
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    const sb = supabase();
+    sb.rpc("my_relay_key_id").then(({ data }) => setSaved((data as string | null) ?? null));
+    sb.auth.getUser().then(async ({ data }) => {
+      if (!data.user) return;
+      const p = await sb.from("profiles").select("is_admin").eq("id", data.user.id).maybeSingle();
+      setOwner(!!p.data?.is_admin);
+    });
+  }, []);
+  if (saved === undefined) return null;
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    const { error } = await supabase().rpc("set_relay_key", { key_id: id.trim().toLowerCase(), token: token.trim().toLowerCase() });
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    forgetRelay();
+    setSaved(id.trim().toLowerCase());
+    setId("");
+    setToken("");
+    toast.success("Relay saved. Remote control now works on networks that block live video.");
+  };
+  return (
+    <section aria-labelledby="relay-h" className="grid gap-2">
+      <h3 id="relay-h" className="font-medium">
+        Relay for networks that block live video
+      </h3>
+      <p className="text-sm text-muted-foreground">
+        Some networks (often school or work Wi-Fi) block the direct connection to your PC, so remote control falls back to slow pictures. A relay fixes that. It&apos;s free from Cloudflare (1,000 GB a month, about 300 hours of remote control) and only used when the direct connection is blocked.
+        {owner && !saved && " As the owner, you already use MoonlightC's relay; add your own key only if you want."}
+      </p>
+      {saved ? (
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <span className="text-emerald-600">Your relay key is saved (…{saved.slice(-6)}).</span>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={busy}
+            onClick={async () => {
+              const { error } = await supabase().rpc("clear_relay_key");
+              if (error) return toast.error(error.message);
+              forgetRelay();
+              setSaved(null);
+            }}
+          >
+            Remove
+          </Button>
+        </div>
+      ) : (
+        <>
+          <ol className="list-decimal pl-5 text-sm text-muted-foreground">
+            <li>
+              Make a free account at{" "}
+              <a className="underline" href="https://dash.cloudflare.com/sign-up" target="_blank" rel="noreferrer">
+                dash.cloudflare.com
+              </a>
+              .
+            </li>
+            <li>In the left menu: Realtime, then TURN Server, then Create (any name).</li>
+            <li>Copy the Turn Token ID and the API Token into the boxes below.</li>
+          </ol>
+          <form onSubmit={save} className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+            <Input aria-label="Turn Token ID" placeholder="Turn Token ID" value={id} onChange={(e) => setId(e.target.value)} autoComplete="off" />
+            <Input aria-label="API Token" placeholder="API Token" type="password" value={token} onChange={(e) => setToken(e.target.value)} autoComplete="off" />
+            <Button type="submit" disabled={busy || !id.trim() || !token.trim()}>
+              Save
+            </Button>
+          </form>
+        </>
+      )}
     </section>
   );
 }

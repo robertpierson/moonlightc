@@ -232,3 +232,19 @@ test("quick access: on needs two-step once, then the PC channel opens without it
   assert.ok((await run("aal1", "select public.set_quick_access(false)")).rows);
   assert.equal((await run("aal1", can)).rows[0].ok, false);
 });
+
+test("relay keys: each person reads only their own; bad keys are refused", async () => {
+  const id = "0123456789abcdef0123456789abcdef";
+  const tok = "ab".repeat(32);
+  await db.query("insert into auth.users (id, email) values ($1, 'ra@example.com'), ($2, 'rb@example.com') on conflict do nothing", [A, B]);
+  await assert.rejects(as(A, "select public.set_relay_key('nope', 'nope')"), /Cloudflare TURN key/);
+  await as(A, "select public.set_relay_key($1, $2)", [id, tok]);
+  assert.equal((await as(A, "select public.my_relay_key_id() k")).rows[0].k, id);
+  assert.equal((await as(A, "select public.get_my_relay_key() k")).rows[0].k.token, tok);
+  assert.equal((await as(B, "select public.get_my_relay_key() k")).rows[0].k, null);
+  await as(A, "select public.set_relay_key($1, $2)", [id, "cd".repeat(32)]);
+  assert.equal((await as(A, "select public.get_my_relay_key() k")).rows[0].k.token, "cd".repeat(32));
+  await as(A, "select public.clear_relay_key()");
+  assert.equal((await as(A, "select public.my_relay_key_id() k")).rows[0].k, null);
+  await assert.rejects(as(A, "select * from private.relay_keys"));
+});

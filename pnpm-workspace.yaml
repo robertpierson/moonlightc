@@ -27,3 +27,7 @@ minimumReleaseAgeExclude:
   - '@ai-sdk/fal@3.0.60'
   - '@ai-sdk/replicate@3.0.60'
   - '@ai-sdk/xai@5.0.21'
+# Security fixes for packages pulled in by other packages (pnpm audit, 2026-10-23).
+overrides:
+  dompurify: '>=3.4.17'
+  katex: '>=0.18.2'
