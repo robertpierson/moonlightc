@@ -190,6 +190,9 @@ export function createHostHandler(
           throw new Error(m);
         }
       }
+      case "open.url":
+        await need(req, "control");
+        return b.remote.openUrl(req.from, String(p.url ?? ""));
       case "clipboard.get":
         await need(req, "control");
         return b.remote.clipboardGet(req.from);

@@ -408,6 +408,7 @@ handle("remote:status", () => remote.status());
 handle("remote:note", (_e, clientId, text) => remote.note(String(clientId), text));
 handle("remote:clipboardGet", (_e, clientId) => remote.clipboardGet(String(clientId)));
 handle("remote:clipboardSet", (_e, clientId, text) => remote.clipboardSet(String(clientId), text));
+handle("remote:openUrl", (_e, clientId, url) => remote.openUrl(String(clientId), url));
 // Your current Windows wallpaper, for Customize > Background ("Use my desktop wallpaper"). Only that one file is read.
 handle("system:wallpaper", async () => {
   if (process.platform !== "win32") return null;

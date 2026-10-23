@@ -791,6 +791,20 @@ function Screen({ client, control, mini, files }: { client: RemoteClient; contro
             <Button type="submit" variant="outline">
               Send
             </Button>
+            {/^https?:\/\/\S+$/.test(text.trim()) && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() =>
+                  client
+                    .call("open.url", { url: text.trim() })
+                    .then(() => (setText(""), toast.success("Opened on your PC.")))
+                    .catch((e: Error) => toast.error(e.message))
+                }
+              >
+                Open on PC
+              </Button>
+            )}
           </form>
           {["Enter", "Backspace", "Tab", "Escape"].map((k) => (
             <Button key={k} size="sm" variant="outline" onClick={() => input({ action: "key", keys: k.toLowerCase() })}>

@@ -2,7 +2,7 @@
 // a private channel only the signed-in owner can join (with two-step sign-in). Everything that touches this PC runs
 // here, and only after the person at this PC approved that device: native prompt, visible frame while connected,
 // Ctrl+Alt+Shift+M ends it, 15 idle minutes end it, and every action is written to an audit log.
-import { app, BrowserWindow, clipboard, dialog, Notification, screen } from "electron";
+import { app, BrowserWindow, clipboard, dialog, Notification, screen, shell } from "electron";
 import { execFile, exec as runShell } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
@@ -278,6 +278,16 @@ export async function clipboardSet(clientId, text) {
   const t = String(text ?? "").slice(0, 1_000_000);
   audit("clipboard.paste", { clientId, chars: t.length });
   await clipboard.writeText(t);
+  return { ok: true };
+}
+
+/** Open a web link in this PC's browser (needs "use the mouse and keyboard"). Only http and https links. */
+export async function openUrl(clientId, url) {
+  need(clientId, "control");
+  const u = new URL(String(url ?? ""));
+  if (u.protocol !== "https:" && u.protocol !== "http:") throw new Error("Only web links (http or https) can be opened.");
+  audit("open.url", { clientId, host: u.host });
+  await shell.openExternal(u.toString());
   return { ok: true };
 }
 

@@ -95,6 +95,7 @@ contextBridge.exposeInMainWorld("moonc", {
     note: (clientId, text) => invoke("remote:note", clientId, text),
     clipboardGet: (clientId) => invoke("remote:clipboardGet", clientId),
     clipboardSet: (clientId, text) => invoke("remote:clipboardSet", clientId, text),
+    openUrl: (clientId, url) => invoke("remote:openUrl", clientId, url),
     onState: (cb) => {
       const fn = (_e, st) => cb(st);
       ipcRenderer.on("remote:state", fn);

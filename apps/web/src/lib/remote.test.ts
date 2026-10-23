@@ -43,6 +43,7 @@ function fakeBridge() {
         return { saved: `${dir}/${name}` };
       },
       clipboardGet: async () => ({ text: "from the PC" }),
+      openUrl: async () => ({ ok: true }),
       clipboardSet: async () => ({ ok: true }),
       input: async (id: string) => {
         if (!sessions.get(id)?.includes("control")) throw new Error("This device wasn't allowed to use the mouse and keyboard.");
@@ -109,8 +110,10 @@ describe("remote control protocol", () => {
     await client.call("connect", { tiers: ["view"] });
     await expect(client.call("clipboard.get")).rejects.toThrow("isn't allowed");
     await expect(client.call("clipboard.set", { text: "x" })).rejects.toThrow("isn't allowed");
+    await expect(client.call("open.url", { url: "https://example.com" })).rejects.toThrow("isn't allowed");
     await client.call("connect", { tiers: ["view", "control"] });
     expect(await client.call("clipboard.get")).toEqual({ text: "from the PC" });
+    expect(await client.call("open.url", { url: "https://example.com" })).toEqual({ ok: true });
   });
 
   it("terminal output flows back, and terminals close when the session ends", async () => {
