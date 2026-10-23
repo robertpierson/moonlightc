@@ -27,6 +27,15 @@ export async function startOpenRouterSignIn() {
 /** True if this address (or moonlightc:// link) carries an OpenRouter sign-in result. */
 export const isOpenRouterReturn = (params: URLSearchParams) => params.has("code") && params.has("state") && !!localStorage.getItem(KEY);
 
+/**
+ * The model a new OpenRouter account starts on: a free one (new accounts have no credit, so a paid model's first reply
+ * would fail), preferring well-known open model families. Read from OpenRouter's live list, never a fixed name.
+ */
+export function firstModel(models: { id: string }[]) {
+  const free = models.filter((m) => m.id.endsWith(":free"));
+  return (free.find((m) => /llama|gemini|gemma|deepseek|qwen|mistral|gpt-oss/i.test(m.id)) ?? free[0] ?? models[0]).id;
+}
+
 /** Exchanges the code for a key, checks it, and saves the connection. Returns the number of models unlocked. */
 export async function finishOpenRouterSignIn(params: URLSearchParams): Promise<number> {
   const saved = JSON.parse(localStorage.getItem(KEY) ?? "null") as { verifier: string; state: string; at: number } | null;
@@ -43,7 +52,7 @@ export async function finishOpenRouterSignIn(params: URLSearchParams): Promise<n
   updateNow((s) => ({
     ...s,
     connections: [...s.connections, conn],
-    lastModel: s.lastModel ?? { connectionId: conn.id, modelId: md.models![0].id },
+    lastModel: s.lastModel ?? { connectionId: conn.id, modelId: firstModel(md.models!) },
   }));
   track("provider.connected", { provider: "openrouter", via: "signin" });
   return md.models.length;
