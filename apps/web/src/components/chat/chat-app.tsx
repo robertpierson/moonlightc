@@ -436,7 +436,8 @@ ${summary}
       <div className={`flex h-dvh min-h-0 ${look.sidebarSide === "right" ? "flex-row-reverse" : ""}`}>
         {!quick && <aside className={`hidden w-72 shrink-0 md:block bg-sidebar ${look.sidebarSide === "right" ? "border-l" : "border-r"}`}>{sidebar}</aside>}
         <Sheet open={navOpen} onOpenChange={setNavOpen}>
-          <SheetContent side="left" className={`w-72 p-0 bg-sidebar`}>
+          {/* The close button sits just outside the panel, so it never covers the Chat / Cowork / Code switcher. */}
+          <SheetContent side="left" className="w-72 p-0 bg-sidebar [&_[data-slot=sheet-close]]:-right-11 [&_[data-slot=sheet-close]]:bg-background [&_[data-slot=sheet-close]]:shadow-md">
             <SheetTitle className="sr-only">Chats</SheetTitle>
             {sidebar}
           </SheetContent>
