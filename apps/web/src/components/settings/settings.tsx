@@ -24,7 +24,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Switch } from "@/components/ui/switch";
 import { TASKS } from "@/lib/auto-model";
 import { desktop } from "@/lib/desktop";
-import { findModel, getState, resetState, update, useStore } from "@/lib/store";
+import { findModel, getState, resetState, update, updateNow, useStore } from "@/lib/store";
+import { readExport } from "@/lib/import-chats";
 import type { ViewId } from "@/lib/customize";
 
 const Connections = dynamic(() => import("@/components/connections/connections").then((m) => m.Connections), { loading: () => <div className="flex-1" /> });
@@ -473,7 +474,7 @@ function Privacy() {
   };
   const wipe = async () => {
     resetState();
-    for (const db of ["moonc-gallery", "moonc-code"]) indexedDB.deleteDatabase(db);
+    for (const db of ["moonc-gallery", "moonc-code", "moonc-backdrop"]) indexedDB.deleteDatabase(db);
     location.reload();
   };
   return (
@@ -482,6 +483,35 @@ function Privacy() {
         <Row label="Export your data" hint="Chats, modes, projects, memory and settings as a JSON file. Keys and sign-in tokens are left out.">
           <Button variant="outline" onClick={exportData}>
             <Download /> Export
+          </Button>
+        </Row>
+        <Row label="Import chats from ChatGPT or Claude" hint="In ChatGPT or Claude: Settings > Data controls > Export data. Pick the .zip they email you (or conversations.json from it). It's read on this device; nothing is uploaded.">
+          <Button variant="outline" asChild>
+            <label>
+              <Upload /> Import
+              <input
+                type="file"
+                accept=".zip,.json,application/zip,application/json"
+                hidden
+                onChange={async (e) => {
+                  const f = e.target.files?.[0];
+                  e.target.value = "";
+                  if (!f) return;
+                  try {
+                    const { from, chats } = await readExport(f);
+                    // Newest first, as many as this browser's storage holds (about 5 MB in all).
+                    const have = new Set(getState().chats.map((c) => c.id));
+                    let room = 4_500_000 - JSON.stringify(getState()).length;
+                    const add = [...chats].sort((a, b) => b.updatedAt - a.updatedAt).filter((c) => !have.has(c.id) && (room -= JSON.stringify(c).length) > 0);
+                    if (add.length) updateNow((st) => ({ ...st, chats: [...st.chats, ...add].sort((a, b) => b.updatedAt - a.updatedAt) }));
+                    const skipped = chats.filter((c) => !have.has(c.id)).length - add.length;
+                    toast.success(`Imported ${add.length} chat${add.length === 1 ? "" : "s"} from ${from}.${skipped > 0 ? ` ${skipped} older ones didn't fit in this browser's storage.` : ""}`);
+                  } catch (err) {
+                    toast.error(err instanceof Error && !(err instanceof SyntaxError) ? err.message : "That file isn't a ChatGPT or Claude export.");
+                  }
+                }}
+              />
+            </label>
           </Button>
         </Row>
         <Row label="Empty all Trash" hint="Deletes everything in the Chat, Cowork and Code Trash for good.">
