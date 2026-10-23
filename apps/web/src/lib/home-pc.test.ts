@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 const calls: [string, Record<string, unknown>][] = [];
 vi.mock("./supabase/client", () => ({ supabase: () => ({ removeChannel() {} }) }));
-vi.mock("./store", () => ({ update: () => {} }));
+vi.mock("./store", () => ({ update: () => {}, getState: () => ({ connections: [] }) }));
 let pingFails = "";
 let chatCb: ((d: { delta?: string; done?: boolean }) => void) | undefined;
 vi.mock("./remote", () => ({
