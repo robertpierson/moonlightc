@@ -143,6 +143,8 @@ export interface Chat {
   titled?: boolean;
   /** Cowork sessions are listed in the Cowork sidebar, not with chats. */
   workspace?: "cowork";
+  /** Hidden behind your chat PIN (Locked chats). */
+  locked?: boolean;
 }
 
 export interface State {
@@ -187,6 +189,8 @@ export interface State {
   remoteEnabled?: boolean;
   /** Remote control's on/off was carried over once from before it saved instantly (0.6.17). */
   remoteCarried?: boolean;
+  /** The PIN for locked chats (salted hash; syncs with your account). */
+  chatLock?: { salt: string; hash: string };
   /** A notification when a reply finishes while MoonlightC isn't in front. */
   notifyDone?: boolean;
   /** Start-with-Windows was switched on once for remote control. */

@@ -2,10 +2,11 @@
 
 import { KeyRound, MessageSquare, Moon, Plus, Sparkles, SunMoon , Settings } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Command, CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandShortcut } from "@/components/ui/command";
 import { currentLook } from "@/components/customize/look";
 import { matchShortcut } from "@/lib/customize";
+import { visible } from "@/lib/chat-lock";
 import { useStore, type ModelRef } from "@/lib/store";
 
 export interface PaletteActions {
@@ -19,7 +20,8 @@ export interface PaletteActions {
 
 export function CommandPalette({ actions }: { actions: PaletteActions }) {
   const [open, setOpen] = useState(false);
-  const chats = useStore((s) => s.chats);
+  const all = useStore((s) => s.chats);
+  const chats = useMemo(() => visible(all), [all]);
   const connections = useStore((s) => s.connections);
   const { resolvedTheme, setTheme } = useTheme();
 

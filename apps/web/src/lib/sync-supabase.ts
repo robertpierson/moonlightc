@@ -15,7 +15,7 @@ function backend(userId: string): SyncBackend {
   };
   return {
     async pullChats(since) {
-      let q = sb.from("chats").select("id, title, model, mode_id, pinned, project_id, workspace, updated_at, deleted_at, messages(id, position, role, parts, metadata)");
+      let q = sb.from("chats").select("id, title, model, mode_id, pinned, locked, project_id, workspace, updated_at, deleted_at, messages(id, position, role, parts, metadata)");
       if (since) q = q.gt("updated_at", since);
       return check(await q.order("updated_at", { ascending: true }).limit(500)) as unknown as RemoteChat[];
     },

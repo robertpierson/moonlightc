@@ -1,9 +1,11 @@
 "use client";
 
-import { ChevronRight, Copy, Download, FolderInput, FolderOpen, History, Link2, MessageSquarePlus, MoreHorizontal, Pencil, Pin, PinOff, Plus, Search, Trash2, Undo2 } from "lucide-react";
+import { ChevronRight, Copy, Download, FolderInput, FolderOpen, History, Link2, Lock, MessageSquarePlus, MoreHorizontal, Pencil, Pin, PinOff, Plus, Search, Trash2, Undo2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { shareChat } from "@/lib/share";
+import { hasPin, lockChat, visible } from "@/lib/chat-lock";
+import { LockedChats, PinDialog } from "./locked";
 import { accountsEnabled } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
@@ -44,8 +46,22 @@ function matches(c: Chat, q: string) {
 export function ChatList({ chats, activeId, onSelect, onDeleted, showProject }: { chats: Chat[]; activeId?: string; onSelect: (id: string) => void; onDeleted: (id: string) => void; showProject?: boolean }) {
   const projects = useStore((s) => s.projects) ?? [];
   const [renaming, setRenaming] = useState<string>();
+  // Locking the first time: choose a PIN, then that chat is locked.
+  const [pinFor, setPinFor] = useState<string>();
   return (
     <ul className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-0.5">
+      {pinFor && (
+        <PinDialog
+          mode="create"
+          onClose={() => setPinFor(undefined)}
+          onDone={() => {
+            lockChat(pinFor);
+            onDeleted(pinFor);
+            setPinFor(undefined);
+            toast.success("PIN saved and chat locked. It's under All chats > Locked.");
+          }}
+        />
+      )}
       {chats.map((c) => (
         <li key={c.id} className="group relative min-w-0">
           {renaming === c.id ? (
@@ -137,6 +153,16 @@ ${chatText(c)}`).then(
                     <Download /> Export as Markdown
                   </DropdownMenuItem>
                   <DropdownMenuItem
+                    onSelect={() => {
+                      if (!hasPin()) return setPinFor(c.id);
+                      lockChat(c.id);
+                      onDeleted(c.id);
+                      toast.success("Chat locked. It's under All chats > Locked.");
+                    }}
+                  >
+                    <Lock /> Lock chat
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
                     variant="destructive"
                     onSelect={() => {
                       trashChat(c.id);
@@ -177,7 +203,8 @@ export function Sidebar({
   const trashCount = useStore((s) => (s.trash ?? []).filter((t) => (t.workspace === "cowork") === (workspace === "cowork")).length);
   const allChats = useStore((s) => s.chats);
   const projects = useStore((s) => s.projects) ?? [];
-  const chats = useMemo(() => allChats.filter((c) => (workspace === "cowork" ? c.workspace === "cowork" : c.workspace !== "cowork")), [allChats, workspace]);
+  const chats = useMemo(() => visible(allChats).filter((c) => (workspace === "cowork" ? c.workspace === "cowork" : c.workspace !== "cowork")), [allChats, workspace]);
+  const lockedCount = useMemo(() => allChats.filter((c) => c.locked && (c.workspace === "cowork") === (workspace === "cowork")).length, [allChats, workspace]);
   const [q, setQ] = useState("");
   const [open, setOpen] = useState<string[]>([]);
   const deleted = (id: string) => id === activeId && onNew();
@@ -265,6 +292,19 @@ export function Sidebar({
                   <Trash2 /> Trash ({trashCount})
                 </Button>
               )}
+              {lockedCount > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start text-muted-foreground"
+                  onClick={() => {
+                    onAllChats();
+                    setTimeout(() => document.getElementById("locked")?.scrollIntoView({ block: "start" }), 100);
+                  }}
+                >
+                  <Lock /> Locked ({lockedCount})
+                </Button>
+              )}
             </section>
           </>
         )}
@@ -279,7 +319,7 @@ export function AllChats({ activeId, onSelect, onNew, workspace = "chat" }: { ac
   const allChats = useStore((s) => s.chats);
   const [q, setQ] = useState("");
   const [limit, setLimit] = useState(100);
-  const list = useMemo(() => allChats.filter((c) => (workspace === "cowork" ? c.workspace === "cowork" : c.workspace !== "cowork") && matches(c, q)).sort(byRecent), [allChats, q, workspace]);
+  const list = useMemo(() => visible(allChats).filter((c) => (workspace === "cowork" ? c.workspace === "cowork" : c.workspace !== "cowork") && matches(c, q)).sort(byRecent), [allChats, q, workspace]);
   return (
     <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
       <div className="mx-auto grid max-w-3xl gap-4 px-4 py-6">
@@ -298,6 +338,7 @@ export function AllChats({ activeId, onSelect, onNew, workspace = "chat" }: { ac
             Show more ({list.length - limit} more)
           </Button>
         )}
+        <LockedChats workspace={workspace} onSelect={onSelect} />
         <Trash workspace={workspace} />
       </div>
     </div>

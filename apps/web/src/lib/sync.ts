@@ -14,6 +14,7 @@ export type RemoteChat = {
   model: unknown;
   mode_id: string | null;
   pinned: boolean;
+  locked?: boolean;
   project_id: string | null;
   workspace: string | null;
   updated_at: string;
@@ -35,7 +36,7 @@ export interface SyncBackend {
 }
 
 /** Settings that follow you (never keys or sign-in tokens). */
-export const SYNCED_KEYS = ["modes", "favorites", "look", "distroId", "customDistros", "pinnedModes", "autoPicks", "projects", "memory", "profile", "myThemes", "codeFolders", "codePermission", "webTools", "lastModel", "thinking"] as const;
+export const SYNCED_KEYS = ["modes", "favorites", "look", "distroId", "customDistros", "pinnedModes", "autoPicks", "projects", "memory", "profile", "myThemes", "codeFolders", "codePermission", "webTools", "lastModel", "thinking", "chatLock"] as const;
 
 const MAX_PART = 150_000;
 
@@ -51,6 +52,7 @@ export function toRemote(c: Chat): RemoteChat {
     model: c.model ?? null,
     mode_id: c.modeId ?? null,
     pinned: !!c.pinned,
+    locked: !!c.locked,
     project_id: c.projectId ?? null,
     workspace: c.workspace ?? null,
     updated_at: new Date(c.updatedAt).toISOString(),
@@ -66,6 +68,7 @@ export function fromRemote(r: RemoteChat): Chat {
     model: (r.model as Chat["model"]) ?? undefined,
     modeId: r.mode_id ?? undefined,
     pinned: r.pinned || undefined,
+    locked: r.locked || undefined,
     projectId: r.project_id ?? undefined,
     workspace: r.workspace === "cowork" ? "cowork" : undefined,
     updatedAt: Date.parse(r.updated_at),

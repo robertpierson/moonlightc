@@ -191,7 +191,7 @@ export function Library({
   const selected = projects.find((p) => p.id === selectedId);
   if (selected) {
     const inside = chats
-      .filter((c) => c.projectId === selected.id)
+      .filter((c) => c.projectId === selected.id && !c.locked)
       .sort((a, b) => b.updatedAt - a.updatedAt);
     return (
       <div className="min-h-0 flex-1 overflow-y-auto">
