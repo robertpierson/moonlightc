@@ -265,7 +265,17 @@ function Screen({ client, control, mini, files }: { client: RemoteClient; contro
   const box = useRef<HTMLDivElement>(null);
   const [full, setFull] = useState(false);
   useEffect(() => {
-    const sync = () => !document.fullscreenElement && setFull(false);
+    // Full screen also locks the keyboard (Chrome): Alt+F4, Alt+Tab and the Search key go to the PC, not the Chromebook.
+    // Holding Esc still leaves full screen.
+    type KB = { lock?: (keys?: string[]) => Promise<void>; unlock?: () => void };
+    const kb = (navigator as Navigator & { keyboard?: KB }).keyboard;
+    const sync = () => {
+      if (document.fullscreenElement) kb?.lock?.().catch(() => {});
+      else {
+        kb?.unlock?.();
+        setFull(false);
+      }
+    };
     document.addEventListener("fullscreenchange", sync);
     return () => document.removeEventListener("fullscreenchange", sync);
   }, []);
