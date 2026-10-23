@@ -7,6 +7,9 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 createServer(async (req, res) => {
   // Also serves as a fake OpenRouter (its API lives under /api/v1).
   if (req.url.startsWith("/api/v1/")) req.url = req.url.slice(4);
+  // "/credit/v1": an account with a free model and no credit (paid models answer 402 when asked about being "broke").
+  const credit = req.url.startsWith("/credit/");
+  if (credit) req.url = req.url.slice(7);
   if (req.method === "POST" && req.url === "/v1/auth/keys") {
     let raw = "";
     for await (const c of req) raw += c;
@@ -17,7 +20,7 @@ createServer(async (req, res) => {
   }
   if (req.method === "GET" && req.url === "/v1/models") {
     res.setHeader("content-type", "application/json");
-    return res.end(JSON.stringify({ data: [{ id: "mock-fast" }, { id: "mock-other" }] }));
+    return res.end(JSON.stringify({ data: [{ id: "mock-fast" }, { id: "mock-other" }, ...(credit ? [{ id: "mock-free:free" }] : [])] }));
   }
   if (req.method === "POST" && req.url === "/v1/chat/completions") {
     let raw = "";
@@ -25,6 +28,11 @@ createServer(async (req, res) => {
     const body = JSON.parse(raw);
     const last = body.messages.findLast((m) => m.role === "user");
     let prompt = typeof last.content === "string" ? last.content : last.content.map((p) => p.text ?? "").join("");
+    if (credit && /broke/.test(prompt) && !String(body.model).endsWith(":free")) {
+      res.statusCode = 402;
+      res.setHeader("content-type", "application/json");
+      return res.end(JSON.stringify({ error: { message: "Insufficient credits", code: 402 } }));
+    }
     const slow = prompt.includes("slow");
     const toolMsg = body.messages.at(-1).role === "tool" ? body.messages.at(-1) : undefined;
     const url = prompt.match(/read (https:\/\/\S+)/)?.[1];

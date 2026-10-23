@@ -685,7 +685,7 @@ export function ChatView({
                   Choose another model
                 </Button>
               )}
-              {/credit/.test(error.message) && freeModel && (
+              {/credit/.test(error.message) && freeModel && freeModel.modelId !== model?.modelId && (
                 <Button
                   size="sm"
                   onClick={() => {
