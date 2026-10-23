@@ -81,6 +81,7 @@ import { summarize } from "@/lib/summarize";
 import { reportError } from "@/lib/analytics";
 import { Message, textOf, type Usage } from "./message";
 import { MicButton } from "./mic-button";
+import { TalkButton } from "./talk-button";
 
 function costLabel(m: UIMessage): string | undefined {
   const meta = m.metadata as { usage?: Usage; modelId?: string } | undefined;
@@ -503,9 +504,9 @@ export function ChatView({
     });
   };
 
-  const submit = async (e?: React.FormEvent) => {
+  const submit = async (e?: React.FormEvent, said?: string) => {
     e?.preventDefault();
-    const text = input.trim();
+    const text = (said ?? input).trim();
     if ((!text && attachments.length === 0) || streaming || !canSend) return;
     googleTokenRef.current = await googleToken();
     accountsRef.current = {
@@ -793,6 +794,12 @@ export function ChatView({
               <Paperclip />
             </Button>
             <MicButton onText={(t) => setInput((v) => (v ? `${v} ${t}` : t))} />
+            <TalkButton
+              busy={streaming}
+              replyId={lastAssistant >= 0 && !streaming ? messages[lastAssistant].id : undefined}
+              replyText={() => (lastAssistant >= 0 ? messages[lastAssistant].parts.flatMap((p) => (p.type === "text" ? [p.text] : [])).join(" ") : "")}
+              onSay={(t) => void submit(undefined, t)}
+            />
             <WebToggle />
             {cowork && desktop() && (
               <Button
