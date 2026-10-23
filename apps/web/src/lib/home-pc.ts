@@ -2,7 +2,7 @@
 
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { useSyncExternalStore } from "react";
-import { canReachPcs, joinChannel, leaveChannel, RemoteClient, subscribed, type Device, type Tier } from "./remote";
+import { canReachPcs, joinChannel, leaveChannel, RemoteClient, sendToPc, subscribed, type Device, type Tier } from "./remote";
 import type { UIMessage, UIMessageChunk } from "ai";
 import { CLAUDE_CODE_MODELS, claudePrompt, friendly, remember, sessions } from "./claude-code";
 import { getState, update } from "./store";
@@ -169,8 +169,11 @@ export async function runHomeTool(name: string, input: Record<string, unknown>) 
     case "pc_write_file": {
       const parts = path.replace(/\\/g, "/").split("/");
       const fileName = parts.pop() ?? "";
-      const data = btoa(String.fromCharCode(...new TextEncoder().encode(String(input.content ?? ""))));
-      return c.call("files.write", { dir: parts.join("/"), name: fileName, data }, 60_000);
+      // Base64 in slices (spreading a big file into one call overflows), sent to the PC in pieces.
+      const bytes = new TextEncoder().encode(String(input.content ?? ""));
+      let bin = "";
+      for (let i = 0; i < bytes.length; i += 32_768) bin += String.fromCharCode(...bytes.subarray(i, i + 32_768));
+      return sendToPc(c, parts.join("/"), fileName, btoa(bin));
     }
     case "pc_run_command":
       return c.call("exec", { command: String(input.command ?? ""), cwd: input.cwd ? String(input.cwd) : undefined }, 150_000);

@@ -144,12 +144,16 @@ export async function uploadToPc(client: RemoteClient, dir: string, file: File) 
     r.onerror = () => fail(new Error("Couldn't read that file."));
     r.readAsDataURL(file);
   });
-  const data = url.slice(url.indexOf(",") + 1);
+  return sendToPc(client, dir, file.name, url.slice(url.indexOf(",") + 1));
+}
+
+/** Base64 file data to the PC, in pieces. */
+export async function sendToPc(client: RemoteClient, dir: string, name: string, data: string) {
   const size = 90_000;
   const n = Math.max(1, Math.ceil(data.length / size));
   const upload = crypto.randomUUID();
   let result: unknown;
-  for (let i = 0; i < n; i++) result = await client.call("files.part", { upload, i, n, dir, name: file.name, data: data.slice(i * size, (i + 1) * size) }, 60_000);
+  for (let i = 0; i < n; i++) result = await client.call("files.part", { upload, i, n, dir, name, data: data.slice(i * size, (i + 1) * size) }, 60_000);
   return result as { saved: string };
 }
 

@@ -5,6 +5,8 @@ vi.mock("./supabase/client", () => ({ supabase: () => ({ removeChannel() {} }) }
 vi.mock("./store", () => ({ update: () => {} }));
 let chatCb: ((d: { delta?: string; done?: boolean }) => void) | undefined;
 vi.mock("./remote", () => ({
+  // Small files go in one piece.
+  sendToPc: (c: { call: (m: string, p: unknown) => unknown }, dir: string, name: string, data: string) => c.call("files.write", { dir, name, data }),
   joinChannel: async () => ({}),
   subscribed: async () => {},
   RemoteClient: class {
