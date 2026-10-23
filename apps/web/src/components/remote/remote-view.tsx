@@ -182,7 +182,12 @@ const SHORTCUTS = [
   ["Close tab (Ctrl+W)", "control+w"],
 ] as const;
 const MODS: Record<string, string> = { Shift: "shift", Control: "control", Alt: "alt" };
-const KEYS: Record<string, string> = { Enter: "enter", Backspace: "backspace", Tab: "tab", Escape: "escape", Delete: "delete", ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right", Home: "home", End: "end", PageUp: "pageup", PageDown: "pagedown" };
+const KEYS: Record<string, string> = {
+  Enter: "enter", Backspace: "backspace", Tab: "tab", Escape: "escape", Delete: "delete", Insert: "insert",
+  ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right", Home: "home", End: "end", PageUp: "pageup", PageDown: "pagedown",
+  // F1-F12 (on a Chromebook: Search + the top row).
+  ...Object.fromEntries(Array.from({ length: 12 }, (_, i) => [`F${i + 1}`, `f${i + 1}`])),
+};
 
 function Screen({ client, control, mini, files }: { client: RemoteClient; control: boolean; mini?: boolean; files?: boolean }) {
   const [live, setLive] = useState<Live>("connecting");
