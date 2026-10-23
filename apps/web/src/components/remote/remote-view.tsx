@@ -12,6 +12,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Switch } from "@/components/ui/switch";
 import { gathered, hifiAudio, iceServers, isOnline, whereAmI, joinChannel, leaveChannel, RemoteClient, subscribed, TIER_LABELS, uploadToPc, type Tier } from "@/lib/remote";
 import { desktop } from "@/lib/desktop";
+import { supabase } from "@/lib/supabase/client";
 import { useDevices } from "./your-computers";
 
 type Tab = "screen" | "terminal" | "files";
@@ -195,6 +196,7 @@ function Screen({ client, control, mini, files }: { client: RemoteClient; contro
   const [rtcTry, setRtcTry] = useState(0);
   // Like Parsec's overlay: frames a second, round-trip delay, and whether the relay is in use.
   const livePc = useRef<RTCPeerConnection | undefined>(undefined);
+  const relaySeconds = useRef(0);
   const [stats, setStats] = useState<{ fps?: number; ms?: number; relay?: boolean }>({});
   useEffect(() => {
     if (live !== "video") return;
@@ -207,6 +209,8 @@ function Screen({ client, control, mini, files }: { client: RemoteClient; contro
       const video = all.find((x) => x.type === "inbound-rtp" && x.kind === "video");
       const pair = all.find((x) => x.type === "candidate-pair" && (x.nominated || x.selected) && x.state === "succeeded");
       const local = pair && all.find((x) => x.id === pair.localCandidateId);
+      // Each minute on the relay counts toward its free monthly amount (see /api/turn).
+      if (local?.candidateType === "relay" && ++relaySeconds.current % 60 === 0) void supabase().rpc("add_relay_minute");
       setStats({
         fps: typeof video?.framesPerSecond === "number" ? Math.round(video.framesPerSecond) : undefined,
         ms: typeof pair?.currentRoundTripTime === "number" ? Math.round(pair.currentRoundTripTime * 1000) : undefined,

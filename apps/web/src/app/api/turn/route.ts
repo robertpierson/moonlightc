@@ -8,6 +8,9 @@ import { accountsEnabled, serverSupabase } from "@/lib/supabase/server";
 const KEY_ID = process.env.TURN_KEY_ID;
 const KEY_TOKEN = process.env.TURN_KEY_API_TOKEN;
 const SITE = "https://moonlightc.vercel.app";
+// Cloudflare's relay is free up to 1,000 GB a month; at about 3.5 GB an hour of 60 fps video, 200 hours stays well
+// inside it. Past that, no relay until next month (remote control falls back to pictures), so it never costs money.
+const MONTHLY_MINUTES = 200 * 60;
 const none = () => NextResponse.json({ iceServers: [] }, { headers: { "cache-control": "no-store" } });
 
 export async function GET(req: Request) {
@@ -26,6 +29,7 @@ export async function GET(req: Request) {
     : await serverSupabase();
   const { data } = await (bearer ? sb.auth.getUser(bearer) : sb.auth.getUser());
   if (!data.user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+  if (((await sb.rpc("relay_minutes_this_month")).data ?? 0) >= MONTHLY_MINUTES) return none();
   // Their own key first; the server's key only for the owner account.
   const own = (await sb.rpc("get_my_relay_key")).data as { key_id: string; token: string } | null;
   const owner = !own && !!(await sb.from("profiles").select("is_admin").eq("id", data.user.id).maybeSingle()).data?.is_admin;

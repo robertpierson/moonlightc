@@ -168,12 +168,6 @@ After it boots, Windows asks for your sign-in before MoonlightC starts. Tell me 
 9. Settings > General > Tell me when a reply finishes (for long Cowork/Code tasks in another tab).
 10. Ask Claude Code (from the Chromebook too) to change a file: you'll see each step it takes. Settings > Code permission controls how free it is.
 
-## Questions for you (answer any time; nothing waits on them)
-1. **Game controller in remote control?** A controller plugged into your Chromebook could act like one plugged into the PC.
-   It needs a free, well-known driver installed on the PC (ViGEmBus, about 1 MB; one Windows "Yes"). Want it?
-2. **"Stop the popup" switch** (Windows' admin Yes/No box never appears, so you can't get stuck on it remotely, but it
-   lowers protection against bad downloads). Want it?
-3. **Background service** for the sign-in screen and Windows prompts (TeamViewer-style). Parked as too big for now.
-4. **Web search without a search key:** Claude, GPT and Gemini have their own web search that uses the key you already
-   added. Testing it costs a few cents of your API credit (Anthropic may also need web search switched on in its
-   Console). OK to test it on your keys?
+## Decided (2026-10-23)
+- No game controller support, no "stop the popup" switch, no paid tests of any kind. Nothing that spends money.
+- Background service for the sign-in screen: parked.

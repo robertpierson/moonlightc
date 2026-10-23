@@ -261,3 +261,12 @@ test("shared chats: the owner manages them, anyone with the link reads one, nobo
   await as(A, "delete from public.shared_chats where id = 'abcdefghijklmnopqrstuv'");
   assert.equal((await as(A, "select public.get_shared_chat('abcdefghijklmnopqrstuv') c")).rows[0].c, null);
 });
+
+test("relay minutes: counted per person per month, private to them", async () => {
+  await db.query("insert into auth.users (id, email) values ($1, 'ra@example.com'), ($2, 'rb@example.com') on conflict do nothing", [A, B]);
+  await as(A, "select public.add_relay_minute()");
+  await as(A, "select public.add_relay_minute()");
+  assert.equal((await as(A, "select public.relay_minutes_this_month() m")).rows[0].m, 2);
+  assert.equal((await as(B, "select public.relay_minutes_this_month() m")).rows[0].m, 0);
+  await assert.rejects(as(A, "select * from private.relay_usage"));
+});
