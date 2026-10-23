@@ -248,3 +248,16 @@ test("relay keys: each person reads only their own; bad keys are refused", async
   assert.equal((await as(A, "select public.my_relay_key_id() k")).rows[0].k, null);
   await assert.rejects(as(A, "select * from private.relay_keys"));
 });
+
+test("shared chats: the owner manages them, anyone with the link reads one, nobody lists others'", async () => {
+  await db.query("insert into auth.users (id, email) values ($1, 'ra@example.com'), ($2, 'rb@example.com') on conflict do nothing", [A, B]);
+  const msgs = JSON.stringify([{ role: "user", text: "hi" }]);
+  await as(A, "insert into public.shared_chats (id, title, messages) values ('abcdefghijklmnopqrstuv', 'Hi', $1)", [msgs]);
+  await assert.rejects(as(B, "insert into public.shared_chats (id, user_id, title, messages) values ('zzzzzzzzzzzzzzzzzzzzzz', $1, 'x', '[]')", [A]));
+  assert.equal((await as(B, "select count(*)::int n from public.shared_chats")).rows[0].n, 0);
+  assert.equal((await as(B, "select public.get_shared_chat('abcdefghijklmnopqrstuv') c")).rows[0].c.title, "Hi");
+  await as(B, "delete from public.shared_chats where id = 'abcdefghijklmnopqrstuv'");
+  assert.equal((await as(A, "select count(*)::int n from public.shared_chats")).rows[0].n, 1);
+  await as(A, "delete from public.shared_chats where id = 'abcdefghijklmnopqrstuv'");
+  assert.equal((await as(A, "select public.get_shared_chat('abcdefghijklmnopqrstuv') c")).rows[0].c, null);
+});

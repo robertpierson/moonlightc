@@ -1,8 +1,10 @@
 "use client";
 
-import { ChevronRight, Copy, Download, FolderInput, FolderOpen, History, MessageSquarePlus, MoreHorizontal, Pencil, Pin, PinOff, Plus, Search, Trash2, Undo2 } from "lucide-react";
+import { ChevronRight, Copy, Download, FolderInput, FolderOpen, History, Link2, MessageSquarePlus, MoreHorizontal, Pencil, Pin, PinOff, Plus, Search, Trash2, Undo2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { shareChat } from "@/lib/share";
+import { accountsEnabled } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -116,6 +118,21 @@ ${chatText(c)}`).then(
                   <DropdownMenuItem onSelect={() => dispatchEvent(new CustomEvent("moonc:continue", { detail: c.id }))}>
                     <MessageSquarePlus /> Continue in a new chat
                   </DropdownMenuItem>
+                  {accountsEnabled && (
+                    <DropdownMenuItem
+                      onSelect={async () => {
+                        try {
+                          const url = await shareChat(c);
+                          await navigator.clipboard.writeText(url).catch(() => {});
+                          toast.success("Share link copied. Anyone with it can read this chat (Settings > Privacy & data to stop sharing).");
+                        } catch (e) {
+                          toast.error(e instanceof Error ? e.message : String(e));
+                        }
+                      }}
+                    >
+                      <Link2 /> Share link
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem onSelect={() => exportMarkdown(c)}>
                     <Download /> Export as Markdown
                   </DropdownMenuItem>

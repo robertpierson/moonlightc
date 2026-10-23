@@ -26,6 +26,7 @@ import { TASKS } from "@/lib/auto-model";
 import { desktop } from "@/lib/desktop";
 import { findModel, getState, resetState, update, updateNow, useStore } from "@/lib/store";
 import { readExport } from "@/lib/import-chats";
+import { sharedLinks, shareUrl, unshare, type SharedLink } from "@/lib/share";
 import type { ViewId } from "@/lib/customize";
 
 const Connections = dynamic(() => import("@/components/connections/connections").then((m) => m.Connections), { loading: () => <div className="flex-1" /> });
@@ -461,6 +462,44 @@ function Files() {
 
 const SECRET_FIELDS = new Set(["apiKey", "key", "token", "accessToken", "access_token", "refresh_token", "tokens", "xToken"]);
 
+/** Chats you shared as links (chat menu > Share link): copy or stop sharing each one. */
+function SharedLinks() {
+  const user = useUser();
+  const [links, setLinks] = useState<SharedLink[]>();
+  useEffect(() => {
+    if (user) sharedLinks().then(setLinks).catch(() => setLinks([]));
+  }, [user]);
+  if (!user || !links?.length) return null;
+  return (
+    <div className="grid gap-2 rounded-xl border p-4">
+      <span className="font-medium">Shared links</span>
+      <span className="text-sm text-muted-foreground">Anyone with one of these links can read that chat. Stop sharing to turn a link off.</span>
+      <ul className="grid gap-1 text-sm">
+        {links.map((l) => (
+          <li key={l.id} className="flex flex-wrap items-center gap-2">
+            <span className="min-w-0 flex-1 truncate">{l.title}</span>
+            <span className="text-muted-foreground">{new Date(l.created_at).toLocaleDateString()}</span>
+            <Button size="sm" variant="ghost" onClick={() => navigator.clipboard.writeText(shareUrl(l.id)).then(() => toast.success("Link copied."))}>
+              Copy link
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={async () => {
+                await unshare(l.id);
+                setLinks((v) => v?.filter((x) => x.id !== l.id));
+                toast.success("Stopped sharing.");
+              }}
+            >
+              Stop sharing
+            </Button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function Privacy() {
   const [confirm, setConfirm] = useState(false);
   const exportData = () => {
@@ -514,6 +553,7 @@ function Privacy() {
             </label>
           </Button>
         </Row>
+        <SharedLinks />
         <Row label="Empty all Trash" hint="Deletes everything in the Chat, Cowork and Code Trash for good.">
           <Button
             variant="outline"
