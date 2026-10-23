@@ -211,6 +211,7 @@ function Screen({ client, control, mini }: { client: RemoteClient; control: bool
     return () => clearInterval(t);
   }, [live]);
   const heldMods = useRef(new Set<string>());
+  const winKey = useRef({ down: false, used: false });
   // Copy and paste between this device and the PC (text).
   const pasteToPc = async () => {
     const text = await navigator.clipboard.readText().catch(() => undefined);
@@ -627,6 +628,17 @@ function Screen({ client, control, mini }: { client: RemoteClient; control: bool
         input({ action: "key", keys: `control+${e.key.toLowerCase()}` });
         return void setTimeout(() => copyFromPc(true), 350);
       }
+      // The Chromebook's Search key (or ⌘) is the Windows key: alone it opens Start, with a letter it's Win+letter.
+      if (e.key === "Meta") {
+        e.preventDefault();
+        winKey.current = { down: true, used: false };
+        return;
+      }
+      if (e.metaKey && e.key.length === 1) {
+        e.preventDefault();
+        winKey.current.used = true;
+        return void input({ action: "key", keys: `command+${e.key.toLowerCase()}` });
+      }
       const mod = MODS[e.key];
       if (mod) {
         e.preventDefault();
@@ -643,6 +655,12 @@ function Screen({ client, control, mini }: { client: RemoteClient; control: bool
       e.preventDefault();
     },
     onKeyUp: (e: React.KeyboardEvent) => {
+      if (e.key === "Meta") {
+        e.preventDefault();
+        if (winKey.current.down && !winKey.current.used) input({ action: "key", keys: "command" });
+        winKey.current = { down: false, used: false };
+        return;
+      }
       const mod = MODS[e.key];
       if (!mod || !heldMods.current.delete(mod)) return;
       e.preventDefault();
