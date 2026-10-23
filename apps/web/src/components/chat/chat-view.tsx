@@ -101,6 +101,19 @@ function costLabel(m: UIMessage): string | undefined {
 const COWORK_INSTRUCTIONS =
   "Cowork: you're working alongside the person on their own computer. Use the folders, screen and browser tabs they shared when it helps, say what you're about to do before doing it, and stop to ask whenever something could delete, buy, send or publish anything.";
 
+const STARTERS = [
+  ["Explain simply", "Explain this to me simply: "],
+  ["Write a message", "Help me write a message to "],
+  ["Plan my week", "Help me plan my week. Here's what I have going on: "],
+  ["Brainstorm", "Give me 10 ideas for "],
+] as const;
+const COWORK_STARTERS = [
+  ["Organize a folder", "Look at my Downloads folder and suggest how to organize it."],
+  ["Find a file", "Find the file on my computer that "],
+  ["Summarize a document", "Read this file and summarize it: "],
+  ["Fix something", "Help me fix this on my computer: "],
+] as const;
+
 const MODEL_PROBLEM = /doesn't recognize this model|isn't on your .{1,40} plan|out of credit/;
 
 export function ChatView({
@@ -624,11 +637,34 @@ export function ChatView({
                   </Button>
                   <OpenRouterSignIn compact />
                 </div>
+              ) : needsSearch ? (
+                <Button onClick={onOpenKeys}>
+                  <KeyRound /> Add a web search key
+                </Button>
               ) : (
-                needsSearch && (
-                  <Button onClick={onOpenKeys}>
-                    <KeyRound /> Add a web search key
-                  </Button>
+                !mode.private &&
+                !mode.research && (
+                  // A first idea of what to ask; it fills the box for you to finish (nothing is sent).
+                  <div className="flex max-w-xl flex-wrap justify-center gap-2 pt-2">
+                    {(cowork ? COWORK_STARTERS : STARTERS).map(([label, text]) => (
+                      <Button
+                        key={label}
+                        size="sm"
+                        variant="outline"
+                        className="rounded-full"
+                        onClick={() => {
+                          setInput(text);
+                          requestAnimationFrame(() => {
+                            const box = document.querySelector<HTMLTextAreaElement>('textarea[aria-label="Message"]');
+                            box?.focus();
+                            box?.setSelectionRange(text.length, text.length);
+                          });
+                        }}
+                      >
+                        {label}
+                      </Button>
+                    ))}
+                  </div>
                 )
               )}
             </div>
