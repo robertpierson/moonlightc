@@ -571,6 +571,17 @@ export function ChatView({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once, right after the model changed
   }, [model]);
 
+  // Esc stops a reply that's being written (unless a dialog or menu is open and wants Esc itself).
+  useEffect(() => {
+    if (!streaming) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" || e.defaultPrevented || document.querySelector('[role="dialog"], [role="menu"]')) return;
+      stop();
+    };
+    addEventListener("keydown", onKey);
+    return () => removeEventListener("keydown", onKey);
+  }, [streaming, stop]);
+
   // A reply finished while you were elsewhere: a notification (Settings > General), clicking it comes back here.
   const wasStreaming = useRef(false);
   useEffect(() => {
