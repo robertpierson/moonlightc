@@ -188,6 +188,28 @@ function Screen({ client, control, mini }: { client: RemoteClient; control: bool
   const [live, setLive] = useState<Live>("connecting");
   const [why, setWhy] = useState("");
   const [rtcTry, setRtcTry] = useState(0);
+  // Like Parsec's overlay: frames a second, round-trip delay, and whether the relay is in use.
+  const livePc = useRef<RTCPeerConnection | undefined>(undefined);
+  const [stats, setStats] = useState<{ fps?: number; ms?: number; relay?: boolean }>({});
+  useEffect(() => {
+    if (live !== "video") return;
+    const t = setInterval(async () => {
+      const pc = livePc.current;
+      if (!pc) return;
+      const r = await pc.getStats().catch(() => undefined);
+      if (!r) return;
+      const all = [...r.values()] as Record<string, unknown>[];
+      const video = all.find((x) => x.type === "inbound-rtp" && x.kind === "video");
+      const pair = all.find((x) => x.type === "candidate-pair" && (x.nominated || x.selected) && x.state === "succeeded");
+      const local = pair && all.find((x) => x.id === pair.localCandidateId);
+      setStats({
+        fps: typeof video?.framesPerSecond === "number" ? Math.round(video.framesPerSecond) : undefined,
+        ms: typeof pair?.currentRoundTripTime === "number" ? Math.round(pair.currentRoundTripTime * 1000) : undefined,
+        relay: local?.candidateType === "relay",
+      });
+    }, 1000);
+    return () => clearInterval(t);
+  }, [live]);
   const heldMods = useRef(new Set<string>());
   // Copy and paste between this device and the PC (text).
   const pasteToPc = async () => {
@@ -293,6 +315,7 @@ function Screen({ client, control, mini }: { client: RemoteClient; control: bool
           await start(simple);
           if (done) return;
           setLive("video");
+          livePc.current = pc;
           setReady(true);
           // Dropped (Wi-Fi blip, new network): connect live video again by itself a few times, then pictures.
           pc!.addEventListener("connectionstatechange", () => {
@@ -641,7 +664,7 @@ function Screen({ client, control, mini }: { client: RemoteClient; control: bool
       )}
       <div className={mini ? "hidden" : "flex flex-wrap items-center gap-2"}>
         <span className="text-xs text-muted-foreground" role="status">
-          {live === "video" ? "Live video" : live === "pictures" ? `Pictures (live video didn't start${why ? `: ${why}` : ""})` : "Connecting…"}
+          {live === "video" ? `Live video${stats.fps !== undefined ? ` · ${stats.fps} fps` : ""}${stats.ms !== undefined ? ` · ${stats.ms} ms` : ""}${stats.relay ? " · via relay" : ""}` : live === "pictures" ? `Pictures (live video didn't start${why ? `: ${why}` : ""})` : "Connecting…"}
           {live === "pictures" && (
             <button
               className="ml-2 underline"
