@@ -2,6 +2,7 @@
 
 import { reportError } from "./analytics";
 import type { MooncBridge } from "./desktop";
+import { claudeText } from "./claude-code";
 import { getState } from "./store";
 import { gathered, hifiAudio, iceServers, type Req } from "./remote";
 
@@ -214,13 +215,13 @@ export function createHostHandler(
         const runId = crypto.randomUUID();
         const off = b.claude.onEvent((id, raw) => {
           if (id !== runId) return;
-          let e: { type?: string; subtype?: string; is_error?: boolean; session_id?: string; result?: string; message?: { content?: { type: string; text?: string }[] } };
+          let e: { type?: string; subtype?: string; is_error?: boolean; session_id?: string; result?: string; message?: { content?: Parameters<typeof claudeText>[0] } };
           try {
             e = JSON.parse(raw);
           } catch {
             return;
           }
-          const text = e.type === "assistant" ? (e.message?.content ?? []).flatMap((c) => (c.type === "text" && c.text ? [c.text] : [])).join("\n\n") : "";
+          const text = e.type === "assistant" ? claudeText(e.message?.content) : "";
           if (text || e.session_id) send("chat", { to: req.from, reqId, delta: text, session: e.session_id });
           if (e.type === "result" || e.type === "exit") {
             off();

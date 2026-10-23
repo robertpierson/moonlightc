@@ -59,6 +59,22 @@ export function claudePrompt(messages: UIMessage[], sid?: string) {
 }
 
 /** A reply from Claude Code, in the AI SDK's chat format. Each MoonlightC chat keeps its own Claude Code session. */
+type Block = { type: string; text?: string; name?: string; input?: Record<string, unknown> };
+const VERB: Record<string, string> = { Bash: "Ran", Edit: "Edited", MultiEdit: "Edited", Write: "Wrote", Read: "Read", Glob: "Looked for", Grep: "Searched for", WebFetch: "Opened", WebSearch: "Searched the web for", NotebookEdit: "Edited", Task: "Started a helper for", TodoWrite: "Updated its to-do list" };
+/** What Claude Code said and did, as text: its words, plus one short line per step (ran a command, edited a file...). */
+export function claudeText(content: Block[] = []) {
+  return content
+    .flatMap((c) => {
+      if (c.type === "text" && c.text) return [c.text];
+      if (c.type !== "tool_use" || !c.name) return [];
+      const i = c.input ?? {};
+      const what = String(i.command ?? i.file_path ?? i.notebook_path ?? i.pattern ?? i.url ?? i.query ?? i.description ?? "").split("\n")[0].slice(0, 160);
+      const verb = VERB[c.name] ?? `Used ${c.name}`;
+      return [what ? `*${verb}* \`${what.replace(/`/g, "'")}\`` : `*${verb}*`];
+    })
+    .join("\n\n");
+}
+
 export function claudeCodeStream(model: string, messages: UIMessage[], chatId: string, signal?: AbortSignal, effort?: string): ReadableStream<UIMessageChunk> {
   const b = desktop()!;
   return new ReadableStream<UIMessageChunk>({
@@ -81,19 +97,18 @@ export function claudeCodeStream(model: string, messages: UIMessage[], chatId: s
       };
       const off = b.claude.onEvent((rid, raw) => {
         if (rid !== id || done) return;
-        let e: { type?: string; subtype?: string; is_error?: boolean; session_id?: string; result?: string; message?: { content?: { type: string; text?: string }[] } };
+        let e: { type?: string; subtype?: string; is_error?: boolean; session_id?: string; result?: string; message?: { content?: Block[] } };
         try {
           e = JSON.parse(raw);
         } catch {
           return;
         }
         if (e.session_id) remember(chatId, e.session_id);
-        if (e.type === "assistant")
-          for (const c of e.message?.content ?? [])
-            if (c.type === "text" && c.text) {
-              ctl.enqueue({ type: "text-delta", id: tid, delta: (wrote ? "\n\n" : "") + c.text });
-              wrote = true;
-            }
+        const said = e.type === "assistant" ? claudeText(e.message?.content) : "";
+        if (said) {
+          ctl.enqueue({ type: "text-delta", id: tid, delta: (wrote ? "\n\n" : "") + said });
+          wrote = true;
+        }
         if (e.type === "result") {
           if (e.is_error || e.subtype !== "success") ctl.enqueue({ type: "error", errorText: friendly(e.result) });
           finish();
