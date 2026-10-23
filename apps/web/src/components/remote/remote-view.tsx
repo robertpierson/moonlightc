@@ -187,6 +187,7 @@ const KEYS: Record<string, string> = { Enter: "enter", Backspace: "backspace", T
 function Screen({ client, control, mini }: { client: RemoteClient; control: boolean; mini?: boolean }) {
   const [live, setLive] = useState<Live>("connecting");
   const [why, setWhy] = useState("");
+  const [rtcTry, setRtcTry] = useState(0);
   const heldMods = useRef(new Set<string>());
   // Copy and paste between this device and the PC (text).
   const pasteToPc = async () => {
@@ -293,8 +294,11 @@ function Screen({ client, control, mini }: { client: RemoteClient; control: bool
           if (done) return;
           setLive("video");
           setReady(true);
+          // Dropped (Wi-Fi blip, new network): connect live video again by itself a few times, then pictures.
           pc!.addEventListener("connectionstatechange", () => {
-            if (!done && pc?.connectionState === "failed") setLive("pictures");
+            if (done || pc?.connectionState !== "failed") return;
+            if (rtcTry < 3) setTimeout(() => !done && setRtcTry((n) => n + 1), 1500);
+            else setLive("pictures");
           });
           return;
         } catch (e) {
@@ -317,7 +321,7 @@ function Screen({ client, control, mini }: { client: RemoteClient; control: bool
       pc?.close();
       client.call("rtc.stop").catch(() => {});
     };
-  }, [client]);
+  }, [client, rtcTry]);
 
   // Pictures (networks that block live video): sized to this screen, and when zoomed in only the part you can see is
   // sent, at full detail, so small text stays readable. Two requests in flight; each picture is drawn once loaded.
@@ -638,6 +642,17 @@ function Screen({ client, control, mini }: { client: RemoteClient; control: bool
       <div className={mini ? "hidden" : "flex flex-wrap items-center gap-2"}>
         <span className="text-xs text-muted-foreground" role="status">
           {live === "video" ? "Live video" : live === "pictures" ? `Pictures (live video didn't start${why ? `: ${why}` : ""})` : "Connecting…"}
+          {live === "pictures" && (
+            <button
+              className="ml-2 underline"
+              onClick={() => {
+                setLive("connecting");
+                setRtcTry((n) => (n >= 3 ? 0 : n) + 1);
+              }}
+            >
+              Try live video again
+            </button>
+          )}
           {game && " · Game mode: click the screen to capture the mouse; press Esc twice quickly to leave"}
         </span>
         <span className="flex-1" />
