@@ -149,6 +149,22 @@ export async function runHomeScreen(a: { action: string; ms?: number; [k: string
   return c.call<{ image: string; width: number; height: number }>("frame", {}, 30_000);
 }
 
+/**
+ * Keep the link to your home PC alive: if it's gone (the PC restarted or was updated), connect again quietly.
+ * An older PC app doesn't know "ping"; that counts as alive.
+ */
+export async function checkHomeLink() {
+  const c = state.client;
+  if (!c) return linkHomePcModels();
+  const ok = await c.call("ping", {}, 10_000).then(
+    () => true,
+    (e: Error) => /Unknown request/.test(e.message),
+  );
+  if (ok) return;
+  await disconnectHomePc().catch(() => {});
+  await linkHomePcModels();
+}
+
 /** Tools the AI gets in Cowork while the home PC is connected. Changes and commands ask the person first. */
 export const HOME_TOOLS = ["pc_list_files", "pc_read_file", "pc_write_file", "pc_run_command"] as const;
 export const homeToolNeedsOk = (name: string) => name === "pc_write_file" || name === "pc_run_command";

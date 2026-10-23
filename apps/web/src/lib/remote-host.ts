@@ -196,6 +196,10 @@ export function createHostHandler(
       case "clipboard.set":
         await need(req, "control");
         return b.remote.clipboardSet(req.from, String(p.text ?? ""));
+      // Is this device still connected here? (After this PC restarts, its old links aren't.)
+      case "ping":
+        await need(req, "chat");
+        return { ok: true };
       case "status":
         await need(req, "view");
         return b.remote.status();

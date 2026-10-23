@@ -58,7 +58,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { isOnline } from "@/lib/remote";
 import { summarize } from "@/lib/summarize";
 import { syncClaudeCode } from "@/lib/claude-code";
-import { connectHomePc, findHomePc, homeScreenOn, linkHomePcModels } from "@/lib/home-pc";
+import { checkHomeLink, connectHomePc, findHomePc, homeScreenOn, linkHomePcModels } from "@/lib/home-pc";
 import { ModelPicker } from "./model-picker";
 import { ModeSelect, ModesDialog, useModes } from "./modes";
 import { CommandPalette } from "./command-palette";
@@ -115,6 +115,8 @@ function Inner() {
       // Home PC models show only while it's actually connected.
       if (getState().connections.some((c) => c.id === "home-pc")) update((s) => ({ ...s, connections: s.connections.filter((c) => c.id !== "home-pc") }));
       linkHomePcModels().catch(() => {});
+      const t = setInterval(() => !document.hidden && checkHomeLink().catch(() => {}), 60_000);
+      return () => clearInterval(t);
     }
   }, []);
   // Desktop: offer AI keys already set up on this PC (shown masked; nothing is added until you pick them).
