@@ -517,8 +517,11 @@ handle("claude:status", () =>
     }),
   ),
 );
-handle("claude:run", (e, id, prompt, sessionId, model, effort) => {
-  const args = ["--print", "--output-format", "stream-json", "--verbose", ...(typeof model === "string" && /^(sonnet|opus|haiku|claude-[a-z0-9-]{3,60})$/.test(model) ? ["--model", model] : []), ...(typeof effort === "string" && /^(low|medium|high|xhigh|max)$/.test(effort) ? ["--effort", effort] : []), ...(typeof sessionId === "string" && /^[\w-]{1,80}$/.test(sessionId) ? ["--resume", sessionId] : [])];
+// Settings > Code permission, as Claude Code understands it (the chat can't answer its prompts mid-run):
+// Auto = Claude Code acts on its own with its safety checks, Bypass = everything without asking, Ask/Plan = plan only.
+const CLAUDE_PERMISSION = { auto: "auto", bypass: "bypassPermissions", plan: "plan", ask: "plan" };
+handle("claude:run", (e, id, prompt, sessionId, model, effort, permission) => {
+  const args = ["--print", "--output-format", "stream-json", "--verbose", "--permission-mode", CLAUDE_PERMISSION[permission] ?? "auto", ...(typeof model === "string" && /^(sonnet|opus|haiku|claude-[a-z0-9-]{3,60})$/.test(model) ? ["--model", model] : []), ...(typeof effort === "string" && /^(low|medium|high|xhigh|max)$/.test(effort) ? ["--effort", effort] : []), ...(typeof sessionId === "string" && /^[\w-]{1,80}$/.test(sessionId) ? ["--resume", sessionId] : [])];
   // The message goes in on stdin, never on the command line.
   // A clean environment: settings from another Claude Code session (if MoonlightC was started from one) break its login.
   const inherited = !!(process.env.CLAUDECODE || process.env.CLAUDE_CODE_SESSION_ID);

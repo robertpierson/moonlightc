@@ -2,6 +2,7 @@
 
 import { reportError } from "./analytics";
 import type { MooncBridge } from "./desktop";
+import { getState } from "./store";
 import { gathered, hifiAudio, iceServers, type Req } from "./remote";
 
 const OLLAMA = "http://127.0.0.1:11434";
@@ -226,7 +227,8 @@ export function createHostHandler(
             send("chat", { to: req.from, reqId, done: true, ...(e.type === "result" && (e.is_error || e.subtype !== "success") ? { error: e.result || "Claude Code stopped." } : {}) });
           }
         });
-        await b.claude.run(runId, String(p.prompt ?? "").slice(0, 100_000), p.session ? String(p.session) : undefined, String(p.model ?? ""), p.effort ? String(p.effort) : undefined);
+        // The permission is this PC's own setting (Settings > Code permission), never the other device's say.
+        await b.claude.run(runId, String(p.prompt ?? "").slice(0, 100_000), p.session ? String(p.session) : undefined, String(p.model ?? ""), p.effort ? String(p.effort) : undefined, getState().codePermission ?? "auto");
         return { started: true };
       }
       case "rtc.stop":

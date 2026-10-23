@@ -104,7 +104,7 @@ export function claudeCodeStream(model: string, messages: UIMessage[], chatId: s
         b.claude.stop(id);
         finish();
       });
-      b.claude.run(id, prompt, sid, model, effort);
+      b.claude.run(id, prompt, sid, model, effort, getState().codePermission ?? "auto");
     },
   });
 }
