@@ -476,7 +476,7 @@ test("hover and drag: moves follow the pointer, a press with a position goes the
     const afterMove = (await b.audit()).filter((e) => e.clientId === "drag-test" && e.action === "input").length;
     await b.input("drag-test", { action: "mouse_down", nx: 0.25, ny: 0.25 });
     await b.input("drag-test", { action: "mouse_up", nx: 0.3, ny: 0.3 });
-    const presses = (await b.audit()).filter((e) => e.clientId === "drag-test" && e.action === "input" && e.action !== "move").length;
+    const presses = (await b.audit()).filter((e) => e.clientId === "drag-test" && e.action === "press").length;
     await b.end("drag-test", "test done");
     return { afterMove, presses };
   });
