@@ -83,6 +83,7 @@ export function createHostHandler(
     }
     return s;
   };
+  const uploads = new Map<string, { from: string; parts: string[]; at: number }>();
   const closeRtc = (id: string) => {
     const r = rtc.get(id);
     if (!r) return;
@@ -274,6 +275,22 @@ export function createHostHandler(
         return b.remote.read(req.from, String(p.path ?? ""));
       case "exec":
         return b.remote.exec(req.from, String(p.command ?? ""), p.cwd ? String(p.cwd) : undefined);
+      // A file in pieces (messages have a size cap): kept until the last piece, then written like files.write.
+      case "files.part": {
+        await need(req, "files");
+        const id = String(p.upload ?? "").slice(0, 64);
+        const i = Number(p.i);
+        const n = Number(p.n);
+        if (!id || !(n > 0 && n <= 200) || !(i >= 0 && i < n)) throw new Error("Bad upload.");
+        const got = uploads.get(id) ?? { from: req.from, parts: Array<string>(n), at: Date.now() };
+        if (got.from !== req.from) throw new Error("Bad upload.");
+        got.parts[i] = String(p.data ?? "");
+        uploads.set(id, got);
+        for (const [k, u] of uploads) if (Date.now() - u.at > 10 * 60_000) uploads.delete(k);
+        if (got.parts.filter((x) => typeof x === "string").length < n) return { ok: true }; // (filter skips missing pieces)
+        uploads.delete(id);
+        return b.remote.write(req.from, String(p.dir ?? ""), String(p.name ?? ""), got.parts.join(""));
+      }
       case "files.write":
         return b.remote.write(
           req.from,

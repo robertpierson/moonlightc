@@ -135,6 +135,24 @@ export class RemoteClient {
 /** Public servers that only tell each side its own internet address, so the two can stream video directly. */
 export const ICE: RTCIceServer[] = [{ urls: ["stun:stun.l.google.com:19302", "stun:stun.cloudflare.com:3478"] }];
 
+/** Send a file to the PC (in pieces: messages have a size cap). Up to 10 MB. */
+export async function uploadToPc(client: RemoteClient, dir: string, file: File) {
+  if (file.size > 10 * 1024 * 1024) throw new Error("Files over 10 MB can't be sent yet.");
+  const url = await new Promise<string>((done, fail) => {
+    const r = new FileReader();
+    r.onload = () => done(String(r.result));
+    r.onerror = () => fail(new Error("Couldn't read that file."));
+    r.readAsDataURL(file);
+  });
+  const data = url.slice(url.indexOf(",") + 1);
+  const size = 90_000;
+  const n = Math.max(1, Math.ceil(data.length / size));
+  const upload = crypto.randomUUID();
+  let result: unknown;
+  for (let i = 0; i < n; i++) result = await client.call("files.part", { upload, i, n, dir, name: file.name, data: data.slice(i * size, (i + 1) * size) }, 60_000);
+  return result as { saved: string };
+}
+
 /** ICE servers plus a relay (when the server has one) for networks that block direct video. Cached for an hour. */
 let relay: { at: number; list: RTCIceServer[] } | undefined;
 export const forgetRelay = () => void (relay = undefined);

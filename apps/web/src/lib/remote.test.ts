@@ -26,6 +26,7 @@ function fakeBridge() {
   const sessions = new Map<string, string[]>();
   const onData = new Map<string, (d: string) => void>();
   const killed: string[] = [];
+  const written: { dir: string; name: string; data: string }[] = [];
   const b = {
     device: { info: async () => ({ id: "pc1", name: "Desk PC", os: "windows", version: "0.3.0" }) },
     remote: {
@@ -35,6 +36,11 @@ function fakeBridge() {
       frame: async (id: string) => {
         if (!sessions.get(id)?.includes("view")) throw new Error("not allowed");
         return { image: "jpg", width: 10, height: 5 };
+      },
+      write: async (id: string, dir: string, name: string, data: string) => {
+        if (!sessions.get(id)?.includes("files")) throw new Error("not allowed");
+        written.push({ dir, name, data });
+        return { saved: `${dir}/${name}` };
       },
       clipboardGet: async () => ({ text: "from the PC" }),
       clipboardSet: async () => ({ ok: true }),
@@ -50,12 +56,12 @@ function fakeBridge() {
       kill: (id: string) => void killed.push(id),
     },
   } as unknown as MooncBridge;
-  return { b, killed };
+  return { b, killed, written };
 }
 
 function connectPair() {
   const { pc, phone } = wire();
-  const { b, killed } = fakeBridge();
+  const { b, killed, written } = fakeBridge();
   const send = (event: string, payload: unknown) => pc.send({ type: "broadcast", event, payload });
   const host = createHostHandler(b, send);
   pc.on("broadcast", { event: "req" }, async ({ payload }) => {
@@ -68,7 +74,7 @@ function connectPair() {
     }
     send("res", res);
   });
-  return { client: new RemoteClient(phone), host, killed };
+  return { client: new RemoteClient(phone), host, killed, written };
 }
 
 // The phone's id lives in localStorage; give the test a tiny one.
@@ -85,6 +91,17 @@ describe("remote control protocol", () => {
     expect(await client.call("frame")).toMatchObject({ image: "jpg", width: 10 });
     await expect(client.call("input", { action: "click", x: 1, y: 1 })).rejects.toThrow("mouse and keyboard");
     await expect(client.call("models")).rejects.toThrow("isn't allowed");
+  });
+
+  it("a file sent in pieces is written once, whole; only with the files permission", async () => {
+    const { client, written } = connectPair();
+    await client.call("connect", { tiers: ["view"] });
+    await expect(client.call("files.part", { upload: "u1", i: 0, n: 2, dir: "Downloads", name: "a.txt", data: "AAA" })).rejects.toThrow("isn't allowed");
+    await client.call("connect", { tiers: ["view", "files"] });
+    expect(await client.call("files.part", { upload: "u2", i: 1, n: 2, dir: "Downloads", name: "a.txt", data: "BBB" })).toEqual({ ok: true });
+    expect(written).toHaveLength(0);
+    expect(await client.call("files.part", { upload: "u2", i: 0, n: 2, dir: "Downloads", name: "a.txt", data: "AAA" })).toEqual({ saved: "Downloads/a.txt" });
+    expect(written).toEqual([{ dir: "Downloads", name: "a.txt", data: "AAABBB" }]);
   });
 
   it("copy and paste need the mouse-and-keyboard permission", async () => {

@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
-import { gathered, hifiAudio, iceServers, isOnline, whereAmI, joinChannel, leaveChannel, RemoteClient, subscribed, TIER_LABELS, type Tier } from "@/lib/remote";
+import { gathered, hifiAudio, iceServers, isOnline, whereAmI, joinChannel, leaveChannel, RemoteClient, subscribed, TIER_LABELS, uploadToPc, type Tier } from "@/lib/remote";
 import { desktop } from "@/lib/desktop";
 import { useDevices } from "./your-computers";
 
@@ -154,7 +154,7 @@ export function RemoteView({ deviceId, onSetup, extra, mini, onLive, onOpen, onC
                     </Button>
                   ))}
               </div>
-              {tab === "screen" && <Screen client={client} control={tiers.includes("control")} />}
+              {tab === "screen" && <Screen client={client} control={tiers.includes("control")} files={tiers.includes("files")} />}
               {tab === "terminal" && <RemoteTerminal client={client} />}
               {tab === "files" && <Files client={client} />}
             </div>
@@ -184,7 +184,7 @@ const SHORTCUTS = [
 const MODS: Record<string, string> = { Shift: "shift", Control: "control", Alt: "alt" };
 const KEYS: Record<string, string> = { Enter: "enter", Backspace: "backspace", Tab: "tab", Escape: "escape", Delete: "delete", ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right", Home: "home", End: "end", PageUp: "pageup", PageDown: "pagedown" };
 
-function Screen({ client, control, mini }: { client: RemoteClient; control: boolean; mini?: boolean }) {
+function Screen({ client, control, mini, files }: { client: RemoteClient; control: boolean; mini?: boolean; files?: boolean }) {
   const [live, setLive] = useState<Live>("connecting");
   const [why, setWhy] = useState("");
   const [rtcTry, setRtcTry] = useState(0);
@@ -609,6 +609,16 @@ function Screen({ client, control, mini }: { client: RemoteClient; control: bool
       e.preventDefault();
       input({ action: "right_click", ...at(e) });
     },
+    // Drop files on the screen: they're saved in the PC's Downloads folder.
+    onDragOver: (e: React.DragEvent) => {
+      if (files && e.dataTransfer.types.includes("Files")) e.preventDefault();
+    },
+    onDrop: (e: React.DragEvent) => {
+      if (!files || !e.dataTransfer.files.length) return;
+      e.preventDefault();
+      for (const f of Array.from(e.dataTransfer.files))
+        toast.promise(uploadToPc(client, "Downloads", f), { loading: `Sending ${f.name}…`, success: `${f.name} is in Downloads on your PC.`, error: (err: Error) => err.message });
+    },
     onWheel: (e: React.WheelEvent) => {
       if (!control || game || Date.now() - lastWheel.current < 120) return;
       lastWheel.current = Date.now();
@@ -871,10 +881,7 @@ function Files({ client }: { client: RemoteClient }) {
                 const f = e.target.files?.[0];
                 e.target.value = "";
                 if (!f || !listing) return;
-                if (f.size > 10 * 1024 * 1024) return toast.error("Files over 10 MB can't be sent yet.");
-                const data = btoa(String.fromCharCode(...new Uint8Array(await f.arrayBuffer())));
-                client
-                  .call("files.write", { dir: listing.path, name: f.name, data }, 120_000)
+                uploadToPc(client, listing.path, f)
                   .then(() => (toast.success(`${f.name} saved on your computer.`), open(listing.path)))
                   .catch((err: Error) => toast.error(err.message));
               }}
