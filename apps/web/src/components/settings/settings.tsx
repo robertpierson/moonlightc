@@ -530,7 +530,7 @@ function Privacy() {
     location.reload();
   };
   return (
-    <Page title="Privacy & data" description="Your chats, keys and settings are stored on this device. MoonlightC's server only passes requests through to the providers you choose and doesn't keep them.">
+    <Page title="Privacy & data" description="Your chats, keys and settings are stored on this device, and sync to your account when you're signed in (keys encrypted). Requests pass through MoonlightC's server to the providers you choose and aren't kept there.">
       <div className="grid gap-4">
         <Row label="Export your data" hint="Chats, modes, projects, memory and settings as a JSON file. Keys and sign-in tokens are left out.">
           <Button variant="outline" onClick={exportData}>

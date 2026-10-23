@@ -283,8 +283,8 @@ export function Landing({ release }: { release: Release | null }) {
                 "You pay providers directly. We don't resell AI, so there are no plans, credits or caps.",
               ],
               [
-                "Nothing stored on our side",
-                "Keys and chats live in your browser. Our server only relays your request to the provider you chose.",
+                "Your data stays yours",
+                "Without an account, keys and chats live in your browser. Sign in to sync them to your devices, keys encrypted. We never sell data.",
               ],
               [
                 "Open source, MIT",
