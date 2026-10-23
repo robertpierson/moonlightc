@@ -55,6 +55,7 @@ contextBridge.exposeInMainWorld("moonc", {
     setupAutoSignIn: () => invoke("setup:autoSignIn"),
     adminStatus: () => invoke("setup:adminStatus"),
     setupStatus: () => invoke("setup:status"),
+    wallpaper: () => invoke("system:wallpaper"),
     setAdmin: (on) => invoke("setup:admin", on),
   },
   device: { info: () => invoke("device:info") },

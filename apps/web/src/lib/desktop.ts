@@ -94,6 +94,7 @@ export interface MooncBridge {
     setupAutoSignIn(): Promise<{ ok: boolean; error?: string }>;
     adminStatus(): Promise<{ admin: boolean }>;
     setupStatus(): Promise<{ away: boolean; autoSignIn: boolean }>;
+    wallpaper(): Promise<{ type: string; data: string } | null>;
     setAdmin(on: boolean): Promise<{ ok: boolean; error?: string }>;
   };
   device: { info(): Promise<{ id: string; name: string; os: string; version: string; mac?: string }> };

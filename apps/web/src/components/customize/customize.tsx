@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { applyDistro, BACKDROP_EVENT, setLook, useLook } from "./look";
 import { EFFECTS } from "./effects";
 import { clearBackdrop, loadBackdrop, MAX_BACKDROP, saveBackdrop } from "@/lib/backdrop-file";
+import { desktop } from "@/lib/desktop";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -344,6 +345,22 @@ function BackgroundControls({ look }: { look: Look }) {
             />
           </label>
         </Button>
+        {desktop() && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={async () => {
+              const w = await desktop()!.settings.wallpaper();
+              if (!w) return toast.error("Couldn't find your desktop wallpaper.");
+              await saveBackdrop(new Blob([Uint8Array.from(atob(w.data), (c) => c.charCodeAt(0))], { type: w.type }));
+              setLook({ wallpaper: undefined });
+              dispatchEvent(new Event(BACKDROP_EVENT));
+              toast.success("Using your desktop wallpaper.");
+            }}
+          >
+            Use my desktop wallpaper
+          </Button>
+        )}
         {(hasFile || look.wallpaper) && (
           <Button
             size="sm"

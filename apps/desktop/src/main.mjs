@@ -406,6 +406,22 @@ handle("remote:audit", () => remote.readAudit());
 handle("remote:power", (_e, clientId, what) => remote.power(String(clientId), String(what)));
 handle("remote:status", () => remote.status());
 handle("remote:note", (_e, clientId, text) => remote.note(String(clientId), text));
+// Your current Windows wallpaper, for Customize > Background ("Use my desktop wallpaper"). Only that one file is read.
+handle("system:wallpaper", async () => {
+  if (process.platform !== "win32") return null;
+  const set = await regValue("HKCU\\Control Panel\\Desktop", "WallPaper");
+  const candidates = [set, path.join(app.getPath("appData"), "Microsoft", "Windows", "Themes", "TranscodedWallpaper")].filter(Boolean);
+  for (const file of candidates) {
+    try {
+      const st = fs.statSync(file);
+      if (!st.isFile() || st.size > 60 * 1024 * 1024) continue;
+      const ext = path.extname(file).toLowerCase();
+      const type = { ".png": "image/png", ".webp": "image/webp", ".gif": "image/gif", ".bmp": "image/bmp" }[ext] ?? "image/jpeg";
+      return { type, data: fs.readFileSync(file).toString("base64") };
+    } catch {}
+  }
+  return null;
+});
 
 // Windows changes that need administrator rights: one Windows "Yes" prompt, then they run hidden.
 const elevated = (script) =>
@@ -436,7 +452,7 @@ handle("setup:adminStatus", async () => ({ admin: (await isAdmin()) || (await ad
 // What's already set up (reading these needs no administrator rights).
 const regValue = (key, name) =>
   new Promise((done) =>
-    process.platform !== "win32" ? done("") : execFile("reg.exe", ["query", key, "/v", name], { windowsHide: true }, (err, out) => done(err ? "" : (String(out).match(/REG_\w+\s+(\S+)/)?.[1] ?? ""))),
+    process.platform !== "win32" ? done("") : execFile("reg.exe", ["query", key, "/v", name], { windowsHide: true }, (err, out) => done(err ? "" : (String(out).match(/REG_\w+[ \t]+(.*\S)/)?.[1] ?? ""))),
   );
 handle("setup:status", async () => ({
   away: (await regValue("HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate\\AU", "NoAutoRebootWithLoggedOnUsers")) === "0x1",
