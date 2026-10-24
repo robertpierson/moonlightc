@@ -133,3 +133,10 @@ Why: the owner asked for code-free access in emergencies and for a location lock
 - **What:** admin mode can no longer be turned on; Settings only offers turning it off, which restarts MoonlightC with normal rights.
 - **Why:** a self-test on the owner's PC showed Windows refuses every live screen capture (getDisplayMedia, desktop source) for the app running elevated ("Could not start video source"), while the same calls work at normal rights. That forced slow pictures for remote control.
 - **Instead:** "sign in by itself" covers the post-restart sign-in screen; UAC prompts can be avoided rather than answered remotely.
+
+## 2026-10-24: Relay stays on Cloudflare (owner's key = owner only)
+- **What:** the owner's Cloudflare TURN key serves only the owner account (capped at 200 h/month, inside the free 1,000 GB).
+  Everyone else brings their own free Cloudflare key (Settings > Account) or gets pictures on blocked networks.
+- **Why:** sharing one free key doesn't scale and could cost the owner money; the owner has no budget.
+- **Alternative parked:** a self-hosted relay (coturn) on Oracle Cloud Always Free (10 TB/month), for when MoonlightC
+  needs to give relay to many users. Needs the owner's sign-up (card check).
