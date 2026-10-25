@@ -2,7 +2,7 @@
 
 import type { UIMessage } from "ai";
 import { AppWindow, Brain, Check, MousePointerClick, Copy, FileText, GitBranch, Link2, Loader2, Globe, Plug, Puzzle, Search, Terminal, Pencil, RotateCcw, Volume2, VolumeX } from "lucide-react";
-import { useState } from "react";
+import { useImperativeHandle, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { utterance } from "@/lib/voice";
@@ -17,6 +17,14 @@ export interface Usage {
   inputTokens?: number;
   outputTokens?: number;
 }
+
+/** What the message box can ask a message to do (ArrowUp on an empty box edits the last message you sent). */
+export interface MessageHandle {
+  edit: () => void;
+}
+
+// The edit box opens with the cursor after the last word, ready to keep typing.
+const cursorAtEnd = (el: HTMLTextAreaElement | null) => el?.setSelectionRange(el.value.length, el.value.length);
 
 export const textOf = (m: UIMessage) =>
   m.parts
@@ -170,6 +178,7 @@ function describeBrowser(action: string, input: Record<string, unknown> = {}) {
 }
 
 export function Message({
+  ref,
   message,
   streaming,
   isLast,
@@ -180,6 +189,7 @@ export function Message({
   onOpenArtifact,
   onApproval,
 }: {
+  ref?: React.Ref<MessageHandle>;
   message: UIMessage;
   streaming: boolean;
   isLast: boolean;
@@ -198,6 +208,24 @@ export function Message({
   const isUser = message.role === "user";
   const { names, blocks, typed } = isUser ? splitFiles(text) : { names: [], blocks: "", typed: text };
   const fileParts = message.parts.filter((p) => p.type === "file");
+
+  // Leaving the edit box (Esc, Cancel, Send) gives focus back to where it was (e.g. the message box), so you can keep typing.
+  const focusBefore = useRef<HTMLElement | null>(null);
+  const startEdit = () => {
+    focusBefore.current = document.activeElement as HTMLElement | null;
+    setDraft(typed);
+    setEditing(true);
+  };
+  const stopEdit = () => {
+    setEditing(false);
+    focusBefore.current?.focus();
+  };
+  // Same rules as the pencil button; an edit already in progress is left alone.
+  useImperativeHandle(ref, () => ({
+    edit: () => {
+      if (!editing && onEdit && text) startEdit();
+    },
+  }));
 
   const copy = async () => {
     await navigator.clipboard.writeText(text);
@@ -221,15 +249,28 @@ export function Message({
   if (editing) {
     return (
       <div className="ml-auto grid w-full max-w-[85%] gap-2">
-        <Textarea aria-label="Edit message" autoFocus value={draft} onChange={(e) => setDraft(e.target.value)} className="min-h-24" />
+        <Textarea
+          ref={cursorAtEnd}
+          aria-label="Edit message"
+          autoFocus
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key !== "Escape" || e.nativeEvent.isComposing) return;
+            // This Esc is used up here, so it doesn't also stop a reply that's being written.
+            e.preventDefault();
+            stopEdit();
+          }}
+          className="min-h-24"
+        />
         <div className="flex justify-end gap-2">
-          <Button variant="ghost" onClick={() => setEditing(false)}>
+          <Button variant="ghost" onClick={stopEdit}>
             Cancel
           </Button>
           <Button
             disabled={!draft.trim()}
             onClick={() => {
-              setEditing(false);
+              stopEdit();
               onEdit?.(blocks + draft.trim());
             }}
           >
@@ -330,13 +371,7 @@ export function Message({
             {copied ? <Check /> : <Copy />}
           </Action>
           {isUser ? (
-            onEdit && <Action
-              label="Edit and resend"
-              onClick={() => {
-                setDraft(typed);
-                setEditing(true);
-              }}
-            >
+            onEdit && <Action label="Edit and resend" onClick={startEdit}>
               <Pencil />
             </Action>
           ) : (
