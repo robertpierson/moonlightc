@@ -294,7 +294,10 @@ export function createHostHandler(
         if (!uploads.has(id) && uploads.size >= 4) throw new Error("Too many files sending at once. Wait for one to finish.");
         const got = uploads.get(id) ?? { from: req.from, parts: Array<string>(n), at: Date.now() };
         if (got.from !== req.from) throw new Error("Bad upload.");
-        got.parts[i] = String(p.data ?? "");
+        // Pieces are about 90 KB; a much bigger one isn't from MoonlightC.
+        const piece = String(p.data ?? "");
+        if (piece.length > 150_000) throw new Error("Bad upload.");
+        got.parts[i] = piece;
         uploads.set(id, got);
         if (got.parts.filter((x) => typeof x === "string").length < n) return { ok: true }; // (filter skips missing pieces)
         uploads.delete(id);
