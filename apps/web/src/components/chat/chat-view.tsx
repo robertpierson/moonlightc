@@ -80,7 +80,7 @@ import {
 import { firstModel } from "@/lib/openrouter-auth";
 import { summarize } from "@/lib/summarize";
 import { reportError } from "@/lib/analytics";
-import { Message, textOf, type Usage } from "./message";
+import { Message, textOf, type MessageHandle, type Usage } from "./message";
 import { MicButton } from "./mic-button";
 import { TalkButton } from "./talk-button";
 
@@ -555,6 +555,9 @@ export function ChatView({
   };
 
   const lastAssistant = messages.findLastIndex((m) => m.role === "assistant");
+  // ArrowUp in the empty message box opens the last message you sent for editing.
+  const lastUser = messages.findLastIndex((m) => m.role === "user");
+  const lastUserMessage = useRef<MessageHandle>(null);
 
   // Out of credit on OpenRouter: one click to a free model there, and the reply is tried again.
   const freeModel = useMemo(() => {
@@ -683,6 +686,7 @@ export function ChatView({
           {messages.map((m, i) => (
             <Message
               key={m.id}
+              ref={i === lastUser ? lastUserMessage : undefined}
               message={m}
               streaming={
                 streaming && i === messages.length - 1 && m.role === "assistant"
@@ -835,6 +839,16 @@ export function ChatView({
                   !e.nativeEvent.isComposing
                 )
                   submit(e);
+                if (
+                  e.key === "ArrowUp" &&
+                  !input &&
+                  !streaming &&
+                  !(e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) &&
+                  lastUserMessage.current
+                ) {
+                  e.preventDefault();
+                  lastUserMessage.current.edit();
+                }
               }}
               rows={1}
               className={`max-h-60 resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 dark:bg-transparent ${bigInput ? "min-h-32 text-lg md:text-lg" : "min-h-10"}`}
