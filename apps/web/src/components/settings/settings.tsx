@@ -1,6 +1,6 @@
 "use client";
 
-import { Brain, ChartBar, Cpu, MonitorSmartphone, Download, FolderOpen, Gauge, Globe, KeyRound, Laptop, Moon, Sunset, Palette, Plug, Puzzle, Shield, SlidersHorizontal, Sparkles, Sun, KeySquare, Trash2, Upload, UserRound, Wand2, X } from "lucide-react";
+import { Brain, ChartBar, Cpu, MonitorSmartphone, Download, FolderOpen, Gauge, Globe, KeyRound, Laptop, Megaphone, Moon, Sunset, Palette, Plug, Puzzle, Shield, SlidersHorizontal, Sparkles, Sun, KeySquare, Trash2, Upload, UserRound, Wand2, X } from "lucide-react";
 import { SaveBar } from "./save-bar";
 import { beginEditing, endEditing, emptyAllTrash } from "@/lib/store";
 import { RemoteSettings } from "@/components/remote/remote-settings";
@@ -26,6 +26,7 @@ import { TASKS } from "@/lib/auto-model";
 import { desktop } from "@/lib/desktop";
 import { findModel, getState, resetState, update, updateNow, useStore } from "@/lib/store";
 import { readExport } from "@/lib/import-chats";
+import { WHATS_NEW } from "@/lib/whats-new";
 import { sharedLinks, shareUrl, unshare, type SharedLink } from "@/lib/share";
 import type { ViewId } from "@/lib/customize";
 
@@ -34,7 +35,7 @@ const Customize = dynamic(() => import("@/components/customize/customize").then(
 const ModsView = dynamic(() => import("@/components/mods/mods-view").then((m) => m.ModsView), { loading: () => <div className="flex-1" /> });
 const LocalModels = dynamic(() => import("@/components/desktop/local-models").then((m) => m.LocalModels), { loading: () => <div className="flex-1" /> });
 
-export type SettingsSection = "profile" | "account" | "general" | "usage" | "memory" | "models" | "auto" | "modes" | "connectors" | "plugins" | "files" | "remote" | "browser" | "local" | "appearance" | "privacy" | "staff";
+export type SettingsSection = "profile" | "account" | "general" | "usage" | "memory" | "models" | "auto" | "modes" | "connectors" | "plugins" | "files" | "remote" | "browser" | "local" | "appearance" | "privacy" | "new" | "staff";
 
 const SECTIONS: { id: SettingsSection; label: string; icon: React.ReactNode; desktopOnly?: boolean; webOnly?: boolean; needsAccounts?: boolean; adminOnly?: boolean }[] = [
   { id: "profile", label: "Profile", icon: <UserRound /> },
@@ -53,6 +54,7 @@ const SECTIONS: { id: SettingsSection; label: string; icon: React.ReactNode; des
   { id: "local", label: "Local models", icon: <Cpu />, desktopOnly: true },
   { id: "appearance", label: "Appearance", icon: <Palette /> },
   { id: "privacy", label: "Privacy & data", icon: <Shield /> },
+  { id: "new", label: "What's new", icon: <Megaphone /> },
   { id: "staff", label: "Staff", icon: <ChartBar />, needsAccounts: true, adminOnly: true },
 ];
 
@@ -144,6 +146,7 @@ export function Settings({ section, onSection, availableViews, onClose, onChat }
         {section === "local" && <LocalModels onChat={onChat} />}
         {section === "appearance" && <Customize availableViews={availableViews} />}
         {section === "privacy" && <Privacy />}
+        {section === "new" && <WhatsNew />}
         {section === "staff" && admin && (
           <TwoStepGate what="The staff panel" onSetup={() => onSection("account")}>
             <div className="grid justify-items-start gap-3 rounded-xl border p-4 text-sm">
@@ -157,6 +160,28 @@ export function Settings({ section, onSection, availableViews, onClose, onChat }
         <SaveBar />
       </div>
     </div>
+  );
+}
+
+/** Recent changes, newest first. */
+function WhatsNew() {
+  return (
+    <Page title="What's new" description="Recent changes to MoonlightC.">
+      <div className="grid gap-6">
+        {WHATS_NEW.map((r) => (
+          <section key={r.version} aria-label={`Version ${r.version}`} className="grid gap-2">
+            <h3 className="font-medium">
+              {r.version} <span className="text-sm font-normal text-muted-foreground">· {r.date}</span>
+            </h3>
+            <ul className="grid list-disc gap-1 pl-5 text-sm">
+              {r.items.map((t) => (
+                <li key={t}>{t}</li>
+              ))}
+            </ul>
+          </section>
+        ))}
+      </div>
+    </Page>
   );
 }
 
