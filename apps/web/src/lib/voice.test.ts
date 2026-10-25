@@ -1,5 +1,20 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { bestVoice } from "./voice";
+import { bestVoice, silenceCheck } from "./voice";
+
+describe("hands-free listening", () => {
+  const quiet = new Float32Array(2048).fill(0.002);
+  const talking = new Float32Array(2048).fill(0.1);
+  it("waits for speech, keeps going through short gaps, stops after a pause", () => {
+    expect(silenceCheck(quiet, 10_000)).toEqual({ lastSpeech: undefined, stop: false }); // nobody has spoken yet
+    expect(silenceCheck(talking, 11_000)).toEqual({ lastSpeech: 11_000, stop: false });
+    expect(silenceCheck(quiet, 11_800, 11_000).stop).toBe(false); // a gap between words
+    expect(silenceCheck(quiet, 12_300, 11_000).stop).toBe(true);
+  });
+  it("stops at 30 seconds, speech or not", () => {
+    expect(silenceCheck(quiet, 30_000).stop).toBe(true);
+    expect(silenceCheck(talking, 30_000).stop).toBe(true);
+  });
+});
 
 describe("best voice", () => {
   afterEach(() => vi.unstubAllGlobals());
