@@ -83,7 +83,7 @@ export class RemoteClient {
     const parts = new Map<string, string[]>();
     ch.on("broadcast", { event: "part" }, ({ payload }) => {
       const pt = payload as { id: string; to: string; i: number; n: number; data: string };
-      if (pt.to !== this.me.id || !this.pending.has(pt.id) || !(pt.n > 0 && pt.n <= 200)) return;
+      if (pt.to !== this.me.id || !this.pending.has(pt.id) || !(pt.n > 0 && pt.n <= 400)) return;
       const got = parts.get(pt.id) ?? Array<string>(pt.n);
       got[pt.i] = pt.data;
       parts.set(pt.id, got);
@@ -135,9 +135,9 @@ export class RemoteClient {
 /** Public servers that only tell each side its own internet address, so the two can stream video directly. */
 export const ICE: RTCIceServer[] = [{ urls: ["stun:stun.l.google.com:19302", "stun:stun.cloudflare.com:3478"] }];
 
-/** Send a file to the PC (in pieces: messages have a size cap). Up to 10 MB. */
+/** Send a file to the PC (in pieces: messages have a size cap). Up to 25 MB. */
 export async function uploadToPc(client: RemoteClient, dir: string, file: File) {
-  if (file.size > 10 * 1024 * 1024) throw new Error("Files over 10 MB can't be sent yet.");
+  if (file.size > 25 * 1024 * 1024) throw new Error("Files over 25 MB can't be sent to the PC.");
   const url = await new Promise<string>((done, fail) => {
     const r = new FileReader();
     r.onload = () => done(String(r.result));

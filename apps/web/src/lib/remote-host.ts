@@ -288,7 +288,7 @@ export function createHostHandler(
         const id = String(p.upload ?? "").slice(0, 64);
         const i = Number(p.i);
         const n = Number(p.n);
-        if (!id || !(n > 0 && n <= 200) || !(i >= 0 && i < n)) throw new Error("Bad upload.");
+        if (!id || !(n > 0 && n <= 400) || !(i >= 0 && i < n)) throw new Error("Bad upload.");
         for (const [k, u] of uploads) if (Date.now() - u.at > 10 * 60_000) uploads.delete(k);
         // A few uploads at a time per PC is plenty; more would just fill memory.
         if (!uploads.has(id) && uploads.size >= 4) throw new Error("Too many files sending at once. Wait for one to finish.");

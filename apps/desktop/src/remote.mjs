@@ -10,7 +10,7 @@ import path from "node:path";
 import { captureJpeg, hold, releaseAll, runAction, screenPixels } from "./computer.mjs";
 
 const IDLE_MS = 15 * 60_000;
-const MAX_FILE = 10 * 1024 * 1024;
+const MAX_FILE = 25 * 1024 * 1024;
 export const TIERS = { view: "See the screen and hear its sound", control: "Use the mouse and keyboard", files: "Browse, download and upload files in your home folder", terminal: "Run commands in a terminal", chat: "Chat with the AI models on this PC" };
 const INPUTS = new Set(["click", "double_click", "right_click", "move", "type", "key", "scroll", "key_down", "key_up", "mouse_down", "mouse_up", "move_by", "wheel"]);
 const HOLDS = new Set(["key_down", "key_up", "mouse_down", "mouse_up", "move_by", "wheel"]);
@@ -346,7 +346,7 @@ export function read(clientId, p) {
   const { real } = inHome(p);
   const st = fs.statSync(real);
   if (!st.isFile()) throw new Error("That's a folder.");
-  if (st.size > MAX_FILE) throw new Error("Files over 10 MB can't be downloaded remotely yet.");
+  if (st.size > MAX_FILE) throw new Error("Files over 25 MB can't be downloaded from this PC.");
   audit("files.download", { clientId, path: real });
   return { name: path.basename(real), data: fs.readFileSync(real).toString("base64") };
 }
@@ -355,7 +355,7 @@ export function write(clientId, dir, name, data) {
   const clean = String(name ?? "").replace(/[\\/:*?"<>|]/g, "_").slice(0, 200);
   if (!clean) throw new Error("Pick a file name.");
   const buf = Buffer.from(String(data ?? ""), "base64");
-  if (buf.length > MAX_FILE) throw new Error("Files over 10 MB can't be uploaded remotely yet.");
+  if (buf.length > MAX_FILE) throw new Error("Files over 25 MB can't be sent to this PC.");
   const { real } = inHome(path.join(String(dir || "."), clean));
   fs.writeFileSync(real, buf);
   audit("files.upload", { clientId, path: real, bytes: buf.length });
