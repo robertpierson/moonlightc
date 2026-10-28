@@ -1,6 +1,17 @@
 // "What's new" in Settings: recent changes in plain English, newest first. Only things that really shipped.
 export const WHATS_NEW: { version: string; date: string; items: string[] }[] = [
   {
+    version: "0.6.53",
+    date: "October 28, 2026",
+    items: [
+      "Remote control on strict networks (schools, work, hotels): live video waits longer for the relay route and retries through the relay only, instead of falling back to pictures.",
+      "Pictures mode is quicker when live video can't connect.",
+      "Send and download files up to 25 MB with remote control.",
+      "Hands-free Talk in the desktop app with an OpenAI or Groq key.",
+      "Press the up arrow in an empty message box to edit your last message.",
+    ],
+  },
+  {
     version: "0.6.52",
     date: "October 23, 2026",
     items: [
