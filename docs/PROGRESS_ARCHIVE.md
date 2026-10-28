@@ -24,3 +24,5 @@
 - 2026-10-13: R8b Chrome extension (apps/extension; zip at /downloads): share a tab, AI reads/clicks/types/opens; risky steps confirmed in an extension window (clickjack-proof), 15-min idle stop, Alt+Shift+M, audit. 97 web e2e incl. real-extension test.
 - 2026-10-13: R9/R10: black accents on dark blue, link color token, profile name+picture (greets you, AI knows your name), My themes. Desktop tests now run hidden (no extra window/tray). 99 web e2e, 13 desktop e2e.
 - 2026-10-13: Desktop 0.2.0 built and installed on the owner's PC (silent NSIS). Fixed data loss: desktop now keeps port 47821 (saved in userData/port.json) so localStorage survives restarts. 14 desktop e2e.
+
+- 2026-10-14: R31-R38 (see checklist). Local Ollama connections no longer sync to other devices. Desktop input tests need the installed app quit first (it holds the panic hotkey). All apps 0.6.0.
