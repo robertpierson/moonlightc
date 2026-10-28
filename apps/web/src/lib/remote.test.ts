@@ -1,7 +1,7 @@
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { MooncBridge } from "./desktop";
-import { RemoteClient, subscribed, type Req, type Res } from "./remote";
+import { RemoteClient, routeKinds, subscribed, type Req, type Res } from "./remote";
 import { createHostHandler } from "./remote-host";
 
 /** An in-memory stand-in for a Realtime channel shared by the PC and one phone. */
@@ -172,5 +172,13 @@ describe("big answers", () => {
     });
     const r = await client.call<{ url: string }>("shot");
     expect(r.url.length).toBe(350_000);
+  });
+});
+
+describe("routeKinds", () => {
+  it("counts direct, internet and relay routes in a connection description", () => {
+    const sdp = "a=candidate:1 1 udp 1 10.0.0.2 5000 typ host\r\na=candidate:2 1 udp 1 1.2.3.4 5000 typ srflx raddr 10.0.0.2\r\na=candidate:3 1 udp 1 5.6.7.8 3478 typ relay\r\na=candidate:4 1 tcp 1 5.6.7.8 443 typ relay\r\n";
+    expect(routeKinds(sdp)).toBe("direct 1, internet 1, relay 2");
+    expect(routeKinds(undefined)).toBe("direct 0, internet 0, relay 0");
   });
 });

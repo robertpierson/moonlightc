@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
-import { gathered, hifiAudio, iceServers, isOnline, whereAmI, joinChannel, leaveChannel, RemoteClient, subscribed, TIER_LABELS, uploadToPc, type Tier } from "@/lib/remote";
+import { gathered, forgetRelay, hifiAudio, iceServers, isOnline, routeKinds, whereAmI, joinChannel, leaveChannel, RemoteClient, subscribed, TIER_LABELS, uploadToPc, type Tier } from "@/lib/remote";
 import { desktop } from "@/lib/desktop";
 import { supabase } from "@/lib/supabase/client";
 import { useDevices } from "./your-computers";
@@ -302,7 +302,11 @@ function Screen({ client, control, mini, files }: { client: RemoteClient; contro
     const timeout = (ms: number) => new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout")), ms));
     const start = async (simple: boolean) => {
       pc?.close();
-      pc = new RTCPeerConnection({ iceServers: await iceServers() });
+      if (simple) forgetRelay();
+      const servers = await iceServers();
+      const hasRelay = servers.some((s) => [s.urls].flat().some((u) => u.startsWith("turn")));
+      // The retry goes through the relay only: on strict networks the direct routes just waste the time limit.
+      pc = new RTCPeerConnection({ iceServers: servers, iceTransportPolicy: simple && hasRelay ? "relay" : "all" });
       const vt = pc.addTransceiver("video", { direction: "recvonly" });
       // H.264 first: most PCs make it on the graphics chip, so streaming barely uses the PC's processor.
       const codecs = RTCRtpReceiver.getCapabilities?.("video")?.codecs ?? [];
@@ -325,10 +329,12 @@ function Screen({ client, control, mini, files }: { client: RemoteClient; contro
         (rc as RTCRtpReceiver & { playoutDelayHint?: number }).playoutDelayHint = 0;
       });
       const v = video.current!;
-      v.srcObject = await Promise.race([track, timeout(10_000)]);
-      await Promise.race([new Promise((resolve) => v.addEventListener("loadeddata", resolve, { once: true })), timeout(10_000)]);
+      // Through a relay on a strict network, the first picture can take a while.
+      v.srcObject = await Promise.race([track, timeout(25_000)]);
+      await Promise.race([new Promise((resolve) => v.addEventListener("loadeddata", resolve, { once: true })), timeout(25_000)]);
     };
-    const why = (e: unknown) => `${e instanceof Error ? e.message : String(e)} (${pc?.connectionState ?? "no connection"}, ice ${pc?.iceConnectionState ?? "-"})`;
+    const why = (e: unknown) =>
+      `${e instanceof Error ? e.message : String(e)} (${pc?.connectionState ?? "no connection"}, ice ${pc?.iceConnectionState ?? "-"}; this device: ${routeKinds(pc?.localDescription?.sdp)}; PC: ${routeKinds(pc?.remoteDescription?.sdp)})`;
     (async () => {
       let first = "";
       for (const simple of [false, true]) {
@@ -430,8 +436,8 @@ function Screen({ client, control, mini, files }: { client: RemoteClient; contro
         }
       }
     };
-    one();
-    setTimeout(one, 150);
+    // Four pictures on the way at once: each round trip through the server takes a moment, so overlap them.
+    for (let i = 0; i < 4; i++) setTimeout(one, i * 80);
     return () => {
       on = false;
     };

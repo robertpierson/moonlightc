@@ -157,6 +157,13 @@ export async function sendToPc(client: RemoteClient, dir: string, name: string, 
   return result as { saved: string };
 }
 
+/** Which kinds of routes a connection description offers (direct, internet, relay), for the activity log. */
+export function routeKinds(sdp?: string | null) {
+  const n = { host: 0, srflx: 0, relay: 0 };
+  for (const m of (sdp ?? "").matchAll(/ typ (host|srflx|relay)/g)) n[m[1] as keyof typeof n]++;
+  return `direct ${n.host}, internet ${n.srflx}, relay ${n.relay}`;
+}
+
 /** ICE servers plus a relay (when the server has one) for networks that block direct video. Cached for an hour. */
 let relay: { at: number; list: RTCIceServer[] } | undefined;
 export const forgetRelay = () => void (relay = undefined);
@@ -166,7 +173,8 @@ export async function iceServers(): Promise<RTCIceServer[]> {
     const { data } = await supabase().auth.getSession();
     const r = await fetch("/api/turn", { headers: data.session ? { authorization: `Bearer ${data.session.access_token}` } : {}, cache: "no-store" });
     const list = r.ok ? (((await r.json()) as { iceServers?: RTCIceServer[] }).iceServers ?? []) : [];
-    relay = { at: Date.now(), list };
+    // Only remember a real answer: one failed fetch on a bad network must not mean "no relay" for an hour.
+    if (list.length) relay = { at: Date.now(), list };
     return [...ICE, ...list];
   } catch {
     return ICE;
@@ -177,7 +185,8 @@ export async function iceServers(): Promise<RTCIceServer[]> {
 export const hifiAudio = (sdp?: string) => (sdp ?? "").replace(/useinbandfec=1/g, "useinbandfec=1;stereo=1;sprop-stereo=1;maxaveragebitrate=192000");
 
 /** Wait until the connection knows all its possible network paths (so one message carries everything). */
-export function gathered(pc: RTCPeerConnection, ms = 4000) {
+// Up to 10 s: on strict networks the relay route (over the web port) can take several seconds to find.
+export function gathered(pc: RTCPeerConnection, ms = 10_000) {
   return new Promise<void>((resolve) => {
     if (pc.iceGatheringState === "complete") return resolve();
     const t = setTimeout(resolve, ms);
