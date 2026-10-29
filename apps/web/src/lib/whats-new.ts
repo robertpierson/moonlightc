@@ -1,7 +1,7 @@
 // "What's new" in Settings: recent changes in plain English, newest first. Only things that really shipped.
 export const WHATS_NEW: { version: string; date: string; items: string[] }[] = [
   {
-    version: "0.6.55",
+    version: "0.6.56",
     date: "October 29, 2026",
     items: [
       "Security levels for your PCs (Settings > Account): Password only, Balanced, Strict or Maximum. Lowering the level needs your two-step code.",

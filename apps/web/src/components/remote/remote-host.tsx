@@ -14,6 +14,13 @@ export async function hasTwoStep() {
   return data?.currentLevel === "aal2";
 }
 
+/** May this PC answer your other devices: two-step sign-in, or your security level is Password only or Balanced. */
+async function mayHost() {
+  if (await hasTwoStep()) return true;
+  const { data } = await supabase().rpc("security_level");
+  return typeof data === "number" && data <= 1;
+}
+
 /**
  * Desktop app only: lists this PC under your account, and while remote control is on (and you're signed in with
  * two-step sign-in), answers your other devices. Every request is checked by the desktop app itself.
@@ -49,7 +56,7 @@ export function RemoteHost() {
         last_seen: new Date().toISOString(),
       };
       if (!stop) await supabase().from("devices").upsert(row);
-      setAal2(await hasTwoStep());
+      setAal2(await mayHost());
     };
     beat();
     const t = setInterval(beat, 60_000);
