@@ -24,8 +24,10 @@ export async function GET(req: Request) {
     return r?.ok ? NextResponse.json(await r.json(), { headers: { "cache-control": "no-store" } }) : none(`website answered ${r?.status ?? "nothing"}`);
   }
   if (!accountsEnabled) return none("accounts are off");
+  // "Authorization" with a capital A: supabase-js adds its own, and a lowercase one is sent as well ("Bearer x, Bearer x"),
+  // which Supabase rejects as no sign-in. That broke the relay for everyone until 0.6.55.
   const sb = bearer
-    ? createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!, { global: { headers: { authorization: auth } }, auth: { persistSession: false } })
+    ? createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!, { global: { headers: { Authorization: auth } }, auth: { persistSession: false } })
     : await serverSupabase();
   const { data } = await (bearer ? sb.auth.getUser(bearer) : sb.auth.getUser());
   if (!data.user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
