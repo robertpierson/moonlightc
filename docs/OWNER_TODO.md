@@ -171,3 +171,10 @@ After it boots, Windows asks for your sign-in before MoonlightC starts. Tell me 
 ## Decided (2026-10-23)
 - No game controller support, no "stop the popup" switch, no paid tests of any kind. Nothing that spends money.
 - Background service for the sign-in screen: parked.
+
+## Try this (0.6.55)
+1. Settings > Account > Test relay: it should say "Relay works".
+2. At school, start remote control: the corner readout should say relay, with real video (not pictures).
+3. Settings > Account > Security level: pick Balanced. Lowering it later asks for your authenticator code.
+4. On Balanced, from a device that hasn't entered the code: the screen works, files and terminal stay locked.
+5. Dark theme: hover the New chat button; its text stays readable.
