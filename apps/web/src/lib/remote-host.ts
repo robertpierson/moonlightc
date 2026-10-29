@@ -4,7 +4,7 @@ import { reportError } from "./analytics";
 import type { MooncBridge } from "./desktop";
 import { claudeText } from "./claude-code";
 import { getState } from "./store";
-import { gathered, hifiAudio, iceServers, routeKinds, type Req } from "./remote";
+import { gathered, hifiAudio, iceServers, noRelayReason, routeKinds, type Req } from "./remote";
 
 const OLLAMA = "http://127.0.0.1:11434";
 
@@ -182,7 +182,7 @@ export function createHostHandler(
           tune();
           step = "network check";
           await gathered(pc);
-          void b.remote.note(req.from, `live video routes: viewer ${routeKinds(String(p.sdp ?? ""))}; PC ${routeKinds(pc.localDescription?.sdp)}`);
+          void b.remote.note(req.from, `live video routes: viewer ${routeKinds(String(p.sdp ?? ""))}; PC ${routeKinds(pc.localDescription?.sdp)}${noRelayReason() ? ` (PC has no relay: ${noRelayReason()})` : ""}`);
           return { sdp: pc.localDescription?.sdp };
         } catch (e) {
           const m = `PC ${step}: ${e instanceof Error ? e.message : String(e)}`;

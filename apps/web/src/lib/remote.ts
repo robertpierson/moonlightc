@@ -172,14 +172,20 @@ export async function iceServers(): Promise<RTCIceServer[]> {
   try {
     const { data } = await supabase().auth.getSession();
     const r = await fetch("/api/turn", { headers: data.session ? { authorization: `Bearer ${data.session.access_token}` } : {}, cache: "no-store" });
-    const list = r.ok ? (((await r.json()) as { iceServers?: RTCIceServer[] }).iceServers ?? []) : [];
+    const d = r.ok ? ((await r.json()) as { iceServers?: RTCIceServer[]; reason?: string }) : { reason: `relay check answered ${r.status}` };
+    const list = d.iceServers ?? [];
+    relayWhy = list.length ? "" : (d.reason ?? "no relay");
     // Only remember a real answer: one failed fetch on a bad network must not mean "no relay" for an hour.
     if (list.length) relay = { at: Date.now(), list };
     return [...ICE, ...list];
-  } catch {
+  } catch (e) {
+    relayWhy = `relay check failed: ${e instanceof Error ? e.message : String(e)}`;
     return ICE;
   }
 }
+let relayWhy = "";
+/** Why the last relay check gave no relay ("" when it did), for the activity log. */
+export const noRelayReason = () => relayWhy;
 
 /** Opus at music quality in stereo (the default is tuned for voices on calls). */
 export const hifiAudio = (sdp?: string) => (sdp ?? "").replace(/useinbandfec=1/g, "useinbandfec=1;stereo=1;sprop-stereo=1;maxaveragebitrate=192000");

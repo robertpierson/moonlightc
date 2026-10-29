@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
-import { gathered, forgetRelay, hifiAudio, iceServers, isOnline, routeKinds, whereAmI, joinChannel, leaveChannel, RemoteClient, subscribed, TIER_LABELS, uploadToPc, type Tier } from "@/lib/remote";
+import { gathered, forgetRelay, hifiAudio, iceServers, isOnline, noRelayReason, routeKinds, whereAmI, joinChannel, leaveChannel, RemoteClient, subscribed, TIER_LABELS, uploadToPc, type Tier } from "@/lib/remote";
 import { desktop } from "@/lib/desktop";
 import { supabase } from "@/lib/supabase/client";
 import { useDevices } from "./your-computers";
@@ -334,7 +334,7 @@ function Screen({ client, control, mini, files }: { client: RemoteClient; contro
       await Promise.race([new Promise((resolve) => v.addEventListener("loadeddata", resolve, { once: true })), timeout(25_000)]);
     };
     const why = (e: unknown) =>
-      `${e instanceof Error ? e.message : String(e)} (${pc?.connectionState ?? "no connection"}, ice ${pc?.iceConnectionState ?? "-"}; this device: ${routeKinds(pc?.localDescription?.sdp)}; PC: ${routeKinds(pc?.remoteDescription?.sdp)})`;
+      `${e instanceof Error ? e.message : String(e)} (${pc?.connectionState ?? "no connection"}, ice ${pc?.iceConnectionState ?? "-"}; this device: ${routeKinds(pc?.localDescription?.sdp)}; PC: ${routeKinds(pc?.remoteDescription?.sdp)}${noRelayReason() ? `; no relay here: ${noRelayReason()}` : ""})`;
     (async () => {
       let first = "";
       for (const simple of [false, true]) {

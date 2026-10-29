@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { authRedirect } from "@/lib/supabase/auth";
 import { SUPABASE_URL, supabase, useUser } from "@/lib/supabase/client";
 import { desktop } from "@/lib/desktop";
-import { forgetRelay } from "@/lib/remote";
+import { forgetRelay, iceServers, noRelayReason } from "@/lib/remote";
 import { resetState } from "@/lib/store";
 
 const NAMES: Record<string, string> = { google: "Google", github: "GitHub", apple: "Apple", discord: "Discord", azure: "Microsoft", email: "Email and password" };
@@ -311,6 +311,25 @@ function RelayKey() {
             </Button>
           </form>
         </>
+      )}
+      {(saved || owner) && (
+        <div>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              forgetRelay();
+              const relays = (await iceServers()).flatMap((x) => [x.urls].flat()).filter((u) => u.startsWith("turn")).length;
+              setBusy(false);
+              if (relays) toast.success(`Relay works: Cloudflare gave ${relays} relay routes.`);
+              else toast.error(`No relay: ${noRelayReason() || "unknown reason"}`);
+            }}
+          >
+            Test relay
+          </Button>
+        </div>
       )}
     </section>
   );
