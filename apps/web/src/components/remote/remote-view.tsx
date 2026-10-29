@@ -382,7 +382,8 @@ function Screen({ client, control, mini, files }: { client: RemoteClient; contro
     let full = { w: 16, h: 9 };
     let seq = 0;
     let drawn = 0;
-    let fails = 0;
+    // Picture size and quality follow the network: smaller after a slow or failed one, back up when they come quickly.
+    let scale = 1;
     const one = async () => {
       while (on) {
         const c = canvas.current;
@@ -411,7 +412,10 @@ function Screen({ client, control, mini, files }: { client: RemoteClient; contro
           const rw = r.width || 1, rh = r.height || 1;
           const crop = x1 > x0 && y1 > y0 ? { x: (x0 - r.left) / rw, y: (y0 - r.top) / rh, w: (x1 - x0) / rw, h: (y1 - y0) / rh } : { x: 0, y: 0, w: 1, h: 1 };
           const mine = ++seq;
-          const f = await client.call<{ url: string; fullW: number; fullH: number }>("shot", { crop, maxW: Math.round(crop.w * W), q: 0.72 }, 20_000);
+          const t0 = performance.now();
+          const f = await client.call<{ url: string; fullW: number; fullH: number }>("shot", { crop, maxW: Math.max(240, Math.round(crop.w * W * scale)), q: 0.45 + 0.27 * scale }, 20_000);
+          const took = performance.now() - t0;
+          scale = took > 1500 ? Math.max(0.3, scale * 0.75) : took < 600 ? Math.min(1, scale * 1.1) : scale;
           const img = new Image();
           img.src = f.url;
           await img.decode();
@@ -419,19 +423,20 @@ function Screen({ client, control, mini, files }: { client: RemoteClient; contro
           if (f.fullW && f.fullH && (f.fullW !== full.w || f.fullH !== full.h)) full = { w: f.fullW, h: f.fullH };
           if (mine < drawn) continue; // a newer picture is already on screen
           drawn = mine;
-          fails = 0;
           if (c.height !== Math.round((c.width * full.h) / full.w)) continue; // size changed; next one fits
           c.getContext("2d")?.drawImage(img, crop.x * c.width, crop.y * c.height, crop.w * c.width, crop.h * c.height);
           setReady(true);
         } catch (e) {
           if (!on) break;
           const msg = e instanceof Error ? e.message : String(e);
-          // An older PC app, or the quick capture isn't available there: whole-screen pictures instead.
-          if (!old && (/Unknown request/i.test(msg) || ++fails >= 2)) {
+          // Only an older PC app (no quick pictures) gets whole-screen pictures. A slow network gets smaller pictures
+          // instead: whole-screen ones are several times bigger and used to jam it until pictures stopped.
+          if (!old && /Unknown request/i.test(msg)) {
             old = true;
             continue;
           }
-          if (msg !== "not ready") toast.error(msg);
+          scale = Math.max(0.3, scale * 0.6);
+          if (msg !== "not ready") toast.error(msg, { id: "pictures" });
           await new Promise((res) => setTimeout(res, 2000));
         }
       }
