@@ -4,6 +4,7 @@ import { reportError } from "./analytics";
 import type { MooncBridge } from "./desktop";
 import { claudeText } from "./claude-code";
 import { getState } from "./store";
+import { supabase } from "./supabase/client";
 import { gathered, hifiAudio, iceServers, noRelayReason, routeKinds, type Req } from "./remote";
 
 const OLLAMA = "http://127.0.0.1:11434";
@@ -113,12 +114,18 @@ export function createHostHandler(
     switch (req.method) {
       case "hello":
         return { name: (await b.device.info()).name };
-      case "connect":
+      case "connect": {
+        // This account's security level and id: the PC checks the other device's signed note against them.
+        const sb = supabase();
+        const [lv, me] = await Promise.all([sb.rpc("security_level"), sb.auth.getUser()]);
         return b.remote.connect(
           { id: req.from, name: req.fromName },
           Array.isArray(p.tiers) ? (p.tiers as string[]) : [],
           p.where,
+          // If the level can't be read, the strictest one applies.
+          { level: typeof lv.data === "number" ? lv.data : 3, uid: me.data.user?.id ?? "" },
         );
+      }
       case "rtc.offer": {
         let step = "permission";
         try {

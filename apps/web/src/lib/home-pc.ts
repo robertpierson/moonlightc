@@ -2,7 +2,7 @@
 
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { useSyncExternalStore } from "react";
-import { canReachPcs, joinChannel, leaveChannel, RemoteClient, sendToPc, subscribed, type Device, type Tier } from "./remote";
+import { canReachPcs, joinChannel, leaveChannel, RemoteClient, sendToPc, subscribed, whereAmI, type Device, type Tier } from "./remote";
 import type { UIMessage, UIMessageChunk } from "ai";
 import { CLAUDE_CODE_MODELS, claudePrompt, friendly, remember, sessions } from "./claude-code";
 import { getState, update } from "./store";
@@ -46,8 +46,8 @@ export async function connectHomePc(device: Device, tiers: Tier[] = ["view", "co
     ch = await joinChannel(device.id, { key: `client:${crypto.randomUUID()}` });
     const client = new RemoteClient(ch);
     await subscribed(ch);
-    const r = await client.call<{ allowed: boolean; tiers?: Tier[] }>("connect", { tiers }, 130_000);
-    if (!r.allowed) throw new Error("The home PC didn't allow this device.");
+    const r = await client.call<{ allowed: boolean; tiers?: Tier[]; reason?: string }>("connect", { tiers, where: await whereAmI() }, 130_000);
+    if (!r.allowed) throw new Error(r.reason ?? "The home PC didn't allow this device.");
     channel = ch;
     set({ client, tiers: r.tiers ?? [], connecting: false });
     // Its local models show up in the model picker on this device (never synced: they only work through this link).

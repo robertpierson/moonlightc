@@ -205,16 +205,41 @@ export function gathered(pc: RTCPeerConnection, ms = 10_000) {
   });
 }
 
-/** This device may reach your PCs: signed in with the two-step code, or "connect without the code" is on. */
+/** Security levels (Settings > Account): how much of a sign-in reaching your PCs needs. */
+export const SECURITY_LEVELS = [
+  { name: "Password only", about: "Your password reaches your PCs: screen, files and terminal. Easiest, least safe." },
+  { name: "Balanced", about: "Your password reaches the screen. Files and terminal need your two-step code." },
+  { name: "Strict", about: "Everything on your PCs needs your two-step code. (Default)" },
+  { name: "Maximum", about: "A two-step code entered in the last 15 minutes for every remote session." },
+] as const;
+export const FRESH_MS = 15 * 60_000;
+
+/** When this sign-in last entered a two-step code (ms; 0 = never). */
+export async function lastCodeAt() {
+  const { data } = await supabase().auth.getSession();
+  try {
+    const amr = (JSON.parse(atob((data.session?.access_token ?? "").split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))).amr ?? []) as { method: string; timestamp: number }[];
+    return Math.max(0, ...amr.filter((a) => /totp|mfa/.test(a.method)).map((a) => a.timestamp * 1000));
+  } catch {
+    return 0;
+  }
+}
+
+/** This device may reach your PCs at your security level (the PC checks again for files, terminal and Maximum). */
 export async function canReachPcs() {
   const sb = supabase();
+  const level = ((await sb.rpc("security_level")).data as number | null) ?? 2;
+  if (level <= 1) return true;
   const { data } = await sb.auth.mfa.getAuthenticatorAssuranceLevel();
-  if (data?.currentLevel === "aal2") return true;
-  return (await sb.rpc("quick_access_on")).data === true;
+  if (data?.currentLevel !== "aal2") return false;
+  return level < 3 || Date.now() - (await lastCodeAt()) < FRESH_MS - 60_000;
 }
 
 /** A note signed by the MoonlightC website saying where this device is (for PCs that allow only certain places). */
-export const whereAmI = () =>
-  fetch("https://moonlightc.vercel.app/api/attest", { cache: "no-store" })
+export const whereAmI = async () =>
+  fetch("https://moonlightc.vercel.app/api/attest", {
+    cache: "no-store",
+    headers: { authorization: `Bearer ${(await supabase().auth.getSession()).data.session?.access_token ?? ""}` },
+  })
     .then((r) => r.json())
     .catch(() => undefined);

@@ -5,7 +5,16 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { canReachPcs } from "@/lib/remote";
 import { accountsEnabled, supabase, useUser } from "@/lib/supabase/client";
+
+// For PC features (quick), the security level decides: password only, the code, or a code from the last 15 minutes.
+async function levelNow(quick?: boolean) {
+  const { data } = await supabase().auth.mfa.getAuthenticatorAssuranceLevel();
+  const next = data?.nextLevel ?? undefined;
+  if (!quick) return { current: data?.currentLevel ?? undefined, next };
+  return { current: (await canReachPcs()) ? "aal2" : undefined, next };
+}
 
 /** Shows its children only when this session is signed in with two-step sign-in; otherwise helps get there. */
 export function TwoStepGate({ children, onSetup, what = "Remote control", quick }: { children: React.ReactNode; onSetup: () => void; what?: string; quick?: boolean }) {
@@ -14,21 +23,14 @@ export function TwoStepGate({ children, onSetup, what = "Remote control", quick 
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const check = useCallback(
-    () =>
-      supabase()
-        .auth.mfa.getAuthenticatorAssuranceLevel()
-        .then(({ data }) => setLevel({ current: data?.currentLevel ?? undefined, next: data?.nextLevel ?? undefined })),
-    [],
-  );
+  const check = useCallback(() => levelNow(quick).then(setLevel), [quick]);
   useEffect(() => {
     if (!user) return;
-    (async () => {
-      const { data } = await supabase().auth.mfa.getAuthenticatorAssuranceLevel();
-      // "Connect to my PCs without the code" counts as unlocked for PC features.
-      const open = quick && data?.currentLevel !== "aal2" && (await supabase().rpc("quick_access_on")).data === true;
-      setLevel({ current: open ? "aal2" : (data?.currentLevel ?? undefined), next: data?.nextLevel ?? undefined });
-    })();
+    let live = true;
+    levelNow(quick).then((l) => live && setLevel(l));
+    return () => {
+      live = false;
+    };
   }, [user, quick]);
 
   if (!accountsEnabled) return <p className="text-sm text-muted-foreground">{what} needs accounts, which aren&apos;t set up on this server.</p>;

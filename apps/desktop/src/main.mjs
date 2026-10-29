@@ -371,7 +371,7 @@ handle("computer:audit", () => computer.readAudit());
 computer.onState((st) => BrowserWindow.getAllWindows().forEach((w) => !w.isDestroyed() && w.webContents.send("computer:state", st)));
 remote.onState((st) => BrowserWindow.getAllWindows().forEach((w) => !w.isDestroyed() && w.webContents.send("remote:state", st)));
 handle("device:info", () => remote.deviceInfo());
-handle("remote:connect", (_e, client, tiers, where) => remote.connect(win, client, tiers, where));
+handle("remote:connect", (_e, client, tiers, where, account) => remote.connect(win, client, tiers, where, account));
 handle("remote:places", () => remote.places());
 handle("remote:setPlaces", (_e, p) => remote.setPlaces(p));
 handle("remote:end", (_e, clientId, reason) => remote.end(clientId ?? undefined, reason ? String(reason).slice(0, 80) : undefined));

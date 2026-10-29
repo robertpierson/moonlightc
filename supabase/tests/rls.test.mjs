@@ -233,6 +233,36 @@ test("quick access: on needs two-step once, then the PC channel opens without it
   assert.equal((await run("aal1", can)).rows[0].ok, false);
 });
 
+test("security levels: lowering needs two-step, raising never; levels 0-1 open the PC channel with a password", async () => {
+  const U = "00000000-0000-0000-0000-0000000000f1";
+  const D = "00000000-0000-0000-0000-0000000000f2";
+  await db.query("insert into auth.users (id, email) values ($1, 'lv@example.com')", [U]);
+  await as(U, "insert into public.devices (id, user_id, name) values ($1, $2, 'PC')", [D, U]);
+  const run = async (aal, sql) => {
+    await db.exec(`reset role; select set_config('request.jwt.claim.sub', '${U}', false); select set_config('request.jwt.claims', '{"aal":"${aal}"}', false); set role authenticated;`);
+    try {
+      return { rows: (await db.query(sql)).rows };
+    } catch (e) {
+      return { error: String(e.message) };
+    } finally {
+      await db.exec("reset role; select set_config('request.jwt.claims', '', false);");
+    }
+  };
+  const can = async (aal) => (await run(aal, `select public.can_use_device_channel('device:${D}') ok`)).rows[0].ok;
+  const level = async () => (await run("aal1", "select public.security_level() l")).rows[0].l;
+  assert.equal(await level(), 2);
+  assert.match((await run("aal1", "select public.set_security_level(1)")).error ?? "", /two-step/);
+  assert.ok((await run("aal2", "select public.set_security_level(1)")).rows);
+  assert.equal(await can("aal1"), true);
+  assert.ok((await run("aal1", "select public.set_security_level(3)")).rows, "raising needs no code");
+  assert.equal(await can("aal1"), false);
+  assert.equal(await can("aal2"), true);
+  assert.match((await run("aal1", "select public.set_security_level(0)")).error ?? "", /two-step/);
+  assert.match((await run("aal2", "select public.set_security_level(7)")).error ?? "", /unknown/);
+  assert.ok((await run("aal2", "select public.set_security_level(0)")).rows);
+  assert.equal((await run("aal1", "select public.quick_access_on() q")).rows[0].q, true);
+});
+
 test("relay keys: each person reads only their own; bad keys are refused", async () => {
   const id = "0123456789abcdef0123456789abcdef";
   const tok = "ab".repeat(32);

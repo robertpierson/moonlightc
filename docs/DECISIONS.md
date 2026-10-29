@@ -140,3 +140,9 @@ Why: the owner asked for code-free access in emergencies and for a location lock
 - **Why:** sharing one free key doesn't scale and could cost the owner money; the owner has no budget.
 - **Alternative parked:** a self-hosted relay (coturn) on Oracle Cloud Always Free (10 TB/month), for when MoonlightC
   needs to give relay to many users. Needs the owner's sign-up (card check).
+
+## 2026-10-29 Security levels replace "Connect to my PCs without the code"
+- What: four levels per account (private.security_levels; default Strict). 0 Password only, 1 Balanced (files/terminal need aal2), 2 Strict (channel needs aal2), 3 Maximum (code within 15 min per session). Lowering needs aal2, raising never.
+- How: channel access in RLS (can_use_device_channel: aal2 or level<=1). Per-tier and freshness checks on the PC: the viewer sends /api/attest's HMAC-signed note with uid, aal and last two-step time (read from a Supabase-verified token); the PC verifies it at /api/attest/verify and compares uid with its own account.
+- Why: owner asked for levels changed with 2FA; fixes review H1 (password-only session silently reaching files/terminal) for anyone who picks Balanced or above.
+- Alternatives: freshness in RLS (rejected: the PC host joins the same channel and would be cut off after 15 min); sending the viewer's token to the PC (rejected: leaks a bearer token).

@@ -11,6 +11,7 @@ vi.mock("./remote", () => ({
   joinChannel: async () => ({}),
   leaveChannel: () => {},
   canReachPcs: async () => false,
+  whereAmI: async () => undefined,
   subscribed: async () => {},
   RemoteClient: class {
     listenChat(_id: string, cb: typeof chatCb) {

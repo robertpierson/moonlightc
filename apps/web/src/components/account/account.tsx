@@ -6,14 +6,13 @@ import { syncNow, useSyncStatus } from "@/lib/sync-supabase";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { authRedirect } from "@/lib/supabase/auth";
 import { SUPABASE_URL, supabase, useUser } from "@/lib/supabase/client";
 import { desktop } from "@/lib/desktop";
-import { forgetRelay, iceServers, noRelayReason } from "@/lib/remote";
+import { forgetRelay, iceServers, noRelayReason, SECURITY_LEVELS } from "@/lib/remote";
 import { resetState } from "@/lib/store";
 
 const NAMES: Record<string, string> = { google: "Google", github: "GitHub", apple: "Apple", discord: "Discord", azure: "Microsoft", email: "Email and password" };
@@ -40,7 +39,7 @@ export function AccountPanel() {
       <SyncStatus />
       <Identities />
       <TwoStep />
-      <QuickAccess />
+      <SecurityLevel />
       <RelayKey />
       <Data />
     </div>
@@ -202,35 +201,72 @@ function TwoStep() {
   );
 }
 
-/** Connect to your PCs without the two-step code. Off by default. */
-function QuickAccess() {
-  const [on, setOn] = useState<boolean>();
+/** How much of a sign-in reaching your PCs needs. Lowering it asks for the two-step code; raising never does. */
+function SecurityLevel() {
+  const [level, setLevel] = useState<number>();
+  const [want, setWant] = useState<number>();
+  const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     supabase()
-      .rpc("quick_access_on")
-      .then(({ data }) => setOn(data === true));
+      .rpc("security_level")
+      .then(({ data }) => setLevel(typeof data === "number" ? data : 2));
   }, []);
-  const set = async (v: boolean) => {
+  const save = async (l: number) => {
     setBusy(true);
-    const { error } = await supabase().rpc("set_quick_access", { enabled: v });
+    const { error } = await supabase().rpc("set_security_level", { l });
     setBusy(false);
-    if (error) return toast.error(/two-step/.test(error.message) ? "Enter your two-step code first (Settings > Remote control or Cowork asks for it), then turn this on." : error.message);
-    setOn(v);
-    toast.success(v ? "Your devices can now reach your PCs without the code." : "Your PCs need the two-step code again.");
+    if (error && /two-step/.test(error.message)) return setWant(l);
+    if (error) return toast.error(error.message);
+    setLevel(l);
+    setWant(undefined);
+    toast.success(`Security level: ${SECURITY_LEVELS[l].name}.`);
   };
-  if (on === undefined) return null;
+  const unlock = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    const { data } = await supabase().auth.mfa.listFactors();
+    const factor = data?.totp.find((f) => f.status === "verified");
+    const r = factor ? await supabase().auth.mfa.challengeAndVerify({ factorId: factor.id, code: code.trim() }) : { error: new Error("none") };
+    setBusy(false);
+    setCode("");
+    if (r.error) return toast.error(factor ? "That code didn't match. Use the newest code from your authenticator app." : "Set up two-step sign-in above first.");
+    if (want !== undefined) await save(want);
+  };
+  if (level === undefined) return null;
   return (
-    <section aria-labelledby="quick-h" className="grid gap-2">
-      <h3 id="quick-h" className="font-medium">
-        Connect to my PCs without the code
+    <section aria-labelledby="level-h" className="grid gap-2">
+      <h3 id="level-h" className="font-medium">
+        Security level for your PCs
       </h3>
-      <p className="text-sm text-muted-foreground">
-        When this is on, any device signed in to your account can use and remote-control your PCs without the two-step code. Handy when you&apos;re out, but anyone who gets your password could reach your PCs. Turning it on needs your code once; turning it off doesn&apos;t.
-      </p>
-      <label className="flex items-center gap-2 text-sm">
-        <Switch aria-label="Connect to my PCs without the code" checked={on} disabled={busy} onCheckedChange={set} /> {on ? "On" : "Off"}
-      </label>
+      <p className="text-sm text-muted-foreground">How much someone needs to reach your PCs from another device. Lowering it needs your two-step code; raising it doesn&apos;t.</p>
+      <div role="radiogroup" aria-labelledby="level-h" className="grid gap-1.5">
+        {SECURITY_LEVELS.map((l, i) => (
+          <label key={l.name} className={`flex cursor-pointer items-start gap-2 rounded-lg border p-2.5 text-sm ${level === i ? "border-primary" : ""}`}>
+            <input type="radio" name="security-level" className="mt-1" checked={level === i} disabled={busy} onChange={() => save(i)} />
+            <span>
+              <span className="font-medium">{l.name}</span>
+              <span className="block text-muted-foreground">{l.about}</span>
+            </span>
+          </label>
+        ))}
+      </div>
+      {want !== undefined && (
+        <form onSubmit={unlock} className="grid justify-items-start gap-2 rounded-lg border p-3 text-sm">
+          <p className="flex items-center gap-1.5">
+            <ShieldCheck className="size-4" /> Enter your two-step code to lower the level to {SECURITY_LEVELS[want].name}.
+          </p>
+          <div className="flex gap-2">
+            <Input aria-label="6-digit code" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code} onChange={(e) => setCode(e.target.value)} className="w-32" />
+            <Button type="submit" disabled={busy || code.trim().length !== 6}>
+              {busy && <Loader2 className="animate-spin" />} Confirm
+            </Button>
+            <Button type="button" variant="ghost" onClick={() => setWant(undefined)}>
+              Cancel
+            </Button>
+          </div>
+        </form>
+      )}
     </section>
   );
 }

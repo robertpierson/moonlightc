@@ -109,7 +109,7 @@ export interface MooncBridge {
   keys: { scan(): Promise<{ provider: string; source: string; value: string; masked: string }[]> };
   /** Remote control of this PC from your other devices (every call is checked against what the person allowed). */
   remote: {
-    connect(client: { id: string; name: string }, tiers: string[], where?: unknown): Promise<{ allowed: boolean; tiers?: string[]; reason?: string }>;
+    connect(client: { id: string; name: string }, tiers: string[], where?: unknown, account?: { level: number; uid: string }): Promise<{ allowed: boolean; tiers?: string[]; reason?: string }>;
     places(): Promise<Places>;
     setPlaces(p: Places): Promise<Places>;
     trusted(): Promise<boolean>;

@@ -4,6 +4,11 @@ import type { MooncBridge } from "./desktop";
 import { RemoteClient, routeKinds, subscribed, type Req, type Res } from "./remote";
 import { createHostHandler } from "./remote-host";
 
+vi.mock("./supabase/client", () => ({
+  supabase: () => ({ rpc: async () => ({ data: 1 }), auth: { getUser: async () => ({ data: { user: { id: "me" } } }), getSession: async () => ({ data: { session: null } }) } }),
+}));
+let account: unknown;
+
 /** An in-memory stand-in for a Realtime channel shared by the PC and one phone. */
 function wire() {
   const handlers: { side: "pc" | "phone"; event: string; fn: (m: { payload: unknown }) => void }[] = [];
@@ -30,7 +35,7 @@ function fakeBridge() {
   const b = {
     device: { info: async () => ({ id: "pc1", name: "Desk PC", os: "windows", version: "0.3.0" }) },
     remote: {
-      connect: async (c: { id: string }, tiers: string[]) => (sessions.set(c.id, tiers), { allowed: true, tiers }),
+      connect: async (c: { id: string }, tiers: string[], _w: unknown, a: unknown) => ((account = a), sessions.set(c.id, tiers), { allowed: true, tiers }),
       end: async (id?: string) => void (id ? sessions.delete(id) : sessions.clear()),
       allowed: async (id: string, t: string) => !!sessions.get(id)?.includes(t),
       frame: async (id: string) => {
@@ -89,6 +94,8 @@ describe("remote control protocol", () => {
   it("connects, streams the screen, and refuses what wasn't allowed", async () => {
     const { client } = connectPair();
     expect(await client.call("connect", { tiers: ["view", "terminal"] })).toEqual({ allowed: true, tiers: ["view", "terminal"] });
+    // The PC passes its account's security level and id, to check the other device's signed note against.
+    expect(account).toEqual({ level: 1, uid: "me" });
     expect(await client.call("frame")).toMatchObject({ image: "jpg", width: 10 });
     await expect(client.call("input", { action: "click", x: 1, y: 1 })).rejects.toThrow("mouse and keyboard");
     await expect(client.call("models")).rejects.toThrow("isn't allowed");

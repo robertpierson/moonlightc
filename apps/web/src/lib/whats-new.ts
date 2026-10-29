@@ -1,6 +1,16 @@
 // "What's new" in Settings: recent changes in plain English, newest first. Only things that really shipped.
 export const WHATS_NEW: { version: string; date: string; items: string[] }[] = [
   {
+    version: "0.6.55",
+    date: "October 29, 2026",
+    items: [
+      "Security levels for your PCs (Settings > Account): Password only, Balanced, Strict or Maximum. Lowering the level needs your two-step code.",
+      "The relay for strict networks (school, work) now really works: live video instead of pictures. Settings > Account > Test relay checks it.",
+      "Pictures mode no longer jams slow networks.",
+      "The New chat button stays readable in dark themes.",
+    ],
+  },
+  {
     version: "0.6.54",
     date: "October 28, 2026",
     items: [

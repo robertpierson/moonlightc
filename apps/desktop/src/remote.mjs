@@ -178,7 +178,7 @@ async function fromAllowedPlace(where) {
 }
 
 /** A device asks to connect. Remembered devices skip the prompt for the access they already have. */
-export async function connect(parent, client, wanted, where) {
+export async function connect(parent, client, wanted, where, account) {
   const id = String(client?.id ?? "").slice(0, 64);
   const name = String(client?.name ?? "Another device").slice(0, 60);
   const tiers = [...new Set((Array.isArray(wanted) ? wanted : []).filter((t) => t in TIERS))];
@@ -187,6 +187,23 @@ export async function connect(parent, client, wanted, where) {
   if (tiers.some((t) => t === "view" || t === "control") && !(await fromAllowedPlace(where))) {
     audit("deny.place", { clientId: id, name, ip: where?.ip, country: where?.country });
     return { allowed: false, reason: "Remote control isn't allowed from this place. On the PC, open Settings > Remote control to allow it." };
+  }
+  // Security level (Settings > Account on the website): some access needs the other device's two-step code, which
+  // its note signed by the MoonlightC website shows (who it is, and when it last entered a code).
+  const level = Number(account?.level ?? 2);
+  const needsCode = (t) => level >= 3 || (level === 1 && (t === "files" || t === "terminal"));
+  if (tiers.some(needsCode)) {
+    const w = await fetch(`${SITE}/api/attest/verify`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(where ?? {}) })
+      .then((r) => r.json())
+      .catch(() => ({}));
+    const good = w.ok === true && !!account?.uid && w.uid === account.uid && w.aal === "aal2" && (level < 3 || Date.now() - Number(w.mfaAt) < 15 * 60_000);
+    if (!good) {
+      const left = tiers.filter((t) => !needsCode(t));
+      audit("deny.level", { clientId: id, name, level, without: tiers.filter(needsCode) });
+      if (!left.length)
+        return { allowed: false, reason: level >= 3 ? "Maximum security: enter your two-step code on this device (needed every 15 minutes), then connect again." : "Your security level needs your two-step code for this." };
+      tiers.splice(0, tiers.length, ...left);
+    }
   }
   const remembered = grants().find((g) => g.clientId === id);
   // Your own devices (same account, two-step sign-in, checked by the server) may use this PC's AI models, and let
