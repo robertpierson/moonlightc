@@ -7,6 +7,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import * as computer from "./computer.mjs";
 import * as remote from "./remote.mjs";
+import * as health from "./health.mjs";
 import { scanKeys } from "./keyscan.mjs";
 import { hardware } from "./hardware.mjs";
 import * as ollama from "./ollama.mjs";
@@ -26,6 +27,7 @@ let quitting = false;
 // They also run without a visible window or tray icon, so they never look like a second MoonlightC on the screen.
 const testRun = !app.isPackaged && !!process.env.MOONC_E2E_USER_DATA;
 if (testRun) app.setPath("userData", process.env.MOONC_E2E_USER_DATA);
+health.guard({ packaged: app.isPackaged && !testRun });
 // Admin mode: Windows doesn't pass the usual "already running" message from a normal program to MoonlightC running as
 // administrator, so that copy also listens on this PC (random port + secret, in a file in your own app folder).
 const relayFile = () => path.join(app.getPath("userData"), "instance.json");
@@ -198,6 +200,12 @@ async function startServer() {
     windowsHide: true,
   });
   server.stderr.on("data", (d) => console.error("[server]", String(d).trim()));
+  // If the app server stops, start it again on the same port (the window and remote control keep working).
+  server.once("exit", (code) => {
+    if (quitting) return;
+    health.log(`app server stopped (${code}); restarting`);
+    setTimeout(() => startServer().catch((e) => health.log(`app server restart failed: ${e?.message ?? e}`)), 1000);
+  });
   fs.writeFileSync(path.join(app.getPath("userData"), "server.pid"), String(server.pid));
   const url = `http://127.0.0.1:${port}`;
   for (let i = 0; i < 100; i++) {
@@ -205,6 +213,8 @@ async function startServer() {
     if (ok) return url;
     await new Promise((r) => setTimeout(r, 150));
   }
+  server.removeAllListeners("exit");
+  server.kill();
   throw new Error("The app server didn't start.");
 }
 
@@ -232,11 +242,24 @@ function createWindow() {
   win = new BrowserWindow({ width: 1280, height: 840, minWidth: 360, minHeight: 500, backgroundColor: "#0e1220", title: "MoonlightC", icon: iconPath(), show: !testRun && !startHidden, webPreferences: { ...webPreferences, backgroundThrottling: false } });
   lockDown(win);
   win.loadURL(appURL + "/app");
-  // Settings has unsaved changes: ask instead of silently refusing to quit.
+  health.watchWindow(win);
+  // Settings has unsaved changes: ask instead of silently refusing to quit. Never with a blocking box (that froze the
+  // whole app, remote control included, until someone at the PC clicked it), and never while the window is hidden.
+  let discard = false;
   win.webContents.on("will-prevent-unload", (e) => {
-    const leave = testRun || dialog.showMessageBoxSync(win, { type: "question", buttons: ["Quit and discard", "Cancel"], defaultId: 1, cancelId: 1, title: "Unsaved changes", message: "You have unsaved changes in Settings. Quit anyway?" }) === 0;
-    if (leave) e.preventDefault();
-    else quitting = false;
+    if (testRun || discard || !win.isVisible()) return e.preventDefault();
+    const wasQuitting = quitting;
+    quitting = false;
+    dialog
+      .showMessageBox(win, { type: "question", buttons: [wasQuitting ? "Quit and discard" : "Discard", "Cancel"], defaultId: 1, cancelId: 1, title: "Unsaved changes", message: "You have unsaved changes in Settings. Discard them?" })
+      .then(({ response }) => {
+        if (response !== 0) return;
+        discard = true;
+        if (wasQuitting) {
+          quitting = true;
+          app.quit();
+        } else win.webContents.reload();
+      });
   });
   win.on("close", (e) => {
     // Closing the window keeps MoonlightC in the tray (so the hotkey still works). Quit from the tray menu.
@@ -688,12 +711,20 @@ app.whenReady().then(async () => {
   yieldCpu();
   setInterval(yieldCpu, 30_000);
   remote.onState(yieldCpu);
-  try {
-    appURL ??= await startServer();
-  } catch (err) {
-    dialog.showErrorBox("MoonlightC couldn't start", String(err?.message ?? err));
-    app.quit();
-    return;
+  // A few tries (right after Windows starts, the PC can be slow); a box only if someone is there to see it.
+  for (let i = 0; !appURL; i++) {
+    try {
+      appURL = await startServer();
+    } catch (err) {
+      health.log(`app server didn't start (try ${i + 1}): ${err?.message ?? err}`);
+      if (i < 4) {
+        await new Promise((r) => setTimeout(r, 10_000));
+        continue;
+      }
+      if (!startHidden) dialog.showErrorBox("MoonlightC couldn't start", String(err?.message ?? err));
+      app.quit();
+      return;
+    }
   }
   createWindow();
   if (!testRun) createTray();
