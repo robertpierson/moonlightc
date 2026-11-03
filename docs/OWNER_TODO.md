@@ -178,3 +178,16 @@ After it boots, Windows asks for your sign-in before MoonlightC starts. Tell me 
 3. Settings > Account > Security level: pick Balanced. Lowering it later asks for your authenticator code.
 4. On Balanced, from a device that hasn't entered the code: the screen works, files and terminal stay locked.
 5. Dark theme: hover the New chat button; its text stays readable.
+
+## Make your PC turn itself on every morning (so remote control works from school)
+Your PC gets shut down from the Start menu at night and stays off all day, so nothing can reach it.
+Your motherboard (ASUS PRIME Z790-V WIFI) can switch it on by itself at a set time. Windows then signs in
+by itself and MoonlightC starts by itself (both are already set up).
+1. Restart the PC. While it starts, keep tapping **Delete** (or **F2**) until the blue ASUS BIOS screen opens.
+2. If it shows "EZ Mode", press **F7** for Advanced Mode.
+3. Go to **Advanced** > **APM Configuration**.
+4. Set **ErP Ready** to **Disabled**.
+5. Set **Power On By RTC** to **Enabled**, then set **RTC Alarm Date (Days)** to **Every Day** and the time to **6:30:00**
+   (or whenever you want it on before school).
+6. Press **F10**, then **OK**, to save. The PC restarts.
+Simpler alternative: just don't shut it down at night (MoonlightC keeps it from sleeping).
