@@ -120,6 +120,11 @@ export function RemoteView({ deviceId, onSetup, extra, mini, onLive, onOpen, onC
             <p className="rounded-xl border p-4 text-sm">Remote control is off on this computer. On it, open MoonlightC and go to Settings &gt; Remote control.</p>
           ) : !client ? (
             <div className="grid justify-items-start gap-3 rounded-xl border p-4">
+              {!isOnline(device) && (
+                <p role="status" className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
+                  {device.name} is off, asleep or offline (last seen {new Date(device.last_seen).toLocaleString()}), so nothing can reach it until it&apos;s back on. Leave it on instead of shutting it down: MoonlightC keeps it awake.
+                </p>
+              )}
               <p className="text-sm">Choose what this device may do. The person at the computer has to click Allow.</p>
               <div className="grid gap-1.5">
                 {ALL.map((t) => (

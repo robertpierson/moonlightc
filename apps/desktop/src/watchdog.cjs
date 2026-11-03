@@ -13,8 +13,17 @@ const note = (t) => {
 const ticks = new Int32Array(workerData.shared);
 let seen = Atomics.load(ticks, 0);
 let since = Date.now();
+let checked = Date.now();
 const timer = setInterval(() => {
   const now = Atomics.load(ticks, 0);
+  // This thread was paused too (the PC slept or hibernated): that's not a freeze, start counting again.
+  const gap = Date.now() - checked;
+  checked = Date.now();
+  if (gap > 15_000) {
+    seen = now;
+    since = Date.now();
+    return;
+  }
   if (now !== seen) {
     seen = now;
     since = Date.now();

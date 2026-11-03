@@ -1,9 +1,10 @@
 // "What's new" in Settings: recent changes in plain English, newest first. Only things that really shipped.
 export const WHATS_NEW: { version: string; date: string; items: string[] }[] = [
   {
-    version: "0.6.57",
+    version: "0.6.58",
     date: "October 29, 2026",
     items: [
+      "Remote control says clearly when your PC is off or asleep, and when it was last on.",
       "The PC app heals itself: if it ever freezes for 90 seconds it restarts on its own, a crashed page or app server comes back by itself, and no pop-up can freeze it while you're away.",
       "Security levels for your PCs (Settings > Account): Password only, Balanced, Strict or Maximum. Lowering the level needs your two-step code.",
       "The relay for strict networks (school, work) now really works: live video instead of pictures. Settings > Account > Test relay checks it.",
