@@ -1,6 +1,14 @@
 // "What's new" in Settings: recent changes in plain English, newest first. Only things that really shipped.
 export const WHATS_NEW: { version: string; date: string; items: string[] }[] = [
   {
+    version: "0.6.59",
+    date: "November 4, 2026",
+    items: [
+      "Click the MoonlightC tray icon for a small panel: remote control on or off, who's connected, your security level, relay hours, and shortcuts into the app.",
+      "Always on (Settings > General, off by default): if MoonlightC gets closed, even by accident, it opens again by itself.",
+    ],
+  },
+  {
     version: "0.6.58",
     date: "October 29, 2026",
     items: [

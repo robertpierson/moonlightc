@@ -86,8 +86,16 @@ export interface MooncBridge {
     get(key: string): Promise<string | null>;
     set(key: string, value: string | null): Promise<void>;
   };
+  /** The small panel from the tray icon. */
+  mini: {
+    open(view?: string): Promise<void>;
+    quickAsk(): Promise<void>;
+    hide(): Promise<void>;
+    quit(): Promise<void>;
+  };
   settings: {
-    get(): Promise<{ openAtLogin: boolean }>;
+    get(): Promise<{ openAtLogin: boolean; keepRunning: boolean }>;
+    setKeepRunning(on: boolean): Promise<boolean>;
     setOpenAtLogin(on: boolean): Promise<void>;
     keepAwake(on: boolean): Promise<void>;
     setupWake(): Promise<{ ok: boolean; error?: string }>;

@@ -290,8 +290,12 @@ function General() {
   const webTools = useStore((s) => !!s.webTools);
   const memory = useStore((s) => !!s.memory?.enabled);
   const [openAtLogin, setOpenAtLogin] = useState<boolean>();
+  const [keepRunning, setKeepRunning] = useState<boolean>();
   useEffect(() => {
-    desktop()?.settings.get().then((s) => setOpenAtLogin(s.openAtLogin));
+    desktop()?.settings.get().then((s) => {
+      setOpenAtLogin(s.openAtLogin);
+      setKeepRunning(s.keepRunning);
+    });
   }, []);
   const themes = [
     { id: "light", label: "Light", icon: <Sun /> },
@@ -357,6 +361,18 @@ function General() {
         <Row label="Memory" hint="Let the AI remember facts you tell it, across chats. Manage them in Settings > Memory.">
           <Switch aria-label="Memory" checked={memory} onCheckedChange={(v) => update((s) => ({ ...s, memory: { enabled: v, items: s.memory?.items ?? [] } }))} />
         </Row>
+        {keepRunning !== undefined && (
+          <Row label="Always on" hint="If MoonlightC gets closed, even by accident, it opens again by itself within a few seconds. To really quit, turn this off first.">
+            <Switch
+              aria-label="Always on"
+              checked={keepRunning}
+              onCheckedChange={(v) => {
+                setKeepRunning(v);
+                desktop()?.settings.setKeepRunning(v);
+              }}
+            />
+          </Row>
+        )}
         {openAtLogin !== undefined && (
           <Row label="Start when I sign in to this computer">
             <Switch

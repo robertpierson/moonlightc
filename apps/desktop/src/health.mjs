@@ -1,6 +1,7 @@
 // Keeps MoonlightC answering while you're away: nothing may freeze it, and if something does, it heals itself.
 // Everything that happens is written to app-health.log in the app's folder (no message content, no keys).
 import { app } from "electron";
+import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -57,3 +58,54 @@ export function watchWindow(win) {
   });
   wc.on("responsive", () => clearTimeout(hung));
 }
+
+// "Always on" (Settings > General, off by default): if MoonlightC is closed, for any reason, it comes back. A small
+// hidden helper waits for this copy to end and starts a new one. Windows' process service (WMI) starts the helper, or
+// it would end together with the app. Turning the setting off, an update or a Windows shutdown stops the comeback.
+const keepFile = () => path.join(app.getPath("userData"), "keep-running.json");
+const readKeep = () => {
+  try {
+    return JSON.parse(fs.readFileSync(keepFile(), "utf8"));
+  } catch {
+    return {};
+  }
+};
+const writeKeep = (k) => fs.writeFileSync(keepFile(), JSON.stringify(k));
+export const keepRunning = () => readKeep().on === true;
+
+let helper = false;
+export function startKeeper(exe = process.execPath) {
+  if (helper || !keepRunning()) return;
+  helper = true;
+  const enc = (cmd) => Buffer.from(cmd, "utf16le").toString("base64");
+  const quote = (s) => `'${s.replace(/'/g, "''")}'`;
+  const wait = [
+    `Wait-Process -Id ${process.pid} -ErrorAction SilentlyContinue`,
+    "Start-Sleep 3",
+    // Never in the middle of an install.
+    "while (Get-Process -Name 'MoonlightC-Setup*','Un_A','Au_' -ErrorAction SilentlyContinue) { Start-Sleep 3 }",
+    `$k = Get-Content -Raw -LiteralPath ${quote(keepFile())} | ConvertFrom-Json`,
+    `if ($k.on -and -not $k.skip) { Start-Process -FilePath ${quote(exe)} -ArgumentList '--hidden' }`,
+  ].join("; ");
+  const line = `powershell.exe -NoProfile -WindowStyle Hidden -EncodedCommand ${enc(wait)}`;
+  const launch = `$si = New-CimInstance -ClassName Win32_ProcessStartup -ClientOnly -Property @{ ShowWindow = [uint16]0 }; Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = '${line}'; ProcessStartupInformation = $si } | Out-Null`;
+  const ps = spawn("powershell.exe", ["-NoProfile", "-WindowStyle", "Hidden", "-EncodedCommand", enc(launch)], { stdio: "ignore", windowsHide: true });
+  ps.on("error", (e) => {
+    helper = false;
+    log(`always on helper failed: ${e.message}`);
+  });
+}
+
+/** Called once at startup: this copy is running, so the "don't come back" from an update or shutdown is used up. */
+export function keeperReady(exe) {
+  const k = readKeep();
+  if (k.skip) writeKeep({ on: k.on === true });
+  startKeeper(exe);
+}
+export function setKeepRunning(on, exe) {
+  writeKeep({ on: !!on });
+  startKeeper(exe);
+  return keepRunning();
+}
+/** This close is meant to stick (an update, or Windows shutting down). */
+export const skipKeeper = () => writeKeep({ on: keepRunning(), skip: true });

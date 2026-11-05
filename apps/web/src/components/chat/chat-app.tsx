@@ -283,6 +283,9 @@ ${summary}
       consumeMcpAuth(hash).then(() => openSettings("connectors"));
     }
     return desktop()?.onDeepLink((url) => {
+      // From the tray panel.
+      const open = /^moonlightc:\/\/open\/(chat|cowork|code|projects|studio|settings)$/.exec(url)?.[1];
+      if (open) return go(open as View);
       if (url.startsWith("moonlightc://openrouter")) {
         finishOpenRouter(new URL(url).searchParams);
         return;

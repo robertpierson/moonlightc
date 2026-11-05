@@ -1,4 +1,4 @@
-import { app, BrowserWindow, clipboard, desktopCapturer, dialog, globalShortcut, ipcMain, Menu, nativeImage, Notification, powerMonitor, powerSaveBlocker, safeStorage, session, shell, Tray } from "electron";
+import { app, BrowserWindow, clipboard, desktopCapturer, dialog, globalShortcut, ipcMain, Menu, nativeImage, Notification, powerMonitor, powerSaveBlocker, safeStorage, screen, session, shell, Tray } from "electron";
 import { execFile, spawn } from "node:child_process";
 import fs from "node:fs";
 import net from "node:net";
@@ -20,6 +20,7 @@ let appURL = devURL;
 let server;
 let win;
 let quick;
+let mini;
 let tray;
 let quitting = false;
 
@@ -243,6 +244,7 @@ function createWindow() {
   lockDown(win);
   win.loadURL(appURL + "/app");
   health.watchWindow(win);
+  win.on("session-end", () => health.skipKeeper());
   // Settings has unsaved changes: ask instead of silently refusing to quit. Never with a blocking box (that froze the
   // whole app, remote control included, until someone at the PC clicked it), and never while the window is hidden.
   let discard = false;
@@ -286,6 +288,29 @@ function toggleQuickAsk() {
   quick.on("blur", () => quick.hide());
 }
 
+// The small panel from the tray icon (status, remote control, shortcuts). Sits next to the icon; closes on click-away.
+function toggleMini() {
+  if (mini && !mini.isDestroyed() && mini.isVisible()) return mini.hide();
+  if (!mini || mini.isDestroyed()) {
+    mini = new BrowserWindow({ width: 340, height: 580, frame: false, resizable: false, alwaysOnTop: true, skipTaskbar: true, show: false, backgroundColor: "#0e1220", webPreferences });
+    lockDown(mini);
+    mini.loadURL(appURL + "/mini");
+    mini.on("blur", () => mini.hide());
+    mini.once("ready-to-show", showMini);
+    return;
+  }
+  showMini();
+}
+function showMini() {
+  const t = tray.getBounds();
+  const area = screen.getDisplayNearestPoint({ x: t.x, y: t.y }).workArea;
+  const [w, h] = mini.getSize();
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(v, hi));
+  mini.setPosition(clamp(Math.round(t.x + t.width / 2 - w / 2), area.x + 8, area.x + area.width - w - 8), clamp(t.y - h - 8, area.y + 8, area.y + area.height - h - 8));
+  mini.show();
+  mini.focus();
+}
+
 function iconPath() {
   return path.join(here, "..", "build", "icon.png");
 }
@@ -293,15 +318,19 @@ function iconPath() {
 function createTray() {
   tray = new Tray(nativeImage.createFromPath(iconPath()).resize({ width: 16, height: 16 }));
   tray.setToolTip("MoonlightC");
-  tray.setContextMenu(
+  trayMenu();
+  tray.on("click", toggleMini);
+}
+function trayMenu() {
+  tray?.setContextMenu(
     Menu.buildFromTemplate([
       { label: "Open MoonlightC", click: () => (win.show(), win.focus()) },
       { label: "Quick ask (Alt+Space)", click: toggleQuickAsk },
       { type: "separator" },
-      { label: "Quit MoonlightC", click: () => app.quit() },
+      // With "Always on", closing means it comes straight back.
+      { label: health.keepRunning() ? "Restart MoonlightC" : "Quit MoonlightC", click: () => app.quit() },
     ]),
   );
-  tray.on("click", () => (win.isVisible() ? win.focus() : win.show()));
 }
 
 // Local MCP commands run only after the user approves the exact command line in a native dialog.
@@ -631,7 +660,25 @@ handle("secrets:set", (_e, key, value) => {
   else all[key] = safeStorage.encryptString(value).toString("base64");
   fs.writeFileSync(secretsFile(), JSON.stringify(all), { mode: 0o600 });
 });
-handle("settings:get", () => ({ openAtLogin: app.getLoginItemSettings().openAtLogin }));
+handle("settings:get", () => ({ openAtLogin: app.getLoginItemSettings().openAtLogin, keepRunning: health.keepRunning() }));
+handle("settings:keepRunning", (_e, on) => {
+  const now = health.setKeepRunning(!!on);
+  trayMenu();
+  return now;
+});
+const MINI_VIEWS = ["chat", "cowork", "code", "projects", "studio", "settings"];
+handle("mini:open", (_e, view) => {
+  mini?.hide();
+  win.show();
+  win.focus();
+  if (MINI_VIEWS.includes(view)) win.webContents.send("deep-link", `moonlightc://open/${view}`);
+});
+handle("mini:quickAsk", () => {
+  mini?.hide();
+  toggleQuickAsk();
+});
+handle("mini:hide", () => mini?.hide());
+handle("mini:quit", () => app.quit());
 // In admin mode a scheduled task starts MoonlightC; the normal startup entry would start a second copy without admin rights.
 handle("settings:openAtLogin", async (_e, on) => (on && (await isAdmin()) ? undefined : app.setLoginItemSettings({ openAtLogin: !!on, args: ["--hidden"] })));
 handle("open-external", (_e, url) => {
@@ -665,7 +712,7 @@ app.on("open-url", (e, url) => {
 app.on("second-instance", (_e, argv) => onSecondCopy(argv));
 function onSecondCopy(argv) {
   // "MoonlightC.exe --quit": close cleanly (used by updates) so nothing in memory is lost.
-  if (argv.includes("--quit")) return app.quit();
+  if (argv.includes("--quit")) return health.skipKeeper(), app.quit();
   // "MoonlightC.exe --selftest": run the screen-capture self-test now (results in selftest-result.json).
   if (argv.includes("--selftest")) return void ((selftest ??= {}), runSelftest().catch(() => {}));
   if (argv.includes("--hidden")) return;
@@ -728,6 +775,7 @@ app.whenReady().then(async () => {
   }
   createWindow();
   if (!testRun) createTray();
+  if (app.isPackaged && !testRun) health.keeperReady();
   if (pendingLink) win.webContents.once("did-finish-load", () => setTimeout(() => win.webContents.send("deep-link", pendingLink), 1500));
   if (!globalShortcut.register("Alt+Space", toggleQuickAsk)) console.warn("Alt+Space is taken by another app.");
   // One panic key for everything that can control this PC: AI computer use and remote sessions.

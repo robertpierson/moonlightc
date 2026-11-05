@@ -51,6 +51,7 @@ contextBridge.exposeInMainWorld("moonc", {
     get: () => invoke("settings:get"),
     setOpenAtLogin: (on) => invoke("settings:openAtLogin", on),
     keepAwake: (on) => invoke("settings:keepAwake", on),
+    setKeepRunning: (on) => invoke("settings:keepRunning", on),
     setupWake: () => invoke("setup:wake"),
     setupAutoSignIn: () => invoke("setup:autoSignIn"),
     adminStatus: () => invoke("setup:adminStatus"),
@@ -59,6 +60,12 @@ contextBridge.exposeInMainWorld("moonc", {
     setAdmin: (on) => invoke("setup:admin", on),
   },
   device: { info: () => invoke("device:info") },
+  mini: {
+    open: (view) => invoke("mini:open", view),
+    quickAsk: () => invoke("mini:quickAsk"),
+    hide: () => invoke("mini:hide"),
+    quit: () => invoke("mini:quit"),
+  },
   keys: { scan: () => invoke("keys:scan") },
   clipboard: { readKey: () => invoke("clipboard:key"), readText: () => invoke("clipboard:text") },
   claude: {
