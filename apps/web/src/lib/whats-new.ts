@@ -1,11 +1,19 @@
 // "What's new" in Settings: recent changes in plain English, newest first. Only things that really shipped.
 export const WHATS_NEW: { version: string; date: string; items: string[] }[] = [
   {
+    version: "0.6.60",
+    date: "November 5, 2026",
+    items: [
+      "Always on now keeps the window open: the X won't close it, and it stays open after a restart. Turn it off to close MoonlightC normally.",
+      "Clicking MoonlightC's own X or title bar from another device could freeze the app. It now frees itself within a few seconds.",
+    ],
+  },
+  {
     version: "0.6.59",
     date: "November 4, 2026",
     items: [
       "Click the MoonlightC tray icon for a small panel: remote control on or off, who's connected, your security level, relay hours, and shortcuts into the app.",
-      "Always on (Settings > General, off by default): if MoonlightC gets closed, even by accident, it opens again by itself.",
+      "Always on (Settings > General, off by default): if something ends MoonlightC, it opens again by itself.",
     ],
   },
   {
