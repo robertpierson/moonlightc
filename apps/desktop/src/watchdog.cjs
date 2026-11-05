@@ -11,6 +11,21 @@ const note = (t) => {
   } catch {}
 };
 const ticks = new Int32Array(workerData.shared);
+
+// A remote press that lands on MoonlightC's own X or title bar: Windows keeps the main thread inside that click until
+// the button is let go, but the remote release has to come through the main thread. Only this thread can let go.
+let letGo;
+try {
+  const koffi = require("koffi");
+  const MOUSEINPUT = koffi.struct("WATCHDOG_MOUSEINPUT", { dx: "long", dy: "long", mouseData: "uint32", dwFlags: "uint32", time: "uint32", dwExtraInfo: "uintptr_t" });
+  const INPUT = koffi.struct("WATCHDOG_INPUT", { type: "uint32", mi: MOUSEINPUT });
+  const SendInput = koffi.load("user32.dll").func("unsigned int __stdcall SendInput(unsigned int cInputs, WATCHDOG_INPUT *pInputs, int cbSize)");
+  const up = (dwFlags) => SendInput(1, [{ type: 0, mi: { dx: 0, dy: 0, mouseData: 0, dwFlags, time: 0, dwExtraInfo: 0 } }], koffi.sizeof(INPUT));
+  letGo = () => (up(0x0004), up(0x0010)); // left up, right up
+} catch (e) {
+  note(`can't let go of a stuck press: ${e.message}`);
+}
+
 let seen = Atomics.load(ticks, 0);
 let since = Date.now();
 let checked = Date.now();
@@ -29,6 +44,11 @@ const timer = setInterval(() => {
     since = Date.now();
     return;
   }
+  if (letGo && Atomics.load(ticks, 1) && Date.now() - since >= 3000) {
+    Atomics.store(ticks, 1, 0);
+    note("a remote press was stuck on MoonlightC's own window: letting go");
+    letGo();
+  }
   if (Date.now() - since < workerData.after) return;
   clearInterval(timer);
   note(`frozen for ${Math.round((Date.now() - since) / 1000)} s: restarting MoonlightC`);
@@ -43,4 +63,4 @@ const timer = setInterval(() => {
   ps.on("exit", () => setTimeout(() => process.kill(workerData.pid, "SIGKILL"), 500));
   // If the helper itself hangs, end anyway.
   setTimeout(() => process.kill(workerData.pid, "SIGKILL"), 15_000);
-}, 5000);
+}, 1000);

@@ -2,6 +2,7 @@
 // overlay shows while it runs, Ctrl+Alt+Shift+M stops everything, sessions time out, destructive steps ask first,
 // and every action is written to an audit log.
 import robot from "@jitsi/robotjs";
+import { setHeld } from "./health.mjs";
 import { app, BrowserWindow, desktopCapturer, dialog, screen } from "electron";
 import { createRequire } from "node:module";
 import fs from "node:fs";
@@ -165,6 +166,7 @@ export function hold(a) {
     if (a.action === "key_down") held.add(key);
     else held.delete(key);
   } else if (a.action === "mouse_down" || a.action === "mouse_up") {
+    setHeld(a.action === "mouse_down");
     robot.mouseToggle(a.action === "mouse_down" ? "down" : "up", a.button === "right" ? "right" : "left");
   } else if (a.action === "move_by") {
     const clamp = (n) => Math.max(-400, Math.min(400, Math.round(Number(n) || 0)));
@@ -182,6 +184,7 @@ export function hold(a) {
 export function releaseAll() {
   for (const k of held) robot.keyToggle(k, "up");
   held.clear();
+  setHeld(false);
   robot.mouseToggle("up", "left");
   robot.mouseToggle("up", "right");
 }

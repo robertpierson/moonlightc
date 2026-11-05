@@ -1,0 +1,42 @@
+name: press on own window
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [apps/desktop/src/watchdog.cjs, apps/desktop/src/health.mjs, apps/desktop/e2e/press-own-x.mjs, .github/workflows/press-own-x.yml]
+
+jobs:
+  press:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Press with no help (shows the freeze; does not fail the job)
+        continue-on-error: true
+        shell: pwsh
+        env:
+          LET_GO: "0"
+        run: |
+          $env:OUT = "$env:RUNNER_TEMP\nohelp"; New-Item -ItemType Directory -Force $env:OUT | Out-Null
+          pnpm --filter @moonc/desktop exec electron e2e/press-own-x.mjs
+          Get-Content "$env:OUT\result.json" -ErrorAction SilentlyContinue
+          Get-Content "$env:OUT\app-health.log" -ErrorAction SilentlyContinue
+          exit 0
+      - name: Press with the watchdog's help (must not freeze)
+        shell: pwsh
+        env:
+          LET_GO: "1"
+        run: |
+          $env:OUT = "$env:RUNNER_TEMP\help"; New-Item -ItemType Directory -Force $env:OUT | Out-Null
+          pnpm --filter @moonc/desktop exec electron e2e/press-own-x.mjs
+          $r = Get-Content "$env:OUT\result.json" -Raw
+          $r
+          Get-Content "$env:OUT\app-health.log" -ErrorAction SilentlyContinue
+          if (-not ($r | ConvertFrom-Json).closed) { throw "the press never finished" }
+          if (Select-String -Quiet -Path "$env:OUT\app-health.log" -Pattern "frozen for") { throw "it froze" }

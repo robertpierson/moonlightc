@@ -20,8 +20,10 @@ export function log(what) {
 }
 
 // The main thread ticks this counter; a watchdog thread reads it, which works even while the main thread is frozen.
-const shared = new SharedArrayBuffer(4);
+const shared = new SharedArrayBuffer(8);
 const counter = new Int32Array(shared);
+/** A remote device is holding a mouse button down (the watchdog thread lets go if the main thread gets stuck on it). */
+export const setHeld = (on) => Atomics.store(counter, 1, on ? 1 : 0);
 
 export function guard({ packaged, exe = process.execPath, after = 90_000 }) {
   // Electron's default for an unexpected error is a blocking error box: the whole app stops until someone at the PC
@@ -30,7 +32,7 @@ export function guard({ packaged, exe = process.execPath, after = 90_000 }) {
   process.on("unhandledRejection", (e) => log(`unhandled: ${e?.stack ?? e}`));
   app.on("child-process-gone", (_e, d) => log(`helper gone: ${d.type} ${d.reason} (${d.exitCode})`));
   if (!packaged) return;
-  setInterval(() => Atomics.add(counter, 0, 1), 2000);
+  setInterval(() => Atomics.add(counter, 0, 1), 1000);
   // If the main part of the app stops answering for 90 seconds, end this copy from outside (it can't end itself while
   // frozen) and start a fresh one in the tray.
   // Packaged, the file is unpacked next to app.asar (see asarUnpack): threads can't start from inside the archive.

@@ -362,7 +362,7 @@ function General() {
           <Switch aria-label="Memory" checked={memory} onCheckedChange={(v) => update((s) => ({ ...s, memory: { enabled: v, items: s.memory?.items ?? [] } }))} />
         </Row>
         {keepRunning !== undefined && (
-          <Row label="Always on" hint="If MoonlightC gets closed, even by accident, it opens again by itself within a few seconds. To really quit, turn this off first.">
+          <Row label="Always on" hint="Keeps the window open: the X won't close it, and if something else ends MoonlightC it comes back within a few seconds. To really close it, turn this off first.">
             <Switch
               aria-label="Always on"
               checked={keepRunning}

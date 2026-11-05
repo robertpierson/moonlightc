@@ -265,11 +265,14 @@ function createWindow() {
   });
   win.on("close", (e) => {
     // Closing the window keeps MoonlightC in the tray (so the hotkey still works). Quit from the tray menu.
+    // With Always on, the X does nothing: the window stays open.
     if (!quitting) {
       e.preventDefault();
-      win.hide();
+      if (!health.keepRunning()) win.hide();
     }
   });
+  // Always on also means the window is open after a restart, without taking focus from whatever you're doing.
+  if (!testRun && startHidden && health.keepRunning()) win.showInactive();
 }
 
 function toggleQuickAsk() {
@@ -663,6 +666,7 @@ handle("secrets:set", (_e, key, value) => {
 handle("settings:get", () => ({ openAtLogin: app.getLoginItemSettings().openAtLogin, keepRunning: health.keepRunning() }));
 handle("settings:keepRunning", (_e, on) => {
   const now = health.setKeepRunning(!!on);
+  if (now && !win.isVisible()) win.showInactive();
   trayMenu();
   return now;
 });
