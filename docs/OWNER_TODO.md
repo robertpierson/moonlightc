@@ -2,6 +2,13 @@
 
 Do them in order. When done, tell Claude "done, continue".
 
+## Try this: the tray panel (0.6.59, 1 minute)
+1. Click the MoonlightC moon icon in the tray (bottom right, next to the clock; click the ^ arrow if you don't see it). A small panel should open next to it.
+2. Click anywhere else, or press Esc. It should hide.
+3. Open it again and click **Chat**. The full app should open on Chat.
+4. Optional: turn on **Always on** in the panel, then close MoonlightC. It should come back within a few seconds. **Quit** changes to **Restart** while this is on.
+5. Tell Claude what you saw, especially anything that didn't match.
+
 ## Do this now: sign MoonlightC on your PC back in (2 minutes)
 An update signed the desktop app out (fixed now, it won't happen again). Your home PC setting is kept.
 1. On your PC, click the MoonlightC moon icon in the taskbar tray (bottom right, next to the clock; click the ^ arrow if you don't see it).
