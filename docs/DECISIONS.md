@@ -146,3 +146,8 @@ Why: the owner asked for code-free access in emergencies and for a location lock
 - How: channel access in RLS (can_use_device_channel: aal2 or level<=1). Per-tier and freshness checks on the PC: the viewer sends /api/attest's HMAC-signed note with uid, aal and last two-step time (read from a Supabase-verified token); the PC verifies it at /api/attest/verify and compares uid with its own account.
 - Why: owner asked for levels changed with 2FA; fixes review H1 (password-only session silently reaching files/terminal) for anyone who picks Balanced or above.
 - Alternatives: freshness in RLS (rejected: the PC host joins the same channel and would be cut off after 15 min); sending the viewer's token to the PC (rejected: leaks a bearer token).
+
+## 2026-11-05: Free a stuck remote press from the watchdog thread
+What: if a remote device holds a mouse button and the main thread goes silent for 3 s, the watchdog thread sends the mouse-up.
+Why: a press on the app's own X or title bar deadlocks the main thread (reproduced on CI). It covers every native click loop, with about 10 lines.
+Alternatives: moving input to a separate process with a direct line from the page (the right design if more input needs to survive a stuck main thread; much larger change); a frameless window (still has drag loops and menus).

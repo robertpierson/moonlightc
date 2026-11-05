@@ -2,11 +2,11 @@
 
 Do them in order. When done, tell Claude "done, continue".
 
-## Try this: the tray panel (0.6.59, 1 minute)
+## Try this: the tray panel (0.6.60, 1 minute)
 1. Click the MoonlightC moon icon in the tray (bottom right, next to the clock; click the ^ arrow if you don't see it). A small panel should open next to it.
 2. Click anywhere else, or press Esc. It should hide.
 3. Open it again and click **Chat**. The full app should open on Chat.
-4. Optional: turn on **Always on** in the panel, then close MoonlightC. It should come back within a few seconds. **Quit** changes to **Restart** while this is on.
+4. Optional: turn on **Always on** in the panel. The window should open, and clicking its X should do nothing. Turn it off to close the window normally.
 5. Tell Claude what you saw, especially anything that didn't match.
 
 ## Do this now: sign MoonlightC on your PC back in (2 minutes)
