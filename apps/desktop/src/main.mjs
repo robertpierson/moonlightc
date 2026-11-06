@@ -29,11 +29,12 @@ let quitting = false;
 // They also run without a visible window or tray icon, so they never look like a second MoonlightC on the screen.
 const testRun = !app.isPackaged && !!process.env.MOONC_E2E_USER_DATA;
 if (testRun) app.setPath("userData", process.env.MOONC_E2E_USER_DATA);
-health.guard({ packaged: app.isPackaged && !testRun });
 // Admin mode: Windows doesn't pass the usual "already running" message from a normal program to MoonlightC running as
 // administrator, so that copy also listens on this PC (random port + secret, in a file in your own app folder).
 const relayFile = () => path.join(app.getPath("userData"), "instance.json");
 const secondCopy = !app.requestSingleInstanceLock();
+// Only the copy that stays. A copy about to quit could tear the watchdog down mid-load, which crashes that copy.
+if (!secondCopy && !process.argv.includes("--quit")) health.guard({ packaged: app.isPackaged && !testRun });
 if (secondCopy) {
   try {
     const { port, token } = JSON.parse(fs.readFileSync(relayFile(), "utf8"));

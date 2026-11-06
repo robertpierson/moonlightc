@@ -65,13 +65,16 @@ Write-Output "--- inside real Electron, with the watchdog thread running ---"
 OpenBox $file
 $env:OUT = "$root\out\electron"; New-Item -ItemType Directory -Force $env:OUT | Out-Null
 $electron = & $node -e "process.stdout.write(require('$($root -replace '\\','/')/apps/desktop/node_modules/electron'))"
-Normal "`"$electron`" `"$root\apps\desktop\pin-helper\ci-electron.mjs`""
+"electron at: $electron"
+Normal "`"$electron`" --no-sandbox `"$root\apps\desktop\pin-helper\ci-electron.mjs`"" | Select-Object -Last 12
 Start-Sleep 3
 $e = Get-Content "$env:OUT\electron.json" -ErrorAction SilentlyContinue
 "electron: $e"
 $got = if (Test-Path $file) { Get-Content $file } else { 'box still open' }
 "what the box received: $got"
-if ($e -notmatch '"inFront":true,"typed":true,"enter":true') { $fails += "electron route: $e" }
+if ("$e" -notmatch '"inFront":true,"typed":true,"enter":true') { $fails += "electron route: $e" }
+Get-Process CredentialUIBroker -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+Start-Sleep 2
 if ($got -notmatch 'typed=electronuser\|') { $fails += "electron box received: $got" }
 if (Select-String -Quiet -Path "$env:OUT\app-health.log" -Pattern "can't let go|error:" -ErrorAction SilentlyContinue) { $fails += 'errors in the app log' }
 
