@@ -7,7 +7,8 @@ import { execFile, exec as runShell } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { captureJpeg, hold, releaseAll, runAction, screenPixels } from "./computer.mjs";
+import { captureJpeg, hold, pointer, releaseAll, runAction, screenPixels } from "./computer.mjs";
+import { closeBox, sendToBox } from "./credential-box.mjs";
 
 const IDLE_MS = 15 * 60_000;
 const MAX_FILE = 25 * 1024 * 1024;
@@ -94,6 +95,7 @@ export function end(clientId, reason = "disconnected") {
     audit("end", { clientId: id, name: s.name, reason });
     releaseAll();
   }
+  if (!sessions.size) closeBox();
   if (!watching()) {
     overlay?.destroy();
     overlay = undefined;
@@ -261,6 +263,12 @@ export async function input(clientId, a) {
     const s = screenPixels();
     return { x: Math.round(a.nx * (s.width - 1)), y: Math.round(a.ny * (s.height - 1)) };
   };
+  // Windows' own PIN box ignores normal apps, so it goes through the helper. The log says that happened, never what was typed.
+  const position = () => (frac(a.nx) && frac(a.ny) ? px() : typeof a.x === "number" ? { x: Math.round(a.x * scale), y: Math.round(a.y * scale) } : pointer());
+  if (await sendToBox(a, position)) {
+    audit("input", { clientId, action: "credential box" });
+    return { ok: true };
+  }
   // Game mode and dragging send many small events; they skip the activity log (it would be noise). A press or
   // release with a position happens there (press, move, release = dragging).
   if (HOLDS.has(a.action)) {

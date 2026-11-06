@@ -54,6 +54,7 @@ contextBridge.exposeInMainWorld("moonc", {
     setKeepRunning: (on) => invoke("settings:keepRunning", on),
     setupWake: () => invoke("setup:wake"),
     setupAutoSignIn: () => invoke("setup:autoSignIn"),
+    setPinHelper: (on) => invoke("setup:pinHelper", on),
     adminStatus: () => invoke("setup:adminStatus"),
     setupStatus: () => invoke("setup:status"),
     wallpaper: () => invoke("system:wallpaper"),

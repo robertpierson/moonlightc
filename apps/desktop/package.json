@@ -12,7 +12,7 @@
     "bundle-web": "node scripts/bundle-web.mjs",
     "dist": "pnpm bundle-web && electron-builder --publish never",
     "typecheck": "tsc --noEmit -p .",
-    "test": "node --test src/safety.test.mjs"
+    "test": "node --test src/safety.test.mjs src/credential-box.test.mjs"
   },
   "dependencies": {
     "@jitsi/robotjs": "0.6.24",
@@ -58,7 +58,8 @@
     "asarUnpack": [
       "**/node_modules/node-pty/**",
       "**/node_modules/koffi/**",
-      "src/watchdog.cjs"
+      "src/watchdog.cjs",
+      "src/MoonlightCInput.cs"
     ],
     "protocols": [
       {

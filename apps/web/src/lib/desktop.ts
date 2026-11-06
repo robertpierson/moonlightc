@@ -100,8 +100,9 @@ export interface MooncBridge {
     keepAwake(on: boolean): Promise<void>;
     setupWake(): Promise<{ ok: boolean; error?: string }>;
     setupAutoSignIn(): Promise<{ ok: boolean; error?: string }>;
+    setPinHelper(on: boolean): Promise<{ ok: boolean; error?: string }>;
     adminStatus(): Promise<{ admin: boolean }>;
-    setupStatus(): Promise<{ away: boolean; autoSignIn: boolean }>;
+    setupStatus(): Promise<{ away: boolean; autoSignIn: boolean; pinHelper: boolean }>;
     wallpaper(): Promise<{ type: string; data: string } | null>;
     setAdmin(on: boolean): Promise<{ ok: boolean; error?: string }>;
   };

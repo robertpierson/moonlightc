@@ -191,6 +191,8 @@ export function releaseAll() {
 
 /** The screen's size in the pixels the mouse uses (correct with display scaling too). */
 export const screenPixels = () => robot.getScreenSize();
+/** Where the pointer is now, in the same pixels. */
+export const pointer = () => robot.getMousePos();
 
 /** A screenshot as JPEG data (smaller, for streaming to another device). Returns the scale for runAction. */
 export async function captureJpeg(maxWidth = 1024, quality = 55) {

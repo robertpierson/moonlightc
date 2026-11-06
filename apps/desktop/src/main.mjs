@@ -7,6 +7,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import * as computer from "./computer.mjs";
 import * as remote from "./remote.mjs";
+import * as credentialBox from "./credential-box.mjs";
 import * as health from "./health.mjs";
 import { scanKeys } from "./keyscan.mjs";
 import { hardware } from "./hardware.mjs";
@@ -515,7 +516,15 @@ const regValue = (key, name) =>
 handle("setup:status", async () => ({
   away: (await regValue("HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate\\AU", "NoAutoRebootWithLoggedOnUsers")) === "0x1",
   autoSignIn: (await regValue("HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon", "AutoAdminLogon")) === "1",
+  pinHelper: credentialBox.installed(),
 }));
+// Typing into Windows' own PIN box from another device: one "Yes" at this PC to turn it on or off.
+handle("setup:pinHelper", async (_e, on) => {
+  if (!on) credentialBox.closeBox();
+  const r = await elevated(on ? credentialBox.installScript() : credentialBox.removeScript());
+  if (!r.ok) return r;
+  return credentialBox.installed() === !!on ? r : { ok: false, error: on ? "Windows couldn't finish setting it up." : "Windows couldn't finish removing it." };
+});
 handle("setup:admin", async (_e, on) => {
   const exe = process.execPath;
   const r = await elevated(

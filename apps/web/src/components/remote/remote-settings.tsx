@@ -22,7 +22,7 @@ export function RemoteSettings({ onSetup }: { onSetup: () => void }) {
   const [home, setHome] = useState(false);
   const [trust, setTrust] = useState(false);
   const [admin, setAdmin] = useState(false);
-  const [done, setDone] = useState({ away: false, autoSignIn: false });
+  const [done, setDone] = useState({ away: false, autoSignIn: false, pinHelper: false });
   const [sessions, setSessions] = useState<RemoteSession[]>([]);
   const [grants, setGrants] = useState<{ clientId: string; name: string; tiers: string[] }[]>([]);
   const [log, setLog] = useState<{ at: string; action: string; name?: string }[]>([]);
@@ -96,6 +96,30 @@ export function RemoteSettings({ onSetup }: { onSetup: () => void }) {
             Set up signing in by itself
           </Button>
         </div>
+
+        {navigator.userAgent.includes("Windows") && (
+          <div className="grid gap-3 rounded-xl border p-4">
+            <div className="grid gap-0.5">
+              <span className="font-medium">Type my PIN from my other devices {done.pinHelper && <span className="text-sm font-normal text-emerald-600">(on)</span>}</span>
+              <span className="text-sm text-muted-foreground">
+                Windows ignores remote typing in its own PIN and password boxes, like the one a website&apos;s passkey opens. This adds a small helper with administrator rights that can only type into those boxes. Anyone who gets into your remote control could then use them too, if they know your PIN. Do this at the PC: Windows asks &quot;Yes&quot;, and remote control can&apos;t see that question.
+              </span>
+            </div>
+            <Button
+              variant="secondary"
+              className="justify-self-start"
+              onClick={async () => {
+                const on = !done.pinHelper;
+                const r = await b.settings.setPinHelper(on);
+                if (r.ok) toast.success(on ? "You can type your PIN from your other devices." : "Turned off.");
+                else toast.error(r.error ?? "Didn't work.");
+                b.settings.setupStatus().then(setDone).catch(() => {});
+              }}
+            >
+              {done.pinHelper ? "Turn off" : "Turn on"}
+            </Button>
+          </div>
+        )}
 
         {/* Admin mode is retired: Windows won't let an app with administrator rights capture the screen, so live video
             and pictures stopped working. Only the way out is shown. */}
