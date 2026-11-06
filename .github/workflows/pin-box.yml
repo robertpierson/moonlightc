@@ -1,0 +1,30 @@
+name: Windows PIN box
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [apps/desktop/pin-helper/**, .github/workflows/pin-box.yml]
+
+jobs:
+  box:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Facts and build
+        shell: pwsh
+        run: |
+          "UAC EnableLUA=" + (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System').EnableLUA
+          [Environment]::OSVersion.VersionString
+          $csc = "$env:WINDIR\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
+          & $csc /nologo /target:exe /out:Probe.exe /r:System.Windows.Forms.dll apps\desktop\pin-helper\Probe.cs
+          & $csc /nologo /target:winexe /out:MoonlightCInput.exe apps\desktop\pin-helper\MoonlightCInput.cs
+          Get-Item Probe.exe, MoonlightCInput.exe | Select-Object Name, Length
+      - name: Run the boxes
+        shell: pwsh
+        run: pwsh -NoProfile -File apps/desktop/pin-helper/ci-test.ps1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pin-box
+          path: out/
