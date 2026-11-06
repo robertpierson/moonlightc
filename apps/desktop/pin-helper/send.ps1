@@ -1,5 +1,6 @@
 # CI only: what MoonlightC does at normal rights. Asks Windows to start the helper, then talks to it over the pipe.
 param($lines)
+Start-Sleep 1 # the last helper is still closing; Windows ignores a start while it runs
 schtasks /run /tn "MoonlightC PIN helper" | Out-Null
 "schtasks exit $LASTEXITCODE"
 Start-Sleep 2

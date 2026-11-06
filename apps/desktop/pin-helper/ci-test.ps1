@@ -17,11 +17,11 @@ function Shot($name) {
 # Runs a command at normal rights, the way MoonlightC runs on a real PC, and waits for it.
 function Normal($cmd) {
   Remove-Item "$root\out\n.txt" -ErrorAction SilentlyContinue
-  & .\Probe.exe medium "cmd /c $cmd > `"$root\out\n.txt`" 2>&1" 30000
+  & .\Probe.exe medium "cmd /c `"$cmd > `"$root\out\n.txt`" 2>&1`"" 30000
   if (Test-Path "$root\out\n.txt") { Get-Content "$root\out\n.txt" }
 }
 $node = (Get-Command node).Source
-function Route($routeArgs) { Normal "`"`"$node`" `"$root\apps\desktop\pin-helper\ci-route.mjs`" $routeArgs`"" }
+function Route($routeArgs) { Normal "`"$node`" `"$root\apps\desktop\pin-helper\ci-route.mjs`" $routeArgs" }
 function Pipe($lines) { Normal "powershell -NoProfile -ExecutionPolicy Bypass -File `"$root\apps\desktop\pin-helper\send.ps1`" -lines `"$($lines -join ',')`"" }
 function OpenBox($file) {
   Remove-Item $file -ErrorAction SilentlyContinue
@@ -35,9 +35,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$root\install.ps1"
 $exe = "$env:ProgramFiles\MoonlightC PIN Helper\MoonlightCInput.exe"
 if (-not (Test-Path $exe)) { $fails += 'helper was not built' }
 if (Test-Path "$env:ProgramFiles\MoonlightC PIN Helper\MoonlightCInput.cs") { $fails += 'source left behind' }
-$w = Normal "copy /y `"$env:WINDIR\win.ini`" `"$env:ProgramFiles\MoonlightC PIN Helper\planted.exe`""
-"normal program writing into the helper's folder: $w"
-if (Test-Path "$env:ProgramFiles\MoonlightC PIN Helper\planted.exe") { $fails += 'a normal program could write to the helper folder' }
+# This runner's "normal" test token keeps its admin group, so the folder's permissions are read instead of tried.
+$writers = (Get-Acl "$env:ProgramFiles\MoonlightC PIN Helper").Access | Where-Object { $_.AccessControlType -eq 'Allow' -and "$($_.FileSystemRights)" -match 'Write|Modify|FullControl|CreateFiles|AppendData' -and "$($_.IdentityReference)" -notmatch 'SYSTEM|Administrators|TrustedInstaller|CREATOR OWNER' }
+"who else can change the helper's folder: $(if ($writers) { $writers.IdentityReference -join ', ' } else { 'nobody' })"
+if ($writers) { $fails += "others can write to the helper folder: $($writers.IdentityReference -join ', ')" }
 
 Write-Output "--- the credential box, opened at normal rights ---"
 $file = "$root\out\typed.txt"

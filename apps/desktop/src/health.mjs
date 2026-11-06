@@ -29,7 +29,7 @@ export function guard({ packaged, exe = process.execPath, after = 90_000 }) {
   // Electron's default for an unexpected error is a blocking error box: the whole app stops until someone at the PC
   // clicks OK. Log it and keep going instead.
   process.on("uncaughtException", (e) => log(`error: ${e?.stack ?? e}`));
-  process.on("unhandledRejection", (e) => log(`unhandled: ${e?.stack ?? e}`));
+  process.on("unhandledRejection", (e) => log(`unhandled: ${/** @type {Error} */ (e)?.stack ?? e}`));
   app.on("child-process-gone", (_e, d) => log(`helper gone: ${d.type} ${d.reason} (${d.exitCode})`));
   if (!packaged) return;
   setInterval(() => Atomics.add(counter, 0, 1), 1000);
