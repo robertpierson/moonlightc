@@ -151,3 +151,9 @@ Why: the owner asked for code-free access in emergencies and for a location lock
 What: if a remote device holds a mouse button and the main thread goes silent for 3 s, the watchdog thread sends the mouse-up.
 Why: a press on the app's own X or title bar deadlocks the main thread (reproduced on CI). It covers every native click loop, with about 10 lines.
 Alternatives: moving input to a separate process with a direct line from the page (the right design if more input needs to survive a stuck main thread; much larger change); a frameless window (still has drag loops and menus).
+
+## 2026-11-06: Small admin helper for Windows' credential box, not admin mode
+What: an opt-in helper with administrator rights sends a remote device's input to CredentialUIBroker.exe only. It lives in Program Files so a normal program can't replace it, and MoonlightC stays at normal rights.
+Why: the owner wants to type their PIN into a passkey prompt remotely. Windows ignores normal apps there since January 2026; KB5080542 lists elevated apps and UIAccess as what's still accepted. Admin mode already failed because an elevated app can't capture the screen live.
+Risk accepted by turning it on: Microsoft made this change on purpose and calls elevation a temporary mitigation for controlled setups. Anyone in remote control can type into that box, though they'd still need the PIN. The PIN is never stored, sent to the helper only while typed, and never logged. The AI's computer use can't reach it.
+Alternatives: UIAccess helper (needs a trusted code-signing chain; a paid certificate or a self-made root on the PC); SYSTEM service (1-2 days, much more power than this needs); a stored PIN typed automatically (rejected: anyone in remote control could sign in as the owner).

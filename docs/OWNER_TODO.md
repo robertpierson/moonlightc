@@ -2,6 +2,13 @@
 
 Do them in order. When done, tell Claude "done, continue".
 
+## Try this: type your PIN from your Chromebook (0.6.61, 2 minutes)
+1. Sitting at the PC, open MoonlightC, go to **Settings > Remote control**, find **Type my PIN from my other devices** and click **Turn on**.
+2. Click **Yes** in the Windows box. A "You can type your PIN" message should appear.
+3. From the Chromebook, connect to the PC and sign in to a site with your passkey.
+4. When the Windows Security box appears, click its PIN field and type your PIN from the Chromebook. If you can't see the box, click the flashing **Windows Security** icon on the PC's taskbar first.
+5. Tell me if it worked. To undo it, click **Turn off** in the same place.
+
 ## Try this: the tray panel (0.6.60, 1 minute)
 1. Click the MoonlightC moon icon in the tray (bottom right, next to the clock; click the ^ arrow if you don't see it). A small panel should open next to it.
 2. Click anywhere else, or press Esc. It should hide.

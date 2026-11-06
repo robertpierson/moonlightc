@@ -1,6 +1,13 @@
 // "What's new" in Settings: recent changes in plain English, newest first. Only things that really shipped.
 export const WHATS_NEW: { version: string; date: string; items: string[] }[] = [
   {
+    version: "0.6.61",
+    date: "November 6, 2026",
+    items: [
+      "Type your PIN from another device: Windows ignores remote typing in its own PIN and password boxes, like the one a website's passkey opens. Turn this on in Settings > Remote control, at the PC, and those boxes work from your other devices.",
+    ],
+  },
+  {
     version: "0.6.60",
     date: "November 5, 2026",
     items: [
