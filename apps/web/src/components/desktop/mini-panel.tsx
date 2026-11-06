@@ -135,7 +135,7 @@ export function MiniPanel() {
         <label className="flex items-center justify-between gap-2 rounded-lg border p-3">
           <span>
             <span className="block font-medium">Always on</span>
-            <span className="block text-xs text-muted-foreground">Keeps the window open. The X won't close it.</span>
+            <span className="block text-xs text-muted-foreground">Keeps the window open. The X won&apos;t close it.</span>
           </span>
           <Switch
             aria-label="Always on"
