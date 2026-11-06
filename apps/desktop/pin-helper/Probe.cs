@@ -3,6 +3,7 @@
 //   Probe passkey         the passkey box a website gets, through webauthn.dll
 //   Probe inspect         prints the window in front: program, integrity, title, class, capture setting
 //   Probe type <text>     SendInput at this process's rights, the way a normal remote-control app types
+//   Probe medium <cmd> [waitMs]   starts <cmd> at normal (medium) rights, the way a program runs on a normal PC
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -29,6 +30,15 @@ static class Probe {
   [DllImport("advapi32.dll")] static extern bool GetTokenInformation(IntPtr t, int c, IntPtr b, int n, out int r);
   [DllImport("advapi32.dll")] static extern IntPtr GetSidSubAuthority(IntPtr s, uint i);
   [DllImport("advapi32.dll")] static extern IntPtr GetSidSubAuthorityCount(IntPtr s);
+
+  [StructLayout(LayoutKind.Sequential)] struct SID_AND_ATTRIBUTES { public IntPtr Sid; public uint Attributes; }
+  [StructLayout(LayoutKind.Sequential)] struct STARTUPINFO { public int cb; public IntPtr r1, desktop, title; public int x, y, w, h, cx, cy, fill, flags; public short show, r2; public IntPtr r3, hin, hout, herr; }
+  [StructLayout(LayoutKind.Sequential)] struct PROCESS_INFORMATION { public IntPtr hProcess, hThread; public int pid, tid; }
+  [DllImport("advapi32.dll", SetLastError = true)] static extern bool DuplicateTokenEx(IntPtr t, uint access, IntPtr attrs, int level, int type, out IntPtr n);
+  [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)] static extern bool ConvertStringSidToSid(string s, out IntPtr sid);
+  [DllImport("advapi32.dll", SetLastError = true)] static extern bool SetTokenInformation(IntPtr t, int c, ref SID_AND_ATTRIBUTES i, int n);
+  [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)] static extern bool CreateProcessAsUser(IntPtr t, string app, StringBuilder cmd, IntPtr pa, IntPtr ta, bool inherit, uint flags, IntPtr env, string dir, ref STARTUPINFO si, out PROCESS_INFORMATION pi);
+  [DllImport("kernel32.dll")] static extern uint WaitForSingleObject(IntPtr h, uint ms);
 
   [StructLayout(LayoutKind.Sequential)] struct KEYBDINPUT { public ushort wVk, wScan; public uint dwFlags, time; public IntPtr extra; public long pad; }
   [StructLayout(LayoutKind.Sequential)] struct INPUT { public uint type; public KEYBDINPUT ki; }
@@ -82,6 +92,19 @@ static class Probe {
         uint aff; GetWindowDisplayAffinity(w, out aff);
         Console.WriteLine("front: " + (got ? name.ToString() : "pid " + pid) + " integrity=" + (p != IntPtr.Zero ? Integrity(p) : "?") + " title=\"" + title + "\" class=" + cls + " captureAffinity=" + aff);
         Console.WriteLine("me: integrity=" + Integrity(System.Diagnostics.Process.GetCurrentProcess().Handle));
+        return 0;
+      }
+      case "medium": {
+        IntPtr me, dup, sid;
+        OpenProcessToken(System.Diagnostics.Process.GetCurrentProcess().Handle, 0x000B, out me); // duplicate, assign, query
+        DuplicateTokenEx(me, 0x02000000, IntPtr.Zero, 2, 1, out dup);
+        ConvertStringSidToSid("S-1-16-8192", out sid);
+        var label = new SID_AND_ATTRIBUTES { Sid = sid, Attributes = 0x20 };
+        if (!SetTokenInformation(dup, 25, ref label, Marshal.SizeOf(label) + 12)) Console.WriteLine("label failed " + Marshal.GetLastWin32Error());
+        var si = new STARTUPINFO(); si.cb = Marshal.SizeOf(si);
+        PROCESS_INFORMATION pi;
+        if (!CreateProcessAsUser(dup, null, new StringBuilder(a[1]), IntPtr.Zero, IntPtr.Zero, false, 0, IntPtr.Zero, null, ref si, out pi)) { Console.WriteLine("start failed " + Marshal.GetLastWin32Error()); return 1; }
+        if (a.Length > 2) WaitForSingleObject(pi.hProcess, uint.Parse(a[2]));
         return 0;
       }
       case "type": {
