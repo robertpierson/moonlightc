@@ -65,6 +65,7 @@ Write-Output "--- inside real Electron, with the watchdog thread running ---"
 OpenBox $file
 $env:OUT = "$root\out\electron"; New-Item -ItemType Directory -Force $env:OUT | Out-Null
 $electron = & $node -e "process.stdout.write(require('$($root -replace '\\','/')/apps/desktop/node_modules/electron'))"
+$electron = [regex]::Match("$electron", '[A-Za-z]:\\.*electron\.exe').Value # it may print a download note first
 "electron at: $electron"
 Normal "`"$electron`" --no-sandbox `"$root\apps\desktop\pin-helper\ci-electron.mjs`"" | Select-Object -Last 12
 Start-Sleep 3
