@@ -29,6 +29,21 @@ function OpenBox($file) {
   Start-Sleep 6
 }
 
+Write-Output "--- Keep this PC awake: what Windows itself reports ---"
+$env:OUT = "$root\out\awake"; New-Item -ItemType Directory -Force $env:OUT | Out-Null
+$locator = & $node -e "process.stdout.write(require('$($root -replace '\\','/')/apps/desktop/node_modules/electron'))"
+$electronExe = [regex]::Match("$locator", '[A-Za-z]:\\.*electron\.exe').Value
+$awake = Start-Process $electronExe -ArgumentList "--no-sandbox", "`"$root\apps\desktop\pin-helper\ci-awake.mjs`"" -PassThru
+Start-Sleep 6
+$on = powercfg /requests | Out-String
+Start-Sleep 10
+$off = powercfg /requests | Out-String
+Stop-Process $awake -Force -ErrorAction SilentlyContinue
+"while on, Windows lists electron: $($on -match 'electron')"
+"after off, Windows lists electron: $($off -match 'electron')"
+if ($on -notmatch 'electron') { $fails += 'staying awake was not registered with Windows' }
+if ($off -match 'electron') { $fails += 'staying awake did not turn off' }
+
 Write-Output "--- turn on, exactly as the app's button does ---"
 & $node --input-type=module -e "import('file:///$($root -replace '\\','/')/apps/desktop/src/credential-box.mjs').then(m => process.stdout.write(m.installScript()))" | Set-Content "$root\install.ps1"
 powershell -NoProfile -ExecutionPolicy Bypass -File "$root\install.ps1"

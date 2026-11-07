@@ -673,7 +673,8 @@ handle("secrets:set", (_e, key, value) => {
   else all[key] = safeStorage.encryptString(value).toString("base64");
   fs.writeFileSync(secretsFile(), JSON.stringify(all), { mode: 0o600 });
 });
-handle("settings:get", () => ({ openAtLogin: app.getLoginItemSettings().openAtLogin, keepRunning: health.keepRunning() }));
+handle("settings:get", () => ({ openAtLogin: app.getLoginItemSettings().openAtLogin, keepRunning: health.keepRunning(), stayAwake: health.stayAwakeOn() }));
+handle("settings:stayAwake", (_e, on) => health.setStayAwake(!!on));
 handle("settings:keepRunning", (_e, on) => {
   const now = health.setKeepRunning(!!on);
   if (now && !win.isVisible()) win.showInactive();
@@ -767,6 +768,14 @@ app.whenReady().then(async () => {
   if (secondCopy) return;
   listenForSecondCopy().catch(() => {});
   if (selftest) runSelftest().catch(() => {});
+  if (!testRun) health.applyStayAwake();
+  // So "why did it stop?" and "why did the PC sleep?" have answers next time.
+  if (app.isPackaged && !testRun) {
+    health.log(`started ${app.getVersion()}${startHidden ? " (hidden)" : ""}`);
+    app.on("before-quit", () => health.log("quitting"));
+    powerMonitor.on("suspend", () => health.log("PC going to sleep"));
+    powerMonitor.on("resume", () => health.log("PC woke up"));
+  }
   powerMonitor.on("lock-screen", () => remote.setLocked(true));
   powerMonitor.on("unlock-screen", () => remote.setLocked(false));
   yieldCpu();

@@ -94,7 +94,8 @@ export interface MooncBridge {
     quit(): Promise<void>;
   };
   settings: {
-    get(): Promise<{ openAtLogin: boolean; keepRunning: boolean }>;
+    get(): Promise<{ openAtLogin: boolean; keepRunning: boolean; stayAwake?: boolean }>;
+    setStayAwake(on: boolean): Promise<boolean>;
     setKeepRunning(on: boolean): Promise<boolean>;
     setOpenAtLogin(on: boolean): Promise<void>;
     keepAwake(on: boolean): Promise<void>;

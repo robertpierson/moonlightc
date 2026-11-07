@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: [apps/desktop/src/MoonlightCInput.cs, apps/desktop/src/credential-box.mjs, apps/desktop/pin-helper/**, .github/workflows/pin-box.yml]
+    paths: [apps/desktop/src/MoonlightCInput.cs, apps/desktop/src/credential-box.mjs, apps/desktop/src/health.mjs, apps/desktop/pin-helper/**, .github/workflows/pin-box.yml]
 
 jobs:
   box:

@@ -51,6 +51,7 @@ contextBridge.exposeInMainWorld("moonc", {
     get: () => invoke("settings:get"),
     setOpenAtLogin: (on) => invoke("settings:openAtLogin", on),
     keepAwake: (on) => invoke("settings:keepAwake", on),
+    setStayAwake: (on) => invoke("settings:stayAwake", on),
     setKeepRunning: (on) => invoke("settings:keepRunning", on),
     setupWake: () => invoke("setup:wake"),
     setupAutoSignIn: () => invoke("setup:autoSignIn"),

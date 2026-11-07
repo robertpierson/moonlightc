@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { gathered, forgetRelay, hifiAudio, iceServers, isOnline, noRelayReason, routeKinds, whereAmI, joinChannel, leaveChannel, RemoteClient, subscribed, TIER_LABELS, uploadToPc, type Tier } from "@/lib/remote";
 import { desktop } from "@/lib/desktop";
 import { supabase } from "@/lib/supabase/client";
+import { relayInUse, selectedPair } from "@/lib/relay-stats";
 import { useDevices } from "./your-computers";
 
 type Tab = "screen" | "terminal" | "files";
@@ -212,14 +213,14 @@ function Screen({ client, control, mini, files }: { client: RemoteClient; contro
       if (!r) return;
       const all = [...r.values()] as Record<string, unknown>[];
       const video = all.find((x) => x.type === "inbound-rtp" && x.kind === "video");
-      const pair = all.find((x) => x.type === "candidate-pair" && (x.nominated || x.selected) && x.state === "succeeded");
-      const local = pair && all.find((x) => x.id === pair.localCandidateId);
+      const pair = selectedPair(all);
+      const relay = relayInUse(all);
       // Each minute on the relay counts toward its free monthly amount (see /api/turn).
-      if (local?.candidateType === "relay" && ++relaySeconds.current % 60 === 0) void supabase().rpc("add_relay_minute");
+      if (relay && ++relaySeconds.current % 60 === 0) void supabase().rpc("add_relay_minute");
       setStats({
         fps: typeof video?.framesPerSecond === "number" ? Math.round(video.framesPerSecond) : undefined,
         ms: typeof pair?.currentRoundTripTime === "number" ? Math.round(pair.currentRoundTripTime * 1000) : undefined,
-        relay: local?.candidateType === "relay",
+        relay,
       });
     }, 1000);
     return () => clearInterval(t);

@@ -157,3 +157,8 @@ What: an opt-in helper with administrator rights sends a remote device's input t
 Why: the owner wants to type their PIN into a passkey prompt remotely. Windows ignores normal apps there since January 2026; KB5080542 lists elevated apps and UIAccess as what's still accepted. Admin mode already failed because an elevated app can't capture the screen live.
 Risk accepted by turning it on: Microsoft made this change on purpose and calls elevation a temporary mitigation for controlled setups. Anyone in remote control can type into that box, though they'd still need the PIN. The PIN is never stored, sent to the helper only while typed, and never logged. The AI's computer use can't reach it.
 Alternatives: UIAccess helper (needs a trusted code-signing chain; a paid certificate or a self-made root on the PC); SYSTEM service (1-2 days, much more power than this needs); a stored PIN typed automatically (rejected: anyone in remote control could sign in as the owner).
+
+## 2026-11-07: Keep this PC awake is a switch, off by default
+What: a setting that stops Windows sleeping the PC by itself while MoonlightC is open. The screen may still turn off.
+Why: the owner's PC slept while they wanted it reachable. MoonlightC starts with Windows and hides, so "open" can mean always; that would drain laptops if it were on for everyone.
+Alternatives: changing the Windows power plan (changes a system setting, and stays after the app closes); only the existing remote-control blocker (depends on the page having loaded).

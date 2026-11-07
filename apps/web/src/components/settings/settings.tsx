@@ -291,10 +291,12 @@ function General() {
   const memory = useStore((s) => !!s.memory?.enabled);
   const [openAtLogin, setOpenAtLogin] = useState<boolean>();
   const [keepRunning, setKeepRunning] = useState<boolean>();
+  const [stayAwake, setStayAwake] = useState<boolean>();
   useEffect(() => {
     desktop()?.settings.get().then((s) => {
       setOpenAtLogin(s.openAtLogin);
       setKeepRunning(s.keepRunning);
+      setStayAwake(s.stayAwake);
     });
   }, []);
   const themes = [
@@ -369,6 +371,18 @@ function General() {
               onCheckedChange={(v) => {
                 setKeepRunning(v);
                 desktop()?.settings.setKeepRunning(v);
+              }}
+            />
+          </Row>
+        )}
+        {stayAwake !== undefined && (
+          <Row label="Keep this PC awake" hint="While MoonlightC is open, Windows won't put this PC to sleep by itself. The screen can still turn off, and you can still sleep or shut down the PC yourself. On a laptop this uses more battery.">
+            <Switch
+              aria-label="Keep this PC awake"
+              checked={stayAwake}
+              onCheckedChange={(v) => {
+                setStayAwake(v);
+                desktop()?.settings.setStayAwake(v);
               }}
             />
           </Row>

@@ -1,6 +1,6 @@
 // Keeps MoonlightC answering while you're away: nothing may freeze it, and if something does, it heals itself.
 // Everything that happens is written to app-health.log in the app's folder (no message content, no keys).
-import { app } from "electron";
+import { app, powerSaveBlocker } from "electron";
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
@@ -59,6 +59,32 @@ export function watchWindow(win) {
     }, 30_000);
   });
   wc.on("responsive", () => clearTimeout(hung));
+}
+
+// "Keep this PC awake" (Settings > General, off by default): Windows won't put the PC to sleep while MoonlightC is open.
+// Runs from here, not the page, so it holds even if the page hasn't loaded. The screen can still turn off, and you can
+// still sleep or shut down the PC yourself.
+const awakeFile = () => path.join(app.getPath("userData"), "stay-awake.json");
+export const stayAwakeOn = () => {
+  try {
+    return JSON.parse(fs.readFileSync(awakeFile(), "utf8")).on === true;
+  } catch {
+    return false;
+  }
+};
+let blocker;
+export function applyStayAwake() {
+  const on = stayAwakeOn();
+  if (on && blocker === undefined) blocker = powerSaveBlocker.start("prevent-app-suspension");
+  if (!on && blocker !== undefined) {
+    powerSaveBlocker.stop(blocker);
+    blocker = undefined;
+  }
+}
+export function setStayAwake(on) {
+  fs.writeFileSync(awakeFile(), JSON.stringify({ on: !!on }));
+  applyStayAwake();
+  return stayAwakeOn();
 }
 
 // "Always on" (Settings > General, off by default): if MoonlightC is closed, for any reason, it comes back. A small

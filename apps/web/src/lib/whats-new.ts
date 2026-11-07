@@ -1,6 +1,14 @@
 // "What's new" in Settings: recent changes in plain English, newest first. Only things that really shipped.
 export const WHATS_NEW: { version: string; date: string; items: string[] }[] = [
   {
+    version: "0.6.62",
+    date: "November 7, 2026",
+    items: [
+      "Keep this PC awake (Settings > General, off by default): while MoonlightC is open, Windows won't put the PC to sleep by itself.",
+      "The relay count in the tray panel now counts time when either device uses the relay, and shows minutes under an hour instead of 0.",
+    ],
+  },
+  {
     version: "0.6.61",
     date: "November 6, 2026",
     items: [

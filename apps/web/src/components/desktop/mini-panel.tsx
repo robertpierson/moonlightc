@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { desktop } from "@/lib/desktop";
 import { SECURITY_LEVELS } from "@/lib/remote";
 import { updateNow, useStore } from "@/lib/store";
+import { relayUsedLabel } from "@/lib/relay-stats";
 import { supabase, useUser } from "@/lib/supabase/client";
 
 const VIEWS = [
@@ -123,7 +124,7 @@ export function MiniPanel() {
             {relayMinutes !== undefined && (
               <>
                 <dt>Relay this month</dt>
-                <dd className="text-right">{Math.round(relayMinutes / 60)} of 200 hours</dd>
+                <dd className="text-right">{relayUsedLabel(relayMinutes)}</dd>
               </>
             )}
           </dl>
