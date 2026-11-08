@@ -2,20 +2,15 @@
 
 import { Moon, Sun } from "lucide-react";
 import { ThemeProvider as NextThemes, useTheme } from "next-themes";
-import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import { sunElevation, sunLook, sunPlace } from "@/lib/sun";
 import { Button } from "@/components/ui/button";
 
-/** The public website (home, download, privacy, terms) is always light; only the app has themes. */
-export const isSitePage = (path: string) => path === "/" || ["/download", "/privacy", "/terms"].some((p) => path === p || path.startsWith(`${p}/`));
-
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const site = isSitePage(usePathname() ?? "");
   return (
     // The app starts dark (easier on the eyes at night); people can switch in Settings > Appearance.
-    <NextThemes attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange forcedTheme={site ? "light" : undefined}>
-      {!site && <FollowTheSun />}
+    <NextThemes attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
+      <FollowTheSun />
       {children}
     </NextThemes>
   );
