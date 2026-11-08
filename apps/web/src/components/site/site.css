@@ -1,128 +1,297 @@
-/* Marketing site: a moonrise over deep, glossy navy. Always this look, whatever the device's color mode. */
+/* Marketing site: white and brushed silver, navy ink. Always light, whatever the device's color mode
+   (the web app has its own themes; this site doesn't follow them). */
 .site {
-  color-scheme: dark;
-  --night: #040b1e; /* page */
-  --night-2: rgb(10 24 60 / 0.72); /* panels */
-  --silver: #e8eeff; /* ink */
-  --mist: #a3b3d9;
-  --tide: #7cb4ff;
-  --line: rgb(148 178 255 / 0.16);
-  --moon-lit: #eef3ff;
-  --moon-dark: #0b1a45;
-  --g-brand: linear-gradient(115deg, #0c2a74 0%, #1d4fd8 48%, #4aa3ff 100%);
-  --g-soft: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 55%, #93c5fd 100%);
-  --g-sky:
-    radial-gradient(55% 60% at 8% 0%, #12306e 0%, transparent 70%),
-    radial-gradient(45% 55% at 92% 8%, #0f2c66 0%, transparent 70%),
-    radial-gradient(60% 55% at 75% 100%, #0b2257 0%, transparent 72%),
-    radial-gradient(40% 40% at 30% 95%, #10285f 0%, transparent 70%),
-    linear-gradient(180deg, #050d24 0%, #071433 100%);
-  background: var(--night);
-  color: var(--silver);
+  color-scheme: light;
+  --paper: #ffffff;
+  --silver-1: #f5f7fa; /* panels */
+  --silver-2: #e7ebf1;
+  --silver-3: #c9d1dd;
+  --ink: #0b1530; /* headings */
+  --mist: #4f5a74; /* body text */
+  --faint: #687187;
+  --tide: #1d4fd8; /* links, accents */
+  --line: rgb(11 21 48 / 0.09);
+  --moon-lit: #ffffff;
+  --moon-dark: #aab5c9;
+  --chrome: linear-gradient(180deg, #ffffff 0%, #eef1f6 55%, #dde2ea 100%);
+  --g-brand: linear-gradient(180deg, #2a5bea 0%, #1640c4 55%, #0e2f99 100%);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
 }
-.site .display {
-  font-family: var(--font-display), var(--font-geist-sans), sans-serif;
-  font-stretch: 85%;
+.site h1,
+.site h2,
+.site h3 {
   letter-spacing: -0.035em;
-  line-height: 0.92;
+  font-weight: 500;
+  text-wrap: balance;
 }
-.site .sky {
-  background: var(--g-sky);
+.site p {
+  text-wrap: pretty;
 }
-/* The whole headline carries a polished-blue sheen (not one word of it). */
-.site .ink-gradient {
-  background: linear-gradient(115deg, #c9dcff 0%, #7cb4ff 45%, #e8f1ff 70%, #5b9dff 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+
+/* Header: clear over the sky, white glass once you scroll. */
+.site-header {
+  background: transparent;
+  border-bottom: 1px solid transparent;
 }
-.site .btn-moon {
+@supports (animation-timeline: scroll()) {
+  .site-header {
+    animation: head linear both;
+    animation-timeline: scroll(root);
+    animation-range: 0 140px;
+  }
+}
+@keyframes head {
+  to {
+    background: rgb(255 255 255 / 0.78);
+    border-bottom-color: var(--line);
+    backdrop-filter: blur(14px) saturate(1.4);
+  }
+}
+
+/* Buttons. Primary: glossy navy with a light sweep on hover. Secondary: polished silver. */
+.btn-primary,
+.btn-silver {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  font-weight: 500;
+  overflow: hidden;
+  transition:
+    transform 0.2s cubic-bezier(0.2, 0.7, 0.2, 1),
+    box-shadow 0.2s;
+}
+.btn-primary {
   background: var(--g-brand);
   color: #fff;
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.25),
-    0 10px 30px -12px rgb(29 78 216 / 0.7);
-  transition:
-    box-shadow 0.2s,
-    transform 0.2s;
+    inset 0 1px 0 rgb(255 255 255 / 0.35),
+    inset 0 -1px 0 rgb(0 0 0 / 0.2),
+    0 8px 24px -10px rgb(22 64 196 / 0.7);
 }
-.site .btn-moon:hover {
+.btn-primary::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 35%, rgb(255 255 255 / 0.35) 50%, transparent 65%);
+  transform: translateX(-120%);
+  transition: transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.btn-primary:hover::after {
+  transform: translateX(120%);
+}
+.btn-silver {
+  background: var(--chrome);
+  color: var(--ink);
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.3),
-    0 14px 34px -10px rgb(59 130 246 / 0.75);
+    inset 0 1px 0 #fff,
+    0 0 0 1px rgb(11 21 48 / 0.1),
+    0 6px 18px -10px rgb(11 21 48 / 0.35);
+}
+.btn-primary:hover,
+.btn-silver:hover {
   transform: translateY(-1px);
 }
-/* Panels: dark glass with a glossy blue edge. */
-.site .panel {
-  border: 1px solid transparent;
+.btn-primary:active,
+.btn-silver:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* Hero sky: a pale silver dawn with brushed-metal hills and the moon rising behind them. */
+.sky {
   background:
-    linear-gradient(var(--night-2), var(--night-2)) padding-box,
-    var(--g-soft) border-box;
-  backdrop-filter: blur(8px);
-  box-shadow: 0 24px 60px -36px rgb(37 99 235 / 0.55);
+    radial-gradient(60% 50% at 78% 78%, rgb(255 255 255 / 0.95), transparent 70%),
+    radial-gradient(70% 60% at 20% 0%, #c3cee2 0%, transparent 70%),
+    linear-gradient(180deg, #cdd6e6 0%, #e3e8f1 38%, #f4f6fa 70%, #ffffff 100%);
 }
-.site .wash {
+.hills {
+  will-change: transform;
+}
+@supports (animation-timeline: scroll()) {
+  .hills-back {
+    animation: drift linear both;
+    animation-timeline: scroll(root);
+    animation-range: 0 100vh;
+  }
+}
+@keyframes drift {
+  to {
+    transform: translateY(60px);
+  }
+}
+
+/* Headline: each word arrives out of a blur, one after another. */
+.word {
+  display: inline-block;
+  animation: word-in 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: calc(var(--i) * 80ms + 100ms);
+}
+@keyframes word-in {
+  from {
+    opacity: 0;
+    filter: blur(12px);
+    transform: translateY(0.35em);
+  }
+}
+.fade-up {
+  animation: fade-up 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: var(--d, 0.5s);
+}
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+}
+
+/* The app window tilts back and settles flat as it scrolls in. */
+.window-stage {
+  perspective: 1800px;
+}
+@supports (animation-timeline: view()) {
+  .tilt {
+    animation: tilt linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 45%;
+  }
+  .rise {
+    animation: rise linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 30%;
+  }
+  /* Section titles fill with ink from left to right as they scroll into view. */
+  .ink-in {
+    background: linear-gradient(90deg, var(--ink) 50%, #c2c9d6 50%) 100% 0 / 200% 100% no-repeat;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: ink linear both;
+    animation-timeline: view();
+    animation-range: entry 30% cover 50%;
+  }
+}
+@keyframes tilt {
+  from {
+    transform: rotateX(18deg) scale(0.92) translateY(-20px);
+  }
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(56px) scale(0.98);
+  }
+}
+@keyframes ink {
+  to {
+    background-position: 0 0;
+  }
+}
+
+/* Feature cards: brushed silver with a faint blue cast. */
+.card {
   background:
-    radial-gradient(35% 30% at 0% 20%, rgb(37 99 235 / 0.18), transparent 70%),
-    radial-gradient(35% 30% at 100% 50%, rgb(14 165 233 / 0.12), transparent 70%),
-    radial-gradient(35% 30% at 0% 85%, rgb(30 64 175 / 0.2), transparent 70%);
+    radial-gradient(80% 70% at 100% 0%, rgb(29 79 216 / 0.07), transparent 70%),
+    linear-gradient(180deg, #f7f9fc 0%, #edf0f5 100%);
+  box-shadow:
+    inset 0 1px 0 #fff,
+    0 0 0 1px var(--line);
 }
-.site .halo {
-  background: radial-gradient(closest-side, rgb(214 228 255 / 0.35), rgb(59 130 246 / 0.18) 45%, rgb(30 64 175 / 0.08) 75%, transparent);
-}
-.site .band {
+.card-blue {
   background:
-    radial-gradient(50% 80% at 85% 20%, rgb(147 197 253 / 0.3), transparent 70%),
-    var(--g-brand);
-  color: #fff;
+    radial-gradient(70% 60% at 20% 0%, rgb(255 255 255 / 0.18), transparent 70%),
+    linear-gradient(160deg, #3560e0 0%, #2a52d2 50%, #1b3aa8 100%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.4);
 }
-.site a:focus-visible,
-.site button:focus-visible,
-.site summary:focus-visible {
-  outline: 2px solid var(--tide);
-  outline-offset: 3px;
-  border-radius: 6px;
+
+/* Dark app pieces inside the mockups (the app itself defaults to dark). */
+.app-dark {
+  color-scheme: dark;
+  background: #0a1022;
+  color: #e6ebf5;
 }
-.site .band a:focus-visible {
-  outline-color: #fff;
+
+.caret::after {
+  content: "";
+  display: inline-block;
+  width: 0.5em;
+  height: 1em;
+  margin-left: 1px;
+  vertical-align: -0.12em;
+  background: currentColor;
+  animation: blink 1s steps(1) infinite;
 }
-.moon-canvas {
-  opacity: 0;
-  transition: opacity 0.9s ease-out;
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
 }
-.moon-canvas[data-ready],
-.moon-canvas[data-fallback] {
-  opacity: 1;
-}
-.moon-canvas[data-fallback] {
-  background: radial-gradient(circle at 40% 40%, var(--moon-lit) 0 22%, transparent 23%);
-}
+
 .marquee {
-  animation: marquee 50s linear infinite;
+  animation: marquee 45s linear infinite;
 }
 @keyframes marquee {
   to {
     transform: translateX(-50%);
   }
 }
-@supports (animation-timeline: view()) {
-  .rise {
-    animation: rise linear both;
-    animation-timeline: view();
-    animation-range: entry 0% cover 35%;
-  }
+
+/* FAQ: answers open smoothly. */
+.faq details::details-content {
+  block-size: 0;
+  overflow: clip;
+  transition:
+    block-size 0.35s cubic-bezier(0.2, 0.7, 0.2, 1),
+    content-visibility 0.35s allow-discrete;
 }
-@keyframes rise {
-  from {
-    transform: translateY(48px) scale(0.97);
-  }
+.faq details[open]::details-content {
+  block-size: auto;
 }
+.faq {
+  interpolate-size: allow-keywords;
+}
+.faq summary::-webkit-details-marker {
+  display: none;
+}
+.faq .plus {
+  transition: transform 0.3s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.faq details[open] .plus {
+  transform: rotate(45deg);
+}
+
+.moon-canvas {
+  opacity: 0;
+  transition: opacity 1.4s ease-out;
+}
+.moon-canvas[data-ready],
+.moon-canvas[data-fallback] {
+  opacity: 1;
+}
+.moon-canvas[data-fallback] {
+  background: radial-gradient(circle at 50% 50%, #fff 0 26%, transparent 27%);
+}
+
+.site a:focus-visible,
+.site button:focus-visible,
+.site summary:focus-visible {
+  outline: 2px solid var(--tide);
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .marquee,
-  .rise {
-    animation: none;
+  .site *,
+  .site *::before,
+  .site *::after {
+    animation: none !important;
+    transition: none !important;
   }
-  .site .btn-moon:hover {
-    transform: none;
+  .ink-in {
+    color: var(--ink);
+    background: none;
   }
 }

@@ -51,7 +51,7 @@ export async function share(tabId) {
   state.shared.set(tabId, Date.now());
   await save();
   await chrome.action.setBadgeText({ tabId, text: "AI" });
-  await chrome.action.setBadgeBackgroundColor({ tabId, color: "#6d28d9" });
+  await chrome.action.setBadgeBackgroundColor({ tabId, color: "#1640c4" });
   await run(tabId, { type: "banner", on: true }).catch(() => {});
   await log("share", { tabId });
 }

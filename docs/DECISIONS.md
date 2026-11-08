@@ -162,3 +162,8 @@ Alternatives: UIAccess helper (needs a trusted code-signing chain; a paid certif
 What: a setting that stops Windows sleeping the PC by itself while MoonlightC is open. The screen may still turn off.
 Why: the owner's PC slept while they wanted it reachable. MoonlightC starts with Windows and hides, so "open" can mean always; that would drain laptops if it were on for everyone.
 Alternatives: changing the Windows power plan (changes a system setting, and stays after the app closes); only the existing remote-control blocker (depends on the page having loaded).
+
+## 2026-11-08: The website is always light; the app defaults to dark
+What: home, download, privacy and terms always render light (white and silver) and ignore the app's theme. The app starts dark; people can change it.
+Why: the owner's call. People look at the site in the day and use the app at night, and white stands out against other AI sites.
+Alternatives: one theme for both (the site followed the device before); a site theme switch (owner said no).

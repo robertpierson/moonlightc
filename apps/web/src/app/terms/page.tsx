@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import { SITE_VIEWPORT } from "@/components/site/chrome";
 import { DocPage } from "@/components/site/doc-page";
 
 export const metadata: Metadata = { title: "Terms · MoonlightC" };
+export const viewport = SITE_VIEWPORT;
 
 export default function Terms() {
   return (

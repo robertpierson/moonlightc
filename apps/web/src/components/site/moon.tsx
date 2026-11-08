@@ -34,9 +34,9 @@ void main() {
     vec3 q = vec3(n.x * cos(c) - n.z * sin(c), n.y, n.x * sin(c) + n.z * cos(c));
     float maria = smoothstep(0.45, 0.7, fbm(q * 2.2));
     float craters = fbm(q * 9.0);
-    // Pearl surface: faint maria, and a lilac-to-peach sheen across the disc.
+    // Silver surface: faint maria, and a cool sheen across the disc.
     float albedo = 0.95 - maria * 0.13 + (craters - 0.5) * 0.09;
-    vec3 pearl = mix(vec3(0.91, 0.89, 1.0), vec3(1.0, 0.9, 0.86), clamp(0.5 - uv.y * 1.3 + uv.x * 0.5, 0.0, 1.0));
+    vec3 pearl = mix(vec3(0.86, 0.89, 0.95), vec3(0.98, 0.98, 1.0), clamp(0.5 - uv.y * 1.3 + uv.x * 0.5, 0.0, 1.0));
     float diff = smoothstep(-0.04, 0.35, dot(n, L));
     col = mix(dark * (0.9 + 0.1 * albedo), lit * albedo * mix(vec3(1.0), pearl, 0.7), diff);
     // Daytime moon: the shadowed side lets the sky show through instead of sitting there as a dark disc.
@@ -52,7 +52,9 @@ const VERT =
   "attribute vec2 p; void main(){ gl_Position = vec4(p, 0.0, 1.0); }";
 
 function hexToRGB(hex: string): [number, number, number] {
-  const n = parseInt(hex.slice(1), 16);
+  const h = hex.slice(1);
+  // Stylesheets get minified, so "#ffffff" can arrive as "#fff".
+  const n = parseInt(h.length === 3 ? [...h].map((c) => c + c).join("") : h, 16);
   return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
 }
 

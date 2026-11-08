@@ -49,3 +49,17 @@ test("account pages stay hidden until accounts are set up", async ({ page, reque
   await nav(page, "Settings");
   await expect(page.getByRole("navigation", { name: "Settings" }).getByRole("button", { name: "Account" })).toHaveCount(0);
 });
+
+test("the website stays light; the app starts dark and keeps the person's choice", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator("html")).toHaveClass(/\blight\b/);
+  await page.goto("/app");
+  await expect(page.locator("html")).toHaveClass(/\bdark\b/);
+  // Someone who picked light in the app still gets light there, and the website is light either way.
+  await page.evaluate(() => localStorage.setItem("theme", "light"));
+  await page.reload();
+  await expect(page.locator("html")).toHaveClass(/\blight\b/);
+  await page.evaluate(() => localStorage.setItem("theme", "dark"));
+  await page.goto("/download");
+  await expect(page.locator("html")).not.toHaveClass(/\bdark\b/);
+});

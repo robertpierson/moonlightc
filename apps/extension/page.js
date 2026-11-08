@@ -18,7 +18,7 @@ export function pageAgent(cmd) {
     host.id = "moonc-shared-banner";
     host.style.cssText = "position:fixed;inset:0 0 auto 0;z-index:2147483647;pointer-events:none";
     const root = host.attachShadow({ mode: "closed" });
-    root.innerHTML = `<div style="pointer-events:auto;margin:8px auto;width:max-content;max-width:92vw;display:flex;gap:10px;align-items:center;padding:8px 12px;border-radius:999px;font:500 13px system-ui;color:#fff;background:linear-gradient(115deg,#4338ca,#7c3aed,#a21caf);box-shadow:0 8px 24px rgba(67,56,202,.35)">MoonlightC can see and use this tab<button style="all:unset;cursor:pointer;padding:2px 10px;border-radius:999px;background:#fff;color:#3b2a9e;font-weight:600">Stop</button></div>`;
+    root.innerHTML = `<div style="pointer-events:auto;margin:8px auto;width:max-content;max-width:92vw;display:flex;gap:10px;align-items:center;padding:8px 12px;border-radius:999px;font:500 13px system-ui;color:#fff;background:linear-gradient(180deg,#2a5bea,#1640c4 55%,#0e2f99);box-shadow:0 8px 24px rgba(22,64,196,.35)">MoonlightC can see and use this tab<button style="all:unset;cursor:pointer;padding:2px 10px;border-radius:999px;background:#fff;color:#1640c4;font-weight:600">Stop</button></div>`;
     root.querySelector("button").addEventListener("click", (e) => {
       if (e.isTrusted) chrome.runtime.sendMessage({ from: "page", method: "stop" });
     });

@@ -1,12 +1,10 @@
 import type { Metadata } from "next";
-import { Bricolage_Grotesque } from "next/font/google";
-import Link from "next/link";
 import { PrimaryDownload } from "@/components/site/os-download";
 import { InstallApp } from "@/components/site/install-app";
 import { getLatestRelease, REPO, type Build } from "@/lib/releases";
-import "@/components/site/site.css";
+import { SITE_VIEWPORT, SiteFooter, SiteHeader } from "@/components/site/chrome";
 
-const display = Bricolage_Grotesque({ subsets: ["latin"], axes: ["wdth", "opsz"], variable: "--font-display" });
+export const viewport = SITE_VIEWPORT;
 
 export const metadata: Metadata = { title: "Download · MoonlightC", description: "Get MoonlightC for Windows, macOS, Linux, or install the web app." };
 
@@ -22,31 +20,29 @@ const archLabel = (a: Build["arch"], platform: Build["platform"]) =>
 export default async function DownloadPage() {
   const release = await getLatestRelease();
   return (
-    <div className={`${display.variable} site relative min-h-dvh overflow-x-clip`}>
-      <div aria-hidden className="sky pointer-events-none absolute inset-x-0 top-0 h-[36rem] [mask-image:linear-gradient(black_60%,transparent)]" />
-      <header className="relative mx-auto flex max-w-5xl items-center px-4 py-5 sm:px-6">
-        <Link href="/" className="display text-xl font-semibold">
-          MoonlightC
-        </Link>
-        <Link prefetch={false} href="/app" className="ml-auto rounded-full btn-moon px-4 py-2 text-sm font-medium ">
-          Open web app
-        </Link>
-      </header>
+    <div className="site relative min-h-dvh overflow-x-clip">
+      <div aria-hidden className="sky pointer-events-none absolute inset-x-0 top-0 h-[34rem] [mask-image:linear-gradient(black_55%,transparent)]" />
+      <SiteHeader />
       <main className="relative mx-auto max-w-5xl px-4 pb-24 sm:px-6">
-        <h1 className="display ink-gradient pt-10 pb-2 text-[clamp(2.8rem,9vw,5.5rem)] font-bold">Get MoonlightC</h1>
-        <div className="mt-8">
-          <PrimaryDownload release={release} className="inline-block rounded-2xl btn-moon px-6 py-4 text-lg font-semibold " />
+        <h1 className="word pt-16 text-[clamp(2.8rem,8vw,5rem)] leading-none" style={{ "--i": 0 } as React.CSSProperties}>
+          Get MoonlightC
+        </h1>
+        <p className="fade-up mt-5 max-w-[46ch] text-lg text-[var(--mist)]" style={{ "--d": "0.3s" } as React.CSSProperties}>
+          On your computer, in your browser, and in Chrome. Free on every one of them.
+        </p>
+        <div className="fade-up mt-8" style={{ "--d": "0.45s" } as React.CSSProperties}>
+          <PrimaryDownload release={release} className="btn-primary flex-col px-7 py-3.5 text-lg [&>span]:opacity-80" />
         </div>
 
         <section aria-labelledby="desktop" className="mt-16">
-          <h2 id="desktop" className="display text-3xl font-semibold sm:text-4xl">
+          <h2 id="desktop" className="text-3xl sm:text-4xl">
             Desktop apps
           </h2>
           {release && release.builds.length > 0 ? (
             <>
               <p className="mt-2 text-[var(--mist)]">
                 Version {release.version}, released {new Date(release.publishedAt).toLocaleDateString("en-US", { dateStyle: "long" })}.{" "}
-                <a href={release.notesUrl} className="underline underline-offset-4 hover:text-[var(--tide)]">
+                <a href={release.notesUrl} className="underline underline-offset-4 hover:text-[var(--ink)]">
                   What&apos;s new
                 </a>
               </p>
@@ -55,12 +51,12 @@ export default async function DownloadPage() {
                   const builds = release.builds.filter((b) => b.platform === g.platform);
                   if (builds.length === 0) return null;
                   return (
-                    <div key={g.platform} className="rounded-2xl border border-[var(--line)] p-5">
-                      <h3 className="text-xl font-semibold">{g.name}</h3>
+                    <div key={g.platform} className="card rounded-3xl p-6">
+                      <h3 className="text-xl">{g.name}</h3>
                       <ul className="mt-3 grid gap-2">
                         {builds.map((b) => (
                           <li key={b.name}>
-                            <a href={b.url} className="flex justify-between gap-3 rounded-lg px-2 py-1.5 hover:bg-[var(--night-2)]">
+                            <a href={b.url} className="flex justify-between gap-3 rounded-lg px-2 py-1.5 hover:bg-white">
                               <span>
                                 {b.kind}, {archLabel(b.arch, b.platform)}
                               </span>
@@ -78,7 +74,7 @@ export default async function DownloadPage() {
           ) : (
             <p className="mt-2 max-w-[60ch] text-[var(--mist)]">
               The desktop app hasn&apos;t had its first release yet. Releases appear here automatically from{" "}
-              <a href={`https://github.com/${REPO}/releases`} className="underline underline-offset-4 hover:text-[var(--tide)]">
+              <a href={`https://github.com/${REPO}/releases`} className="underline underline-offset-4 hover:text-[var(--ink)]">
                 GitHub Releases
               </a>
               . Until then, install the web app below: it works on every device.
@@ -87,7 +83,7 @@ export default async function DownloadPage() {
         </section>
 
         <section aria-labelledby="web" className="mt-16">
-          <h2 id="web" className="display text-3xl font-semibold sm:text-4xl">
+          <h2 id="web" className="text-3xl sm:text-4xl">
             Install the web app
           </h2>
           <p className="mt-2 max-w-[60ch] text-[var(--mist)]">It opens in its own window, gets an icon, and starts even when you&apos;re offline.</p>
@@ -99,8 +95,8 @@ export default async function DownloadPage() {
               ["Safari on iPhone or iPad", "Open the web app, tap the Share button, then Add to Home Screen, then Add."],
               ["Safari on a Mac", "Open the web app, choose File, then Add to Dock."],
             ].map(([t, d]) => (
-              <div key={t} className="rounded-2xl border border-[var(--line)] p-5">
-                <dt className="font-semibold">{t}</dt>
+              <div key={t} className="card rounded-3xl p-6">
+                <dt className="font-medium">{t}</dt>
                 <dd className="mt-1 text-[var(--mist)]">{d}</dd>
               </div>
             ))}
@@ -108,13 +104,13 @@ export default async function DownloadPage() {
         </section>
 
         <section aria-labelledby="ext" className="mt-16">
-          <h2 id="ext" className="display text-3xl font-semibold sm:text-4xl">
+          <h2 id="ext" className="text-3xl sm:text-4xl">
             Chrome extension
           </h2>
           <p className="mt-2 max-w-[60ch] text-[var(--mist)]">
             Let the AI read and use browser tabs you share with it: it can read a page, click, type and open links. Buying, sending or deleting always waits for your OK.
           </p>
-          <a href="/downloads/moonlightc-chrome-extension.zip" download className="btn-moon mt-4 inline-block rounded-full px-6 py-3 font-semibold">
+          <a href="/downloads/moonlightc-chrome-extension.zip" download className="btn-primary mt-5 px-6 py-3">
             Download the extension
           </a>
           <ol className="mt-4 grid max-w-[60ch] list-decimal gap-1 pl-5 text-[var(--mist)]">
@@ -125,6 +121,7 @@ export default async function DownloadPage() {
           </ol>
         </section>
       </main>
+      <SiteFooter />
     </div>
   );
 }

@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
+import { SITE_VIEWPORT } from "@/components/site/chrome";
 import { DocPage } from "@/components/site/doc-page";
 import { accountsEnabled } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Privacy · MoonlightC" };
+export const viewport = SITE_VIEWPORT;
 
 export default function Privacy() {
   return (
-    <DocPage title="Privacy" updated="October 13, 2026">
+    <DocPage title="Privacy" updated="November 8, 2026">
       <p>MoonlightC is free, open-source software. We don&apos;t sell AI and we don&apos;t sell data. This page explains exactly what happens to your information.</p>
       <h2>What stays on your device</h2>
       <ul>
@@ -18,6 +20,11 @@ export default function Privacy() {
       <ul>
         <li>When you send a message, check a key, use web tools or voice typing, your browser sends the request and the key it needs to our server, which forwards it to the provider you chose (for example Anthropic, OpenAI or Google) and streams the answer back.</li>
         <li>Passing a request on, we don&apos;t store or log your keys, your messages, your audio or the answers. Our hosting provider (Vercel) keeps standard request logs (time, path, status) for operating the service.</li>
+      </ul>
+      <h2>The Chrome extension</h2>
+      <ul>
+        <li>The extension does nothing on a tab until you share it. It then reads that tab&apos;s text and clicks or types there when the AI in MoonlightC asks, and passes what it read to the MoonlightC web app open in the same browser, which sends it to the AI company you chose.</li>
+        <li>Which tabs are shared is kept until you close the browser. A log of what the AI did stays in the extension on your device. Neither is sent to us.</li>
       </ul>
       <h2>The providers you choose</h2>
       <p>Each AI or search provider you connect handles your requests under its own privacy policy. Read theirs before you connect them. Voice typing without an OpenAI or Groq key uses your browser&apos;s built-in speech service, which may send audio to the browser maker.</p>

@@ -2,6 +2,24 @@
 
 Do them in order. When done, tell Claude "done, continue".
 
+## Try this: the new website (0.6.63, 2 minutes)
+1. Open https://moonlightc.vercel.app . It should be white and silver, with the headline appearing word by word and a moving preview of the app.
+2. Scroll down slowly: the app window flattens out, section titles fill in, and the little demos play.
+3. Click **Open web app**. The app should open in dark mode. (If you'd picked light before, it keeps your choice. Settings > Appearance changes it.)
+4. Go back to the website. It stays white whatever the app is set to.
+5. Tell Claude anything you'd like changed.
+
+## For launch: two decisions only you can make
+**A. Make the desktop app downloadable from the website.** Installers for Windows, Mac and Linux are built in a private draft on GitHub. Until they're public, the website's main button says "Open the web app" instead of "Download for Windows". Making them public is your call: tell Claude "publish the desktop release".
+
+**B. Put the Chrome extension in the Chrome Web Store** (a one-time $5 fee to Google, paid by you; skip it if you'd rather not). Without it, people install the extension with Developer mode, which most people won't do. Everything is ready to upload:
+1. Open https://chrome.google.com/webstore/devconsole and sign in with your Google account.
+2. Accept the developer agreement and pay the $5 registration fee. On the **Account** tab, add and verify a contact email.
+3. Click **New item** and upload `C:\Users\rober\MoonC\apps\web\public\downloads\moonlightc-chrome-extension.zip`.
+4. On the **Store listing** tab, copy the text from `C:\Users\rober\MoonC\apps\extension\store\LISTING.md`, and upload the 4 pictures from the same `store` folder.
+5. On the **Privacy practices** tab, copy the answers from the bottom of LISTING.md. Then click **Submit for review**.
+6. Google reviews it, usually within a few days. Send Claude the store link and it'll switch the Download page to a one-click install.
+
 ## Try this: type your PIN from your Chromebook (0.6.61, 2 minutes)
 1. Sitting at the PC, open MoonlightC, go to **Settings > Remote control**, find **Type my PIN from my other devices** and click **Turn on**.
 2. Click **Yes** in the Windows box. A "You can type your PIN" message should appear.
@@ -131,10 +149,6 @@ For each one, after step 3 add the two values in Vercel exactly like step 6 of s
 ## Optional: let the desktop app update itself
 Today Claude installs new desktop versions on your PC by hand. For automatic updates (on any PC), the app needs public releases on GitHub.
 That's publishing something publicly, so it needs your OK: tell Claude "publish desktop releases".
-
-## Optional: put the Chrome extension in the Chrome Web Store (costs a one-time $5 Google fee; your call)
-Right now people install it from the download page with "Load unpacked". Publishing makes it a one-click install.
-Only do this if you want to pay the fee; tell Claude "publish the extension" and it will prepare the store listing and tell you what to click.
 
 ## Optional: publish a test version of the desktop app
 Installers for Windows, Mac and Linux are built and waiting in a **draft** (private) release. Nothing is public until you choose.

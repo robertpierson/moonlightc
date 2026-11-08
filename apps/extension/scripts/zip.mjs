@@ -7,7 +7,7 @@ import zlib from "node:zlib";
 const here = path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1"));
 const root = path.join(here, "..");
 const out = path.join(root, "..", "web", "public", "downloads", "moonlightc-chrome-extension.zip");
-const FILES = ["manifest.json", "background.js", "bridge.js", "page.js", "popup.html", "popup.js", "confirm.html", "confirm.js", "icon.png"];
+const FILES = ["manifest.json", "background.js", "bridge.js", "page.js", "popup.html", "popup.js", "confirm.html", "confirm.js", "icons/16.png", "icons/32.png", "icons/48.png", "icons/128.png"];
 
 const manifest = JSON.parse(fs.readFileSync(path.join(root, "manifest.json"), "utf8"));
 manifest.content_scripts[0].matches = manifest.content_scripts[0].matches.filter((m) => m.startsWith("https://"));

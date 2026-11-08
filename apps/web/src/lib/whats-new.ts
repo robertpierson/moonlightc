@@ -1,6 +1,15 @@
 // "What's new" in Settings: recent changes in plain English, newest first. Only things that really shipped.
 export const WHATS_NEW: { version: string; date: string; items: string[] }[] = [
   {
+    version: "0.6.63",
+    date: "November 8, 2026",
+    items: [
+      "A new website: white and silver, with a live preview of the app.",
+      "The app now starts in dark mode. You can still pick light or match your device in Settings > Appearance.",
+      "The Chrome extension has a new icon and colors, and is ready for the Chrome Web Store.",
+    ],
+  },
+  {
     version: "0.6.62",
     date: "November 7, 2026",
     items: [
