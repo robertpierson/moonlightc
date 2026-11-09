@@ -1,9 +1,11 @@
+import { Brain, EyeOff, FileCode, FolderOpen, Image, MessageSquare, Mic, MonitorSmartphone, Plug, Puzzle, Telescope } from "lucide-react";
 import Link from "next/link";
 import type { Release } from "@/lib/releases";
 import { Arrival } from "./arrival";
 import { Cta, SectionTitle, SiteFooter, SiteHeader, Words } from "./chrome";
 import { BrowserTab, CodeTerminal, ModelMenu, RemoteScreen } from "./demos";
 import { Moon } from "./moon";
+import { CountUp } from "./motion";
 import { PrimaryDownload } from "./os-download";
 import { DemoVideo } from "./scenes";
 
@@ -21,6 +23,20 @@ const FAQ = [
   ],
   ["Does it work on my phone?", "Yes. Open the web app in your phone's browser and add it to your home screen. It works like an app, with your chats synced when you sign in."],
   ["Can I change it?", "Yes. The code is on GitHub. Fork it, change it, run your own copy."],
+];
+
+const EVERYTHING = [
+  { icon: MessageSquare, title: "Chat", body: "Every model your keys unlock, in one conversation. Switch whenever you like." },
+  { icon: FolderOpen, title: "Projects", body: "Folders of chats with their own instructions, files and tools." },
+  { icon: Telescope, title: "Deep research", body: "It plans the questions, reads the sources and writes a report with citations." },
+  { icon: FileCode, title: "Live previews", body: "Web pages, charts and React components open beside the chat, ready to edit." },
+  { icon: Image, title: "Studio", body: "Make images, video and voice with fal, Replicate or ElevenLabs keys." },
+  { icon: Plug, title: "Connections", body: "GitHub, Google, Notion, Slack and any MCP server, with your OK before it acts." },
+  { icon: Puzzle, title: "Claude plugins", body: "Install skills, slash commands and connectors made for Claude." },
+  { icon: Brain, title: "Memory", body: "It remembers what you tell it to, and you can see and delete every fact." },
+  { icon: Mic, title: "Voice", body: "Talk instead of typing, and have answers read aloud." },
+  { icon: EyeOff, title: "Private mode", body: "A chat that's never saved anywhere." },
+  { icon: MonitorSmartphone, title: "Every device", body: "Web, Windows, Mac, Linux and your phone, synced when you sign in." },
 ];
 
 const EXPLORE = [
@@ -71,17 +87,19 @@ export function Landing({ release }: { release: Release | null }) {
         </section>
 
         {/* The real app on film. The window grows to fill the screen as you scroll; the buttons jump to each part. */}
-        <section aria-labelledby="see" className="scene">
+        <section aria-labelledby="see" className="scene night">
           <div className="scene-sticky flex flex-col items-center justify-center px-3 pt-16 sm:px-6">
             <div className="scene-title pointer-events-none absolute inset-x-0 top-[14vh] z-10 px-4 text-center">
-              <h2 id="see" className="text-[clamp(2.4rem,6vw,4.5rem)] leading-[1.02]">
+              <h2 id="see" className="on-night text-[clamp(2.6rem,6.5vw,5rem)] leading-[1.0]">
                 See it work.
               </h2>
-              <p className="mx-auto mt-3 max-w-[40ch] text-lg text-[var(--mist)]">The real app, start to finish, in 25 seconds.</p>
+              <p className="on-night-soft mx-auto mt-3 max-w-[40ch] text-lg">The real app, start to finish, in 25 seconds.</p>
             </div>
             <div className="w-[min(100%,72rem,calc((100svh-15rem)*1.6))]">
               <DemoVideo frameClassName="scene-grow rounded-[1.25rem] shadow-[0_50px_120px_-40px_rgb(14_22_40/0.6)] ring-1 ring-black/5" chipsClassName="scene-caption" />
-              <p className="scene-caption mt-3 text-center text-xs text-[var(--faint)]">Filmed in the real web app. The AI&apos;s answers are written samples, so no AI company was paid to make it.</p>
+              <p className="scene-caption mt-3 text-center text-xs">
+            <span className="on-night-soft">Filmed in the real web app. The AI&apos;s answers are written samples, so no AI company was paid to make it.</span>
+          </p>
             </div>
           </div>
         </section>
@@ -99,11 +117,35 @@ export function Landing({ release }: { release: Release | null }) {
           </div>
         </section>
 
+
+        {/* Everything else in the app, travelling sideways as you scroll down. */}
+        <section aria-labelledby="all" className="gallery">
+          <div className="gallery-sticky">
+            <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
+              <h2 id="all" className="text-[clamp(2.4rem,6vw,4.5rem)] leading-[1.0]">
+                Everything in one app.
+              </h2>
+              <p className="mt-4 max-w-[46ch] text-lg text-[var(--mist)]">Not just chat. Here&apos;s what else is inside, all with your own keys.</p>
+            </div>
+            <div className="gallery-track mt-12 flex w-max gap-5 pr-[10vw] pl-[max(1rem,calc((100vw-72rem)/2+1.5rem))]">
+              {EVERYTHING.map(({ icon: Icon, title, body }) => (
+                <article key={title} className="card spot flex h-[19rem] w-[19rem] shrink-0 flex-col rounded-[1.75rem] p-7 sm:w-[21rem]">
+                  <span className="grid size-14 place-items-center rounded-2xl [background:var(--g-brand)] text-white shadow-lg shadow-[#0e1628]/20">
+                    <Icon className="size-6" aria-hidden />
+                  </span>
+                  <h3 className="mt-auto text-[1.6rem] leading-tight">{title}</h3>
+                  <p className="mt-2 text-[var(--mist)]">{body}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
         <section className="mx-auto max-w-6xl px-4 pt-28 sm:px-6">
           <SectionTitle title="One app. Four superpowers." />
           <div className="mt-14 grid gap-5 md:grid-cols-2">
             {EXPLORE.map((e) => (
-              <Link key={e.href} href={e.href} className="card card-link rise flex flex-col overflow-hidden rounded-3xl p-7 sm:p-9">
+              <Link key={e.href} href={e.href} className="card card-link spot rise flex flex-col overflow-hidden rounded-3xl p-7 sm:p-9">
                 <h3 className="text-2xl">{e.title}</h3>
                 <p className="mt-2 max-w-[40ch] text-[var(--mist)]">{e.body}</p>
                 <span className="mt-4 text-sm font-medium text-[var(--tide)]">
@@ -123,7 +165,9 @@ export function Landing({ release }: { release: Release | null }) {
               ["MIT", "Open source", "Read every line on GitHub, change it, or run your own copy."],
             ].map(([big, title, body]) => (
               <div key={title} className="rise bg-white p-8 sm:p-10">
-                <p className="text-[clamp(3rem,6vw,4.5rem)] leading-none font-medium tracking-[-0.04em]">{big}</p>
+                <p className="text-[clamp(3rem,6vw,4.5rem)] leading-none font-medium tracking-[-0.04em]">
+                  <CountUp value={big} />
+                </p>
                 <h3 className="mt-4 text-xl">{title}</h3>
                 <p className="mt-1.5 text-[var(--mist)]">{body}</p>
               </div>

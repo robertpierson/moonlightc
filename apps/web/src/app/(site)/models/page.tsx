@@ -38,10 +38,22 @@ export default function Models() {
         ]}
       />
 
-      <section className="mx-auto max-w-5xl px-4 pt-32 sm:px-6">
-        <SectionTitle title="Switch in the middle of a chat." body="Start with one model, ask the next question with another. The conversation carries over." />
-        <div className="rise mt-12">
-          <DemoVideo from={DEMO_CHAPTERS[1].t} chapters={DEMO_CHAPTERS.slice(1, 2)} frameClassName="rounded-[1.25rem] shadow-[0_40px_100px_-40px_rgb(14_22_40/0.55)]" chipsClassName="hidden" />
+      <section aria-labelledby="switch" className="scene night mt-24">
+        <div className="scene-sticky flex flex-col items-center justify-center px-3 pt-16 sm:px-6">
+          <div className="scene-title pointer-events-none absolute inset-x-0 top-[14vh] z-10 px-4 text-center">
+            <h2 id="switch" className="on-night text-[clamp(2.4rem,6vw,4.5rem)] leading-[1.02]">
+              Switch mid-chat.
+            </h2>
+            <p className="on-night-soft mx-auto mt-3 max-w-[40ch] text-lg">Start with one model, ask the next question with another.</p>
+          </div>
+          <div className="w-[min(100%,72rem,calc((100svh-15rem)*1.6))]">
+            <DemoVideo
+              from={DEMO_CHAPTERS[1].t}
+              chapters={DEMO_CHAPTERS.slice(1, 2)}
+              frameClassName="scene-grow rounded-[1.25rem] shadow-[0_50px_120px_-40px_rgb(0_0_0/0.8)]"
+              chipsClassName="hidden"
+            />
+          </div>
         </div>
       </section>
 

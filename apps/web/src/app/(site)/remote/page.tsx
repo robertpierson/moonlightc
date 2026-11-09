@@ -22,15 +22,17 @@ export default function Remote() {
         </Link>
       </PageHero>
 
-      <section aria-label="Your PC's screen on another device" className="scene">
+      <section aria-label="Your PC's screen on another device" className="scene night">
         <div className="scene-sticky flex flex-col items-center justify-center px-4 sm:px-6">
           <div className="scene-title pointer-events-none absolute inset-x-0 top-[14vh] z-10 px-4 text-center">
-            <h2 className="text-[clamp(2.2rem,5.5vw,4rem)] leading-[1.05]">Your screen, in your pocket.</h2>
+            <h2 className="on-night text-[clamp(2.4rem,6vw,4.5rem)] leading-[1.02]">Your screen, in your pocket.</h2>
           </div>
           <div className="scene-grow card w-[min(100%,64rem)] rounded-[2rem] px-5 pt-10 sm:px-14 sm:pt-14">
             <RemoteScreen />
           </div>
-          <p className="scene-caption mt-6 max-w-[48ch] text-center text-[var(--mist)]">The pointer, keyboard and screen go straight between your devices. A relay helps only on networks that block that.</p>
+          <p className="scene-caption mt-6 max-w-[48ch] text-center">
+            <span className="on-night-soft">The pointer, keyboard and screen go straight between your devices. A relay helps only on networks that block that.</span>
+          </p>
         </div>
       </section>
 

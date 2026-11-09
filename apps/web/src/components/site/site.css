@@ -1,6 +1,8 @@
 /* Marketing site: white and brushed silver, deep navy ink. Always light, whatever the device's color mode
    (the web app has its own themes; this site doesn't follow them). */
 .site {
+  /* Lets the header react to night sections further down the page. */
+  timeline-scope: --night;
   color-scheme: light;
   --paper: #ffffff;
   --silver-1: #f5f6f9; /* panels */
@@ -28,6 +30,11 @@
   font-weight: 500;
   text-wrap: balance;
 }
+.site h1,
+.site h2 {
+  letter-spacing: -0.045em;
+  font-weight: 550;
+}
 .site p {
   text-wrap: pretty;
 }
@@ -39,9 +46,32 @@
 }
 @supports (animation-timeline: scroll()) {
   .site-header {
-    animation: head linear both;
-    animation-timeline: scroll(root);
-    animation-range: 0 120px;
+    animation:
+      head linear both,
+      head-night linear both;
+    animation-timeline: scroll(root), --night;
+    animation-range:
+      0 120px,
+      entry 0% exit 100%;
+  }
+}
+/* Over a night section the header turns to dark glass with light text (pages without one never run this). */
+@keyframes head-night {
+  0%,
+  17% {
+    background: rgb(255 255 255 / 0.8);
+  }
+  20%,
+  82% {
+    background: rgb(10 15 28 / 0.72);
+    border-bottom-color: rgb(255 255 255 / 0.08);
+    color: #f2f4f8;
+    --ink: #f2f4f8;
+    --mist: #aab2c3;
+  }
+  85%,
+  100% {
+    background: rgb(255 255 255 / 0.8);
   }
 }
 @keyframes head {
@@ -318,6 +348,138 @@
   transform: translateX(4px);
 }
 
+/* A soft light that follows the pointer across cards (position set by SiteMotion). */
+.spot {
+  position: relative;
+  isolation: isolate;
+}
+.spot::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: radial-gradient(420px circle at var(--x, 50%) var(--y, 0%), rgb(255 255 255 / 0.9), transparent 60%);
+  opacity: 0;
+  transition: opacity 0.4s var(--ease);
+}
+.spot:hover::before {
+  opacity: 1;
+}
+
+/* Night: the page darkens around the film of the app (which is dark), then brightens again after it. The words
+   change color in step, so they're readable at every moment. Browsers without scroll animations just get the night. */
+.night {
+  background: #0a0f1c;
+  view-timeline-name: --scene, --night;
+  view-timeline-axis: block, block;
+}
+.night .on-night {
+  color: #f2f4f8;
+}
+.night .on-night-soft {
+  color: #a9b1c2;
+}
+@supports (animation-timeline: view()) {
+  .night {
+    animation: night linear both;
+    animation-timeline: --scene;
+    animation-range: entry 0% exit 100%;
+  }
+  .night .on-night,
+  .night .on-night-soft {
+    animation: on-night linear both;
+    animation-timeline: --night;
+    animation-range: entry 0% exit 100%;
+  }
+  .night .on-night-soft {
+    animation-name: on-night-soft;
+  }
+}
+@keyframes night {
+  0% {
+    background-color: #ffffff;
+  }
+  22%,
+  80% {
+    background-color: #0a0f1c;
+  }
+  100% {
+    background-color: #ffffff;
+  }
+}
+@keyframes on-night {
+  0%,
+  8% {
+    color: var(--ink);
+  }
+  18%,
+  84% {
+    color: #f2f4f8;
+  }
+  94%,
+  100% {
+    color: var(--ink);
+  }
+}
+@keyframes on-night-soft {
+  0%,
+  8% {
+    color: var(--mist);
+  }
+  18%,
+  84% {
+    color: #a9b1c2;
+  }
+  94%,
+  100% {
+    color: var(--mist);
+  }
+}
+
+/* Sideways gallery: you scroll down, the cards travel left. */
+.gallery {
+  view-timeline: --gallery block;
+  height: 300vh;
+}
+.gallery-sticky {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+@supports (animation-timeline: view()) {
+  .gallery-track {
+    animation: gallery-track linear both;
+    animation-timeline: --gallery;
+    animation-range: contain 5% contain 95%;
+  }
+}
+@supports not (animation-timeline: view()) {
+  .gallery {
+    height: auto;
+  }
+  .gallery-sticky {
+    position: static;
+    height: auto;
+    padding-block: 6rem;
+  }
+  .gallery-track {
+    overflow-x: auto;
+  }
+}
+@keyframes gallery-track {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(calc(-100% + 100vw - 2rem));
+  }
+}
+
 /* Dark app pieces inside the pictures (the app itself defaults to dark). */
 .app-dark {
   color-scheme: dark;
@@ -397,5 +559,16 @@
     position: static;
     height: auto;
     padding-block: 4rem;
+  }
+  .gallery {
+    height: auto;
+  }
+  .gallery-sticky {
+    position: static;
+    height: auto;
+    padding-block: 4rem;
+  }
+  .gallery-track {
+    overflow-x: auto;
   }
 }

@@ -17,10 +17,10 @@ export default function Code() {
         </Link>
       </PageHero>
 
-      <section aria-label="Building an app in the Code tab" className="scene">
+      <section aria-label="Building an app in the Code tab" className="scene night">
         <div className="scene-sticky flex flex-col items-center justify-center px-3 pt-16 sm:px-6">
           <div className="scene-title pointer-events-none absolute inset-x-0 top-[14vh] z-10 px-4 text-center">
-            <h2 className="text-[clamp(2.2rem,5.5vw,4rem)] leading-[1.05]">Say it. See it run.</h2>
+            <h2 className="on-night text-[clamp(2.4rem,6vw,4.5rem)] leading-[1.02]">Say it. See it run.</h2>
           </div>
           <div className="w-[min(100%,72rem,calc((100svh-15rem)*1.6))]">
             <DemoVideo
