@@ -104,7 +104,7 @@ export function PageHero({ title, body, children }: { title: string; body: strin
   return (
     <section className="sky relative -mt-16 flex min-h-[min(88svh,56rem)] flex-col overflow-hidden pt-16">
       <div className="relative z-10 mx-auto max-w-5xl px-4 pt-[clamp(3rem,10vh,7rem)] text-center sm:px-6">
-        <h1 className="text-[clamp(2.8rem,8vw,5.75rem)] leading-[1.0]">
+        <h1 className="metal text-[clamp(2.8rem,8vw,5.75rem)] leading-[1.0]">
           <Words text={title} />
         </h1>
         <p className="fade-up mx-auto mt-6 max-w-[44ch] text-lg text-[var(--mist)] sm:text-xl" style={{ "--d": "0.5s" } as React.CSSProperties}>

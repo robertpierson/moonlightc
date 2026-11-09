@@ -69,7 +69,7 @@ export function Landing({ release }: { release: Release | null }) {
         {/* Hero: the headline and buttons on a silver sky, then a moon wider than the screen rising below them. */}
         <section className="hero sky relative -mt-16 flex flex-col overflow-hidden pt-16">
           <div className="relative z-10 mx-auto flex max-w-5xl flex-col items-center px-4 pt-[clamp(2.5rem,9vh,6rem)] text-center sm:px-6">
-            <h1 className="text-[clamp(3rem,8.2vw,6.25rem)] leading-[0.98]">
+            <h1 className="metal text-[clamp(3rem,8.2vw,6.25rem)] leading-[0.98]">
               <Words text="Every AI," />
               <br />
               <Words text="one window." start={2} />

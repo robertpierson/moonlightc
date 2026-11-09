@@ -209,6 +209,15 @@ html[data-night] .site-header {
   user-select: none;
 }
 
+/* Big headlines in brushed metal: each word carries a soft top-to-bottom sheen (per word, because the words animate). */
+.metal .word {
+  background: linear-gradient(180deg, #3a4668 0%, #121b31 48%, #0e1628 62%, #2b3756 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  padding-bottom: 0.08em; /* room for descenders inside the clipped background */
+}
+
 /* Headline: each word arrives out of a blur, one after another. */
 .word {
   display: inline-block;
