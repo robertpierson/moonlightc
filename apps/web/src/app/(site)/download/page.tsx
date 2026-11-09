@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { PrimaryDownload } from "@/components/site/os-download";
 import { InstallApp } from "@/components/site/install-app";
 import { getLatestRelease, REPO, type Build } from "@/lib/releases";
-import { SITE_VIEWPORT, SiteFooter, SiteHeader } from "@/components/site/chrome";
+import { PageHero, SITE_VIEWPORT, SiteFooter, SiteHeader } from "@/components/site/chrome";
 
 export const viewport = SITE_VIEWPORT;
 
@@ -21,21 +21,14 @@ export default async function DownloadPage() {
   const release = await getLatestRelease();
   return (
     <div className="site relative min-h-dvh overflow-x-clip">
-      <div aria-hidden className="sky pointer-events-none absolute inset-x-0 top-0 h-[34rem] [mask-image:linear-gradient(black_55%,transparent)]" />
       <SiteHeader />
+      <PageHero title="Get MoonlightC" body="On your computer, in your browser, and in Chrome. Free on every one of them.">
+        <PrimaryDownload release={release} className="btn-primary flex-col px-7 py-3.5 text-lg [&>span]:opacity-80" />
+      </PageHero>
       <main className="relative mx-auto max-w-5xl px-4 pb-24 sm:px-6">
-        <h1 className="word pt-16 text-[clamp(2.8rem,8vw,5rem)] leading-none" style={{ "--i": 0 } as React.CSSProperties}>
-          Get MoonlightC
-        </h1>
-        <p className="fade-up mt-5 max-w-[46ch] text-lg text-[var(--mist)]" style={{ "--d": "0.3s" } as React.CSSProperties}>
-          On your computer, in your browser, and in Chrome. Free on every one of them.
-        </p>
-        <div className="fade-up mt-8" style={{ "--d": "0.45s" } as React.CSSProperties}>
-          <PrimaryDownload release={release} className="btn-primary flex-col px-7 py-3.5 text-lg [&>span]:opacity-80" />
-        </div>
 
-        <section aria-labelledby="desktop" className="mt-16">
-          <h2 id="desktop" className="text-3xl sm:text-4xl">
+        <section aria-labelledby="desktop">
+          <h2 id="desktop" className="text-[clamp(2rem,4.5vw,3rem)] leading-tight">
             Desktop apps
           </h2>
           {release && release.builds.length > 0 ? (
@@ -51,7 +44,7 @@ export default async function DownloadPage() {
                   const builds = release.builds.filter((b) => b.platform === g.platform);
                   if (builds.length === 0) return null;
                   return (
-                    <div key={g.platform} className="card rounded-3xl p-6">
+                    <div key={g.platform} className="card spot rise rounded-3xl p-6">
                       <h3 className="text-xl">{g.name}</h3>
                       <ul className="mt-3 grid gap-2">
                         {builds.map((b) => (
@@ -83,7 +76,7 @@ export default async function DownloadPage() {
         </section>
 
         <section aria-labelledby="web" className="mt-16">
-          <h2 id="web" className="text-3xl sm:text-4xl">
+          <h2 id="web" className="text-[clamp(2rem,4.5vw,3rem)] leading-tight">
             Install the web app
           </h2>
           <p className="mt-2 max-w-[60ch] text-[var(--mist)]">It opens in its own window, gets an icon, and starts even when you&apos;re offline.</p>
@@ -95,7 +88,7 @@ export default async function DownloadPage() {
               ["Safari on iPhone or iPad", "Open the web app, tap the Share button, then Add to Home Screen, then Add."],
               ["Safari on a Mac", "Open the web app, choose File, then Add to Dock."],
             ].map(([t, d]) => (
-              <div key={t} className="card rounded-3xl p-6">
+              <div key={t} className="card spot rise rounded-3xl p-6">
                 <dt className="font-medium">{t}</dt>
                 <dd className="mt-1 text-[var(--mist)]">{d}</dd>
               </div>
@@ -104,7 +97,7 @@ export default async function DownloadPage() {
         </section>
 
         <section aria-labelledby="ext" className="mt-16">
-          <h2 id="ext" className="text-3xl sm:text-4xl">
+          <h2 id="ext" className="text-[clamp(2rem,4.5vw,3rem)] leading-tight">
             Chrome extension
           </h2>
           <p className="mt-2 max-w-[60ch] text-[var(--mist)]">

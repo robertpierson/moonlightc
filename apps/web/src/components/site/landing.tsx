@@ -2,7 +2,7 @@ import { Brain, EyeOff, FileCode, FolderOpen, Image, MessageSquare, Mic, Monitor
 import Link from "next/link";
 import type { Release } from "@/lib/releases";
 import { Arrival } from "./arrival";
-import { Cta, SectionTitle, SiteFooter, SiteHeader, Words } from "./chrome";
+import { Cta, SectionTitle, SiteFooter, SiteHeader, Statement, Words } from "./chrome";
 import { BrowserTab, CodeTerminal, ModelMenu, RemoteScreen } from "./demos";
 import { Moon } from "./moon";
 import { CountUp } from "./motion";
@@ -82,9 +82,13 @@ export function Landing({ release }: { release: Release | null }) {
             </div>
           </div>
           <div aria-hidden className="hero-moon pointer-events-none relative -mt-[calc(160px-clamp(1.5rem,5vh,3.5rem))] min-h-[22rem] flex-1 [mask-image:linear-gradient(black_60%,transparent)]">
-            <Moon className="absolute inset-0 h-full w-full" />
+            <div className="moon-in absolute inset-0">
+              <Moon className="absolute inset-0 h-full w-full" />
+            </div>
           </div>
         </section>
+
+        <Statement text="One window for every AI you use. Your keys, your devices, your rules. No subscription, no markup, nothing hidden." />
 
         {/* The real app on film. The window grows to fill the screen as you scroll; the buttons jump to each part. */}
         <section aria-labelledby="see" className="scene night">

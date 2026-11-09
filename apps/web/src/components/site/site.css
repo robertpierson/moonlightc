@@ -165,6 +165,59 @@
   }
 }
 
+/* The moon rises into place when the page opens. */
+.moon-in {
+  animation: moon-in 2.2s var(--ease) 0.2s both;
+}
+@keyframes moon-in {
+  from {
+    transform: translateY(18%);
+    opacity: 0;
+  }
+}
+.page-in {
+  animation: page-in 0.6s var(--ease) both;
+}
+@keyframes page-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Statement: words go from faint to full ink, one after another, as you scroll. */
+@supports (animation-timeline: view()) {
+  .statement {
+    view-timeline: --statement block;
+  }
+  .statement .w {
+    animation: w-light linear both;
+    animation-timeline: --statement;
+    animation-range: cover calc(25% + var(--p) * 35%) cover calc(30% + var(--p) * 35%);
+  }
+}
+@keyframes w-light {
+  from {
+    color: #8d94a2; /* faint but still readable (3:1 for text this large) */
+  }
+}
+
+/* The footer ends on a giant brushed-silver wordmark, cut off by the bottom of the page. */
+.wordmark {
+  margin-top: 1rem;
+  height: clamp(4rem, 13vw, 11rem);
+  font-size: clamp(5rem, 17.5vw, 15.5rem);
+  line-height: 0.95;
+  font-weight: 600;
+  letter-spacing: -0.06em;
+  text-align: center;
+  white-space: nowrap;
+  background: linear-gradient(180deg, #d6dbe4 0%, #eef0f4 60%, #ffffff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  user-select: none;
+}
+
 /* Headline: each word arrives out of a blur, one after another. */
 .word {
   display: inline-block;

@@ -80,6 +80,9 @@ export function SiteFooter() {
           </Link>
         </nav>
       </div>
+      <div aria-hidden className="wordmark mx-auto max-w-6xl overflow-hidden px-4 sm:px-6">
+        MoonlightC
+      </div>
     </footer>
   );
 }
@@ -113,6 +116,25 @@ export function PageHero({ title, body, children }: { title: string; body: strin
           </div>
         )}
       </div>
+    </section>
+  );
+}
+
+/** A big statement whose words light up one after another as it scrolls through the screen. */
+export function Statement({ text }: { text: string }) {
+  const words = text.split(" ");
+  return (
+    <section className="statement mx-auto max-w-5xl px-4 py-[22vh] sm:px-6">
+      <p className="text-[clamp(2rem,4.6vw,3.6rem)] leading-[1.12] font-[550] tracking-[-0.035em] text-[var(--ink)]">
+        {words.map((w, i) => (
+          <span key={i}>
+            {i > 0 && " "}
+            <span className="w" style={{ "--p": i / words.length } as React.CSSProperties}>
+              {w}
+            </span>
+          </span>
+        ))}
+      </p>
     </section>
   );
 }
