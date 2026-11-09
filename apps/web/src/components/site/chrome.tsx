@@ -1,6 +1,7 @@
 import type { Viewport } from "next";
 import Link from "next/link";
 import { REPO } from "@/lib/releases";
+import { Moon } from "./moon";
 import { MenuButton, NavLinks } from "./nav";
 import { PAGES } from "./pages";
 import "./site.css";
@@ -98,13 +99,12 @@ export function Words({ text, start = 0 }: { text: string; start?: number }) {
   ));
 }
 
-/** The top of every feature page: a big title that arrives word by word over a quiet silver sky. */
+/** The top of every feature page: a big title that arrives word by word, over a silver sky with the moon rising below. */
 export function PageHero({ title, body, children }: { title: string; body: string; children?: React.ReactNode }) {
   return (
-    <section className="relative -mt-16 overflow-hidden pt-16">
-      <div aria-hidden className="sky pointer-events-none absolute inset-0 [mask-image:linear-gradient(black_55%,transparent)]" />
-      <div className="relative mx-auto max-w-5xl px-4 pt-20 pb-24 text-center sm:px-6 sm:pt-28">
-        <h1 className="text-[clamp(2.8rem,8vw,5.5rem)] leading-[1.02]">
+    <section className="sky relative -mt-16 flex min-h-[min(88svh,56rem)] flex-col overflow-hidden pt-16">
+      <div className="relative z-10 mx-auto max-w-5xl px-4 pt-[clamp(3rem,10vh,7rem)] text-center sm:px-6">
+        <h1 className="text-[clamp(2.8rem,8vw,5.75rem)] leading-[1.0]">
           <Words text={title} />
         </h1>
         <p className="fade-up mx-auto mt-6 max-w-[44ch] text-lg text-[var(--mist)] sm:text-xl" style={{ "--d": "0.5s" } as React.CSSProperties}>
@@ -115,6 +115,11 @@ export function PageHero({ title, body, children }: { title: string; body: strin
             {children}
           </div>
         )}
+      </div>
+      <div aria-hidden className="hero-moon pointer-events-none relative -mt-[calc(160px-3rem)] min-h-[14rem] flex-1 [mask-image:linear-gradient(black_50%,transparent)]">
+        <div className="moon-in absolute inset-0">
+          <Moon className="absolute inset-0 h-full w-full" />
+        </div>
       </div>
     </section>
   );

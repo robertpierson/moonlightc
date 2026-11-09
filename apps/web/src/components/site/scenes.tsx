@@ -126,13 +126,13 @@ export function StickySteps({ steps }: { steps: { title: string; body: string; v
         {steps.map((s, i) => (
           <div key={s.title} ref={(el) => void (refs.current[i] = el)} data-i={i} data-active={i === active ? "" : undefined} className="step flex flex-col justify-center py-10 md:min-h-[78vh] md:py-0">
             <div className="card mb-8 grid aspect-[4/3] place-items-center overflow-hidden rounded-3xl p-6 md:hidden">{s.visual}</div>
-            <h3 className="text-[clamp(1.8rem,3.6vw,2.6rem)] leading-tight">{s.title}</h3>
-            <p className="mt-4 max-w-[42ch] text-lg text-[var(--mist)]">{s.body}</p>
+            <h3 className="text-[clamp(1.9rem,3.4vw,3.1rem)] leading-[1.08]">{s.title}</h3>
+            <p className="mt-5 max-w-[40ch] text-lg text-[var(--mist)] xl:text-xl">{s.body}</p>
           </div>
         ))}
       </div>
       <div className="hidden md:block">
-        <div className="card sticky top-[calc(50vh-15rem)] grid h-[30rem] overflow-hidden rounded-[2rem]">
+        <div className="card sticky top-[calc(50vh-17rem)] grid h-[34rem] overflow-hidden rounded-[2rem]">
           {steps.map((s, i) => (
             <div key={s.title} aria-hidden={i !== active} data-active={i === active ? "" : undefined} className="step-visual col-start-1 row-start-1 grid place-items-center p-8">
               {s.visual}

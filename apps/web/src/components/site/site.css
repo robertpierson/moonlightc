@@ -48,37 +48,23 @@
   .site-header {
     animation:
       head linear both,
-      head-night linear both;
+      head-night linear none;
     animation-timeline: scroll(root), --night;
     animation-range:
       0 120px,
-      entry 0% exit 100%;
+      contain 0% contain 100%;
   }
 }
-/* Over a night section the header turns to dark glass with light text (pages without one never run this). */
+/* While a night section fills the screen, the header is dark glass with light text. Outside it, this does nothing
+   (no fill), and pages without a night section never run it. */
 @keyframes head-night {
-  0%,
-  17% {
-    background: rgb(255 255 255 / 0.8);
-  }
-  20%,
-  82% {
+  from,
+  to {
     background: rgb(10 15 28 / 0.72);
     border-bottom-color: rgb(255 255 255 / 0.08);
     color: #f2f4f8;
     --ink: #f2f4f8;
     --mist: #aab2c3;
-  }
-  85%,
-  100% {
-    background: rgb(255 255 255 / 0.8);
-  }
-}
-@keyframes head {
-  to {
-    background: rgb(255 255 255 / 0.8);
-    border-bottom-color: var(--line);
-    backdrop-filter: blur(16px) saturate(1.5);
   }
 }
 .nav-link[aria-current="page"] {
