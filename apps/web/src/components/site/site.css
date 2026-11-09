@@ -394,6 +394,15 @@
     0 0 0 1px var(--line),
     0 24px 50px -28px rgb(14 22 40 / 0.45);
 }
+.tilt3d {
+  transform: perspective(1000px);
+  transition:
+    transform 0.25s var(--ease),
+    box-shadow 0.4s var(--ease);
+}
+.tilt3d:hover {
+  transform: perspective(1000px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateY(-4px);
+}
 .card-link .arrow {
   transition: transform 0.4s var(--ease);
 }

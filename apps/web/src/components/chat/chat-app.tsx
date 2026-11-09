@@ -165,7 +165,16 @@ function Inner() {
   const [termOpened, setTermOpened] = useState(false);
   const [launch, setLaunch] = useState<LaunchRequest>();
   const [pendingFiles, setPendingFiles] = useState<FileUIPart[]>();
-  const [pendingText, setPendingText] = useState<string>();
+  // "/app?q=..." (from the website's "Ask anything" box) puts that question in the message box. It's never sent by
+  // itself; the person reads it and presses Send.
+  const [pendingText, setPendingText] = useState<string | undefined>(() => new URLSearchParams(location.search).get("q")?.trim().slice(0, 2000) || undefined);
+  // Then drop it from the address, so a reload doesn't put it back.
+  useEffect(() => {
+    const u = new URL(location.href);
+    if (!u.searchParams.has("q")) return;
+    u.searchParams.delete("q");
+    history.replaceState(history.state, "", u.pathname + u.search + u.hash);
+  }, []);
   const [sideChat, setSideChat] = useState(false);
   const [remoteLive, setRemoteLive] = useState(false);
   const [remoteDevice2, setRemoteDevice2] = useState<string>();

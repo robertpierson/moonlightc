@@ -81,3 +81,14 @@ test("every website page loads, links to the others, and the demo video is serve
   for (const f of ["/demo/moonlightc-demo.mp4", "/demo/poster.jpg"]) expect((await request.get(f)).status(), f).toBe(200);
   expect(errors).toEqual([]);
 });
+
+test("Try it now: a question typed on the website waits in the app's message box, unsent", async ({ page }) => {
+  await page.goto("/");
+  await page.getByLabel("Ask MoonlightC anything").fill("What's a good name for a cat?");
+  await page.getByRole("button", { name: "Ask", exact: true }).click();
+  await expect(page).toHaveURL(/\/app$/);
+  await expect(page.getByLabel("Message", { exact: true })).toHaveValue("What's a good name for a cat?");
+  // Nothing was sent: there's still no chat, and the address no longer carries the question.
+  await page.reload();
+  await expect(page.getByLabel("Message", { exact: true })).not.toHaveValue("What's a good name for a cat?");
+});

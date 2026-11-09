@@ -23,6 +23,11 @@ export function SiteMotion() {
       const r = el.getBoundingClientRect();
       el.style.setProperty("--x", `${e.clientX - r.left}px`);
       el.style.setProperty("--y", `${e.clientY - r.top}px`);
+      // Cards that lean toward the pointer, a few degrees at most.
+      if (el.classList.contains("tilt3d") && !reduced) {
+        el.style.setProperty("--ry", `${((e.clientX - r.left) / r.width - 0.5) * 6}deg`);
+        el.style.setProperty("--rx", `${(0.5 - (e.clientY - r.top) / r.height) * 6}deg`);
+      }
     };
     addEventListener("pointermove", move, { passive: true });
     return () => {

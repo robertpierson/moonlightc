@@ -2,6 +2,7 @@ import { Brain, EyeOff, FileCode, FolderOpen, Image, MessageSquare, Mic, Monitor
 import Link from "next/link";
 import type { Release } from "@/lib/releases";
 import { Arrival } from "./arrival";
+import { AskBox } from "./ask-box";
 import { Cta, SectionTitle, SiteFooter, SiteHeader, Statement, Words } from "./chrome";
 import { BrowserTab, CodeTerminal, ModelMenu, RemoteScreen } from "./demos";
 import { Moon } from "./moon";
@@ -108,6 +109,14 @@ export function Landing({ release }: { release: Release | null }) {
           </div>
         </section>
 
+        <section aria-labelledby="try" className="px-4 pt-32 text-center sm:px-6">
+          <h2 id="try" className="ink-in text-[clamp(2.4rem,6vw,4.5rem)] leading-[1.0]">
+            Try it now.
+          </h2>
+          <p className="mx-auto mt-4 mb-10 max-w-[44ch] text-lg text-[var(--mist)]">Type a question. The app opens with it ready to send, and asks for a key the first time.</p>
+          <AskBox />
+        </section>
+
         {/* Giant names sliding past. */}
         <section aria-label="Works with" className="overflow-hidden pt-28 pb-10">
           <p className="mb-6 text-center text-sm text-[var(--faint)]">Works with keys from</p>
@@ -149,7 +158,7 @@ export function Landing({ release }: { release: Release | null }) {
           <SectionTitle title="One app. Four superpowers." />
           <div className="mt-14 grid gap-5 md:grid-cols-2">
             {EXPLORE.map((e) => (
-              <Link key={e.href} href={e.href} className="card card-link spot rise flex flex-col overflow-hidden rounded-3xl p-7 sm:p-9">
+              <Link key={e.href} href={e.href} className="card card-link spot tilt3d rise flex flex-col overflow-hidden rounded-3xl p-7 sm:p-9">
                 <h3 className="text-2xl">{e.title}</h3>
                 <p className="mt-2 max-w-[40ch] text-[var(--mist)]">{e.body}</p>
                 <span className="mt-4 text-sm font-medium text-[var(--tide)]">
