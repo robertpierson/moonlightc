@@ -1,6 +1,14 @@
 // "What's new" in Settings: recent changes in plain English, newest first. Only things that really shipped.
 export const WHATS_NEW: { version: string; date: string; items: string[] }[] = [
   {
+    version: "0.6.64",
+    date: "November 8, 2026",
+    items: [
+      "The website has separate pages for models, remote control, Code and the Chrome extension, with scenes that move as you scroll.",
+      "A demo video of the real app on the website, with buttons to jump to each part.",
+    ],
+  },
+  {
     version: "0.6.63",
     date: "November 8, 2026",
     items: [

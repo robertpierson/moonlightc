@@ -2,13 +2,13 @@
 
 import { useEffect, useRef } from "react";
 
-// A daytime moon drawn with one fragment shader. The light swings around it as you scroll, so the phase changes from
-// crescent to full. No libraries; stops drawing when off screen; static under prefers-reduced-motion.
+// A huge silver moon rising over the bottom half of the hero, drawn with one fragment shader. The canvas covers the
+// hero; the disc is wider than the screen and its top edge sits at the middle. The light shifts a little as you scroll.
+// No libraries; draws only when something changes (no animation loop), so it costs nothing while you read.
 const FRAG = `
-precision mediump float;
-uniform vec2 res;
+precision highp float;
+uniform vec3 disc; // center x, center y (pixels, from the bottom left), radius
 uniform float phase;
-uniform float time;
 uniform vec3 lit;
 uniform vec3 dark;
 
@@ -19,37 +19,35 @@ float noise(vec3 p) {
   return mix(mix(mix(hash(i), hash(i + vec3(1,0,0)), f.x), mix(hash(i + vec3(0,1,0)), hash(i + vec3(1,1,0)), f.x), f.y),
              mix(mix(hash(i + vec3(0,0,1)), hash(i + vec3(1,0,1)), f.x), mix(hash(i + vec3(0,1,1)), hash(i + vec3(1,1,1)), f.x), f.y), f.z);
 }
-float fbm(vec3 p) { float v = 0.0, a = 0.5; for (int i = 0; i < 4; i++) { v += a * noise(p); p *= 2.03; a *= 0.5; } return v; }
+float fbm(vec3 p) { float v = 0.0, a = 0.5; for (int i = 0; i < 5; i++) { v += a * noise(p); p *= 2.03; a *= 0.5; } return v; }
 
 void main() {
-  vec2 uv = (gl_FragCoord.xy - 0.5 * res) / min(res.x, res.y);
-  float r = 0.36;
+  vec2 uv = (gl_FragCoord.xy - disc.xy) / disc.z; // 1.0 at the rim
   float d = length(uv);
   vec3 col = vec3(0.0);
   float alpha = 0.0;
-  vec3 L = normalize(vec3(sin(phase), 0.18, cos(phase)));
-  if (d < r) {
-    vec3 n = normalize(vec3(uv, sqrt(r * r - d * d)));
-    float c = time * 0.02;
-    vec3 q = vec3(n.x * cos(c) - n.z * sin(c), n.y, n.x * sin(c) + n.z * cos(c));
-    float maria = smoothstep(0.45, 0.7, fbm(q * 2.2));
-    float craters = fbm(q * 9.0);
-    // Silver surface: faint maria, and a cool sheen across the disc.
-    float albedo = 0.95 - maria * 0.13 + (craters - 0.5) * 0.09;
-    vec3 pearl = mix(vec3(0.86, 0.89, 0.95), vec3(0.98, 0.98, 1.0), clamp(0.5 - uv.y * 1.3 + uv.x * 0.5, 0.0, 1.0));
-    float diff = smoothstep(-0.04, 0.35, dot(n, L));
-    col = mix(dark * (0.9 + 0.1 * albedo), lit * albedo * mix(vec3(1.0), pearl, 0.7), diff);
-    // Daytime moon: the shadowed side lets the sky show through instead of sitting there as a dark disc.
-    alpha = smoothstep(r, r - 0.004, d) * mix(0.3, 1.0, diff);
+  vec3 L = normalize(vec3(sin(phase), 0.55, cos(phase)));
+  float edge = 1.5 / disc.z; // one and a half pixels of antialiasing
+  if (d < 1.0) {
+    vec3 n = normalize(vec3(uv, sqrt(1.0 - d * d)));
+    float maria = smoothstep(0.42, 0.72, fbm(n * 2.6 + 3.1));
+    float craters = fbm(n * 14.0);
+    float fine = fbm(n * 48.0);
+    float albedo = 0.96 - maria * 0.16 + (craters - 0.5) * 0.08 + (fine - 0.5) * 0.04;
+    // Brushed silver: cool at the rim, near white at the top of the arc.
+    vec3 silver = mix(vec3(0.80, 0.84, 0.91), vec3(0.99, 0.99, 1.0), clamp(n.z * 1.2, 0.0, 1.0));
+    float diff = smoothstep(-0.1, 0.6, dot(n, L));
+    col = mix(dark * (0.85 + 0.15 * albedo), lit * albedo * silver, diff);
+    alpha = smoothstep(1.0, 1.0 - edge, d);
   }
-  float glow = exp(-max(d - r, 0.0) * 14.0) * 0.55 * (0.35 + 0.65 * max(L.z * 0.5 + 0.5, 0.0));
+  // A soft halo above the rim.
+  float glow = exp(-max(d - 1.0, 0.0) * 9.0) * 0.6;
   col += lit * glow * (1.0 - alpha);
   alpha = max(alpha, glow);
   gl_FragColor = vec4(col, alpha);
 }`;
 
-const VERT =
-  "attribute vec2 p; void main(){ gl_Position = vec4(p, 0.0, 1.0); }";
+const VERT = "attribute vec2 p; void main(){ gl_Position = vec4(p, 0.0, 1.0); }";
 
 function hexToRGB(hex: string): [number, number, number] {
   const h = hex.slice(1);
@@ -59,10 +57,7 @@ function hexToRGB(hex: string): [number, number, number] {
 }
 
 function setup(canvas: HTMLCanvasElement): () => void {
-  const gl = canvas.getContext("webgl", {
-    premultipliedAlpha: false,
-    antialias: true,
-  });
+  const gl = canvas.getContext("webgl", { premultipliedAlpha: false, antialias: false });
   if (!gl) {
     canvas.dataset.fallback = "true";
     return () => {};
@@ -79,11 +74,7 @@ function setup(canvas: HTMLCanvasElement): () => void {
   gl.linkProgram(prog);
   gl.useProgram(prog);
   gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
-  gl.bufferData(
-    gl.ARRAY_BUFFER,
-    new Float32Array([-1, -1, 3, -1, -1, 3]),
-    gl.STATIC_DRAW,
-  );
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
   const loc = gl.getAttribLocation(prog, "p");
   gl.enableVertexAttribArray(loc);
   gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
@@ -91,63 +82,40 @@ function setup(canvas: HTMLCanvasElement): () => void {
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
   const u = (n: string) => gl.getUniformLocation(prog, n);
   const styles = getComputedStyle(canvas);
-  gl.uniform3fv(
-    u("lit"),
-    hexToRGB(styles.getPropertyValue("--moon-lit").trim() || "#e4e8f2"),
-  );
-  gl.uniform3fv(
-    u("dark"),
-    hexToRGB(styles.getPropertyValue("--moon-dark").trim() || "#1b2550"),
-  );
-
+  gl.uniform3fv(u("lit"), hexToRGB(styles.getPropertyValue("--moon-lit").trim() || "#ffffff"));
+  gl.uniform3fv(u("dark"), hexToRGB(styles.getPropertyValue("--moon-dark").trim() || "#aab5c9"));
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  // Draw one frame now; start the slow drift only after the page has settled, so it never competes with loading.
-  let still = true;
-  let raf = 0;
-  let visible = true;
-  const start = performance.now();
 
-  const resize = () => {
-    const dpr = Math.min(
-      devicePixelRatio,
-      matchMedia("(pointer: coarse)").matches ? 1 : 1.5,
-    );
-    canvas.width = canvas.clientWidth * dpr;
-    canvas.height = canvas.clientHeight * dpr;
-    gl.viewport(0, 0, canvas.width, canvas.height);
-    gl.uniform2f(u("res"), canvas.width, canvas.height);
-    if (still) draw();
-  };
+  let raf = 0;
   const draw = () => {
-    const progress = Math.min(1, scrollY / Math.max(1, innerHeight));
-    gl.uniform1f(u("phase"), -1.1 + progress * 1.1);
-    gl.uniform1f(u("time"), still ? 0 : (performance.now() - start) / 1000);
+    raf = 0;
+    const w = canvas.width;
+    const h = canvas.height;
+    // Wider than the screen, with its top at the middle of the canvas.
+    const r = Math.max(w * 0.78, h * 0.7);
+    gl.uniform3f(u("disc"), w / 2, h / 2 - r, r);
+    const progress = reduced ? 0 : Math.min(1, scrollY / Math.max(1, innerHeight));
+    gl.uniform1f(u("phase"), -0.35 + progress * 0.5);
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
-    if (!still && visible) raf = requestAnimationFrame(draw);
   };
-  const io = new IntersectionObserver(([e]) => {
-    visible = e.isIntersecting;
-    cancelAnimationFrame(raf);
-    if (visible) draw();
-  });
-  const onScroll = () => still && draw();
+  const schedule = () => (raf ||= requestAnimationFrame(draw));
+  const resize = () => {
+    // A big canvas: cap the pixel ratio so phones and 4K screens stay smooth.
+    const dpr = Math.min(devicePixelRatio, 1.5);
+    canvas.width = Math.round(canvas.clientWidth * dpr);
+    canvas.height = Math.round(canvas.clientHeight * dpr);
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    schedule();
+  };
+  const onScroll = () => scrollY < innerHeight * 1.2 && schedule();
   resize();
-  draw();
   canvas.dataset.ready = "true";
-  io.observe(canvas);
-  const wake = setTimeout(() => {
-    if (reduced) return;
-    still = false;
-    if (visible) draw();
-  }, 4000);
   addEventListener("resize", resize);
-  addEventListener("scroll", onScroll, { passive: true });
+  if (!reduced) addEventListener("scroll", onScroll, { passive: true });
   return () => {
-    clearTimeout(wake);
     cancelAnimationFrame(raf);
-    io.disconnect();
     removeEventListener("resize", resize);
     removeEventListener("scroll", onScroll);
   };
@@ -155,32 +123,20 @@ function setup(canvas: HTMLCanvasElement): () => void {
 
 export function Moon({ className }: { className?: string }) {
   const ref = useRef<HTMLCanvasElement>(null);
-
   useEffect(() => {
     let cleanup: (() => void) | undefined;
     let cancelled = false;
-    // Start only after the page has loaded and gone idle, so the moon never delays the text from appearing.
+    // Start once the page has loaded, so the moon never delays the text.
     const begin = () => {
       if (!cancelled && ref.current) cleanup = setup(ref.current);
     };
-    const idle = () =>
-      "requestIdleCallback" in window
-        ? requestIdleCallback(begin, { timeout: 2000 })
-        : setTimeout(begin, 200);
-    if (document.readyState === "complete") idle();
-    else addEventListener("load", idle, { once: true });
+    if (document.readyState === "complete") begin();
+    else addEventListener("load", begin, { once: true });
     return () => {
       cancelled = true;
-      removeEventListener("load", idle);
+      removeEventListener("load", begin);
       cleanup?.();
     };
   }, []);
-
-  return (
-    <canvas
-      ref={ref}
-      aria-hidden
-      className={`moon-canvas ${className ?? ""}`}
-    />
-  );
+  return <canvas ref={ref} aria-hidden className={`moon-canvas ${className ?? ""}`} />;
 }

@@ -63,3 +63,21 @@ test("the website stays light; the app starts dark and keeps the person's choice
   await page.goto("/download");
   await expect(page.locator("html")).not.toHaveClass(/\bdark\b/);
 });
+
+test("every website page loads, links to the others, and the demo video is served", async ({ page, request }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  for (const [path, title] of [
+    ["/models", /Every model\.\s*Your keys\./],
+    ["/remote", /Your PC, from anywhere\./],
+    ["/code", /Build with AI, on any device\./],
+    ["/extension", /Let the AI use your browser\./],
+  ] as const) {
+    await page.goto(path);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(title);
+    const hrefs = await page.locator("a[href^='/']").evaluateAll((as) => [...new Set(as.map((a) => a.getAttribute("href")!))]);
+    for (const h of hrefs) expect((await request.get(h)).status(), `${path} -> ${h}`).toBe(200);
+  }
+  for (const f of ["/demo/moonlightc-demo.mp4", "/demo/poster.jpg"]) expect((await request.get(f)).status(), f).toBe(200);
+  expect(errors).toEqual([]);
+});

@@ -2,11 +2,11 @@
 
 Do them in order. When done, tell Claude "done, continue".
 
-## Try this: the new website (0.6.63, 2 minutes)
-1. Open https://moonlightc.vercel.app . It should be white and silver, with the headline appearing word by word and a moving preview of the app.
-2. Scroll down slowly: the app window flattens out, section titles fill in, and the little demos play.
-3. Click **Open web app**. The app should open in dark mode. (If you'd picked light before, it keeps your choice. Settings > Appearance changes it.)
-4. Go back to the website. It stays white whatever the app is set to.
+## Try this: the new website (0.6.64, 3 minutes)
+1. Open https://moonlightc.vercel.app . A huge silver moon fills the bottom half; the headline appears word by word.
+2. Scroll slowly. The app window grows to fill the screen and plays a real demo. Click the buttons under it to jump to a part.
+3. Keep scrolling: AI company names slide past, then four cards. Click one: each has its own page (also in the menu at the top).
+4. On the Models and Code pages, the picture on the right changes as you read each step on the left.
 5. Tell Claude anything you'd like changed.
 
 ## For launch: two decisions only you can make

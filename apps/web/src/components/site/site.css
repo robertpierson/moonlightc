@@ -1,20 +1,22 @@
-/* Marketing site: white and brushed silver, navy ink. Always light, whatever the device's color mode
+/* Marketing site: white and brushed silver, deep navy ink. Always light, whatever the device's color mode
    (the web app has its own themes; this site doesn't follow them). */
 .site {
   color-scheme: light;
   --paper: #ffffff;
-  --silver-1: #f5f7fa; /* panels */
-  --silver-2: #e7ebf1;
-  --silver-3: #c9d1dd;
-  --ink: #0b1530; /* headings */
-  --mist: #4f5a74; /* body text */
-  --faint: #687187;
-  --tide: #1d4fd8; /* links, accents */
-  --line: rgb(11 21 48 / 0.09);
+  --silver-1: #f5f6f9; /* panels */
+  --silver-2: #e6e9ef;
+  --silver-3: #c9cfd9;
+  --ink: #0e1628; /* headings */
+  --mist: #4a5368; /* body text */
+  --faint: #626b80;
+  --tide: #24365f; /* links, accents: a deep, quiet navy */
+  --line: rgb(14 22 40 / 0.09);
   --moon-lit: #ffffff;
-  --moon-dark: #aab5c9;
-  --chrome: linear-gradient(180deg, #ffffff 0%, #eef1f6 55%, #dde2ea 100%);
-  --g-brand: linear-gradient(180deg, #2a5bea 0%, #1640c4 55%, #0e2f99 100%);
+  --moon-dark: #b4bccb;
+  --chrome: linear-gradient(180deg, #ffffff 0%, #eff1f5 55%, #dfe3ea 100%);
+  --g-brand: linear-gradient(180deg, #2c3b5e 0%, #1b2744 55%, #121b31 100%);
+  --g-night: linear-gradient(165deg, #1e2a46 0%, #141d33 55%, #0e1527 100%);
+  --ease: cubic-bezier(0.22, 0.8, 0.2, 1);
   background: var(--paper);
   color: var(--ink);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
@@ -39,18 +41,28 @@
   .site-header {
     animation: head linear both;
     animation-timeline: scroll(root);
-    animation-range: 0 140px;
+    animation-range: 0 120px;
   }
 }
 @keyframes head {
   to {
-    background: rgb(255 255 255 / 0.78);
+    background: rgb(255 255 255 / 0.8);
     border-bottom-color: var(--line);
-    backdrop-filter: blur(14px) saturate(1.4);
+    backdrop-filter: blur(16px) saturate(1.5);
   }
 }
+.nav-link[aria-current="page"] {
+  color: var(--ink);
+  font-weight: 500;
+}
+.menu[open] .menu-panel {
+  animation: fade-up 0.35s var(--ease) both;
+}
+.menu summary::-webkit-details-marker {
+  display: none;
+}
 
-/* Buttons. Primary: glossy navy with a light sweep on hover. Secondary: polished silver. */
+/* Buttons. Primary: glossy deep navy with a light sweep on hover. Secondary: polished silver. */
 .btn-primary,
 .btn-silver {
   position: relative;
@@ -62,24 +74,24 @@
   font-weight: 500;
   overflow: hidden;
   transition:
-    transform 0.2s cubic-bezier(0.2, 0.7, 0.2, 1),
-    box-shadow 0.2s;
+    transform 0.25s var(--ease),
+    box-shadow 0.25s;
 }
 .btn-primary {
   background: var(--g-brand);
   color: #fff;
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.35),
-    inset 0 -1px 0 rgb(0 0 0 / 0.2),
-    0 8px 24px -10px rgb(22 64 196 / 0.7);
+    inset 0 1px 0 rgb(255 255 255 / 0.22),
+    inset 0 -1px 0 rgb(0 0 0 / 0.25),
+    0 10px 26px -12px rgb(14 22 40 / 0.7);
 }
 .btn-primary::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(105deg, transparent 35%, rgb(255 255 255 / 0.35) 50%, transparent 65%);
+  background: linear-gradient(105deg, transparent 35%, rgb(255 255 255 / 0.22) 50%, transparent 65%);
   transform: translateX(-120%);
-  transition: transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+  transition: transform 0.8s var(--ease);
 }
 .btn-primary:hover::after {
   transform: translateX(120%);
@@ -89,8 +101,8 @@
   color: var(--ink);
   box-shadow:
     inset 0 1px 0 #fff,
-    0 0 0 1px rgb(11 21 48 / 0.1),
-    0 6px 18px -10px rgb(11 21 48 / 0.35);
+    0 0 0 1px rgb(14 22 40 / 0.1),
+    0 6px 18px -10px rgb(14 22 40 / 0.35);
 }
 .btn-primary:hover,
 .btn-silver:hover {
@@ -101,44 +113,55 @@
   transform: translateY(0) scale(0.98);
 }
 
-/* Hero sky: a pale silver dawn with brushed-metal hills and the moon rising behind them. */
+/* Hero: a pale silver sky, and a moon wider than the screen rising over its bottom half. */
 .sky {
   background:
-    radial-gradient(60% 50% at 78% 78%, rgb(255 255 255 / 0.95), transparent 70%),
-    radial-gradient(70% 60% at 20% 0%, #c3cee2 0%, transparent 70%),
-    linear-gradient(180deg, #cdd6e6 0%, #e3e8f1 38%, #f4f6fa 70%, #ffffff 100%);
+    radial-gradient(70% 55% at 50% 100%, rgb(255 255 255 / 0.9), transparent 70%),
+    linear-gradient(180deg, #d3d9e4 0%, #e6e9f0 40%, #f3f4f8 75%, #ffffff 100%);
 }
-.hills {
-  will-change: transform;
+.hero {
+  height: 100svh;
+  min-height: 38rem;
 }
 @supports (animation-timeline: scroll()) {
-  .hills-back {
-    animation: drift linear both;
+  .hero-moon {
+    animation: moon-rise linear both;
     animation-timeline: scroll(root);
-    animation-range: 0 100vh;
+    animation-range: 0 100svh;
+  }
+  .hero-copy {
+    animation: copy-out linear both;
+    animation-timeline: scroll(root);
+    animation-range: 0 70svh;
   }
 }
-@keyframes drift {
+@keyframes moon-rise {
   to {
-    transform: translateY(60px);
+    transform: translateY(-14%) scale(1.06);
+  }
+}
+@keyframes copy-out {
+  to {
+    opacity: 0;
+    transform: translateY(-48px) scale(0.97);
   }
 }
 
 /* Headline: each word arrives out of a blur, one after another. */
 .word {
   display: inline-block;
-  animation: word-in 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
-  animation-delay: calc(var(--i) * 80ms + 100ms);
+  animation: word-in 1s var(--ease) both;
+  animation-delay: calc(var(--i) * 90ms + 150ms);
 }
 @keyframes word-in {
   from {
     opacity: 0;
-    filter: blur(12px);
-    transform: translateY(0.35em);
+    filter: blur(14px);
+    transform: translateY(0.3em);
   }
 }
 .fade-up {
-  animation: fade-up 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation: fade-up 1s var(--ease) both;
   animation-delay: var(--d, 0.5s);
 }
 @keyframes fade-up {
@@ -148,24 +171,43 @@
   }
 }
 
-/* The app window tilts back and settles flat as it scrolls in. */
-.window-stage {
-  perspective: 1800px;
+/* Pinned scenes: the section is tall, its inside stays on screen, and scrolling drives what happens in it. */
+.scene {
+  view-timeline: --scene block;
+  height: 280vh;
+}
+.scene-short {
+  height: 200vh;
+}
+.scene-sticky {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  overflow: hidden;
 }
 @supports (animation-timeline: view()) {
-  .tilt {
-    animation: tilt linear both;
-    animation-timeline: view();
-    animation-range: entry 0% cover 45%;
+  .scene-grow {
+    animation: scene-grow linear both;
+    animation-timeline: --scene;
+    animation-range: contain 0% contain 55%;
+  }
+  .scene-title {
+    animation: title-out linear both;
+    animation-timeline: --scene;
+    animation-range: contain 0% contain 35%;
+  }
+  .scene-caption {
+    animation: caption-in linear both;
+    animation-timeline: --scene;
+    animation-range: contain 50% contain 70%;
   }
   .rise {
     animation: rise linear both;
     animation-timeline: view();
     animation-range: entry 0% cover 30%;
   }
-  /* Section titles fill with ink from left to right as they scroll into view. */
   .ink-in {
-    background: linear-gradient(90deg, var(--ink) 50%, #c2c9d6 50%) 100% 0 / 200% 100% no-repeat;
+    background: linear-gradient(90deg, var(--ink) 50%, #c5cbd6 50%) 100% 0 / 200% 100% no-repeat;
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -173,10 +215,34 @@
     animation-timeline: view();
     animation-range: entry 30% cover 50%;
   }
+  /* Giant words that slide sideways as you scroll past. */
+  .slide-x {
+    animation: slide-x linear both;
+    animation-timeline: view();
+    animation-range: cover 0% cover 100%;
+  }
 }
-@keyframes tilt {
+@keyframes scene-grow {
   from {
-    transform: rotateX(18deg) scale(0.92) translateY(-20px);
+    transform: translateY(12vh) scale(0.58);
+    border-radius: 2.5rem;
+  }
+  to {
+    transform: none;
+    border-radius: 1.25rem;
+  }
+}
+@keyframes title-out {
+  to {
+    opacity: 0;
+    transform: translateY(-6vh) scale(0.94);
+    filter: blur(6px);
+  }
+}
+@keyframes caption-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
   }
 }
 @keyframes rise {
@@ -190,44 +256,85 @@
     background-position: 0 0;
   }
 }
+@keyframes slide-x {
+  from {
+    transform: translateX(8%);
+  }
+  to {
+    transform: translateX(-62%);
+  }
+}
 
-/* Feature cards: brushed silver with a faint blue cast. */
+/* Sticky steps: the text on one side scrolls, the picture on the other stays and changes. */
+/* Steps you're not reading fade to grey (still readable), the current one is full ink. */
+.step h3,
+.step p {
+  transition: color 0.5s var(--ease);
+}
+.step h3 {
+  color: #868ea0; /* large text: 3:1 is enough */
+}
+.step p {
+  color: #697185;
+}
+.step[data-active] h3 {
+  color: var(--ink);
+}
+.step[data-active] p {
+  color: var(--mist);
+}
+.step-visual {
+  opacity: 0;
+  transform: scale(0.97) translateY(12px);
+  transition:
+    opacity 0.6s var(--ease),
+    transform 0.6s var(--ease);
+}
+.step-visual[data-active] {
+  opacity: 1;
+  transform: none;
+}
+
+/* Cards. Silver for most; one deep night card per page at most. */
 .card {
   background:
-    radial-gradient(80% 70% at 100% 0%, rgb(29 79 216 / 0.07), transparent 70%),
-    linear-gradient(180deg, #f7f9fc 0%, #edf0f5 100%);
+    radial-gradient(80% 70% at 100% 0%, rgb(36 54 95 / 0.06), transparent 70%),
+    linear-gradient(180deg, #f7f8fb 0%, #edf0f4 100%);
   box-shadow:
     inset 0 1px 0 #fff,
     0 0 0 1px var(--line);
 }
-.card-blue {
+.card-night {
   background:
-    radial-gradient(70% 60% at 20% 0%, rgb(255 255 255 / 0.18), transparent 70%),
-    linear-gradient(160deg, #3560e0 0%, #2a52d2 50%, #1b3aa8 100%);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.4);
+    radial-gradient(70% 60% at 20% 0%, rgb(255 255 255 / 0.08), transparent 70%),
+    var(--g-night);
+  color: #eef1f6;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1);
+}
+.card-link {
+  transition:
+    transform 0.4s var(--ease),
+    box-shadow 0.4s var(--ease);
+}
+.card-link:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    inset 0 1px 0 #fff,
+    0 0 0 1px var(--line),
+    0 24px 50px -28px rgb(14 22 40 / 0.45);
+}
+.card-link .arrow {
+  transition: transform 0.4s var(--ease);
+}
+.card-link:hover .arrow {
+  transform: translateX(4px);
 }
 
-/* Dark app pieces inside the mockups (the app itself defaults to dark). */
+/* Dark app pieces inside the pictures (the app itself defaults to dark). */
 .app-dark {
   color-scheme: dark;
-  background: #0a1022;
-  color: #e6ebf5;
-}
-
-.caret::after {
-  content: "";
-  display: inline-block;
-  width: 0.5em;
-  height: 1em;
-  margin-left: 1px;
-  vertical-align: -0.12em;
-  background: currentColor;
-  animation: blink 1s steps(1) infinite;
-}
-@keyframes blink {
-  50% {
-    opacity: 0;
-  }
+  background: #0d121d;
+  color: #e8ebf2;
 }
 
 .marquee {
@@ -240,24 +347,24 @@
 }
 
 /* FAQ: answers open smoothly. */
+.faq {
+  interpolate-size: allow-keywords;
+}
 .faq details::details-content {
   block-size: 0;
   overflow: clip;
   transition:
-    block-size 0.35s cubic-bezier(0.2, 0.7, 0.2, 1),
-    content-visibility 0.35s allow-discrete;
+    block-size 0.4s var(--ease),
+    content-visibility 0.4s allow-discrete;
 }
 .faq details[open]::details-content {
   block-size: auto;
-}
-.faq {
-  interpolate-size: allow-keywords;
 }
 .faq summary::-webkit-details-marker {
   display: none;
 }
 .faq .plus {
-  transition: transform 0.3s cubic-bezier(0.2, 0.7, 0.2, 1);
+  transition: transform 0.35s var(--ease);
 }
 .faq details[open] .plus {
   transform: rotate(45deg);
@@ -265,14 +372,14 @@
 
 .moon-canvas {
   opacity: 0;
-  transition: opacity 1.4s ease-out;
+  transition: opacity 1.6s ease-out;
 }
 .moon-canvas[data-ready],
 .moon-canvas[data-fallback] {
   opacity: 1;
 }
 .moon-canvas[data-fallback] {
-  background: radial-gradient(circle at 50% 50%, #fff 0 26%, transparent 27%);
+  background: radial-gradient(80% 100% at 50% 100%, #fff 0 49%, transparent 50%);
 }
 
 .site a:focus-visible,
@@ -293,5 +400,14 @@
   .ink-in {
     color: var(--ink);
     background: none;
+  }
+  .scene,
+  .scene-short {
+    height: auto;
+  }
+  .scene-sticky {
+    position: static;
+    height: auto;
+    padding-block: 4rem;
   }
 }

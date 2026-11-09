@@ -167,3 +167,8 @@ Alternatives: changing the Windows power plan (changes a system setting, and sta
 What: home, download, privacy and terms always render light (white and silver) and ignore the app's theme. The app starts dark; people can change it.
 Why: the owner's call. People look at the site in the day and use the app at night, and white stands out against other AI sites.
 Alternatives: one theme for both (the site followed the device before); a site theme switch (owner said no).
+
+## 2026-11-08: The website's demo video is the real app with scripted answers
+What: the demo is filmed from the real web app; only the AI's replies come from a local stand-in server, and the page says so.
+Why: real AI calls would cost money (owner: don't spend), and scripted answers keep the video the same every time it's re-filmed.
+Alternatives: hand-built animated mockups only (looked fake to the owner); filming with a real key (costs money, answers change).
