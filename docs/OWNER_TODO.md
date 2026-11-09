@@ -9,10 +9,13 @@ Do them in order. When done, tell Claude "done, continue".
 4. On the Models and Code pages, the picture on the right changes as you read each step on the left.
 5. Tell Claude anything you'd like changed.
 
-## For launch: two decisions only you can make
-**A. Make the desktop app downloadable from the website.** Installers for Windows, Mac and Linux are built in a private draft on GitHub. Until they're public, the website's main button says "Open the web app" instead of "Download for Windows". Making them public is your call: tell Claude "publish the desktop release".
+## Launched (Nov 9, 2026): try the download yourself (2 minutes)
+1. Open https://moonlightc.vercel.app on any computer. The main button now says **Download for Windows** (or Mac/Linux, matching the computer).
+2. Click it: the installer downloads straight from GitHub. The Download page lists every installer plus the Chrome extension zip.
+3. All files are also at https://github.com/robertpierson/moonlightc/releases/latest
 
-**B. Put the Chrome extension in the Chrome Web Store** (a one-time $5 fee to Google, paid by you; skip it if you'd rather not). Without it, people install the extension with Developer mode, which most people won't do. Everything is ready to upload:
+## Later, if you want: Chrome Web Store
+You chose to skip it for launch; people install the extension from the zip. If you change your mind (one-time $5 fee to Google, paid by you):
 1. Open https://chrome.google.com/webstore/devconsole and sign in with your Google account.
 2. Accept the developer agreement and pay the $5 registration fee. On the **Account** tab, add and verify a contact email.
 3. Click **New item** and upload `C:\Users\rober\MoonC\apps\web\public\downloads\moonlightc-chrome-extension.zip`.
@@ -144,19 +147,6 @@ For each one, after step 3 add the two values in Vercel exactly like step 6 of s
 3. Click **Studio**, describe an image, click **Generate**. Then the **Video** tab, describe a short clip, **Generate** (takes 1–5 minutes).
 4. Click **Connections** > **Connect GitHub**. Make a token at https://github.com/settings/personal-access-tokens/new (Repository access: All repositories; Permissions: Contents, Issues, Pull requests = Read). Paste it and click **Connect**. Your real GitHub numbers appear.
 5. In a chat, turn on nothing extra and ask: "What are my open pull requests?" Click **Allow once** when it asks.
-
----
-## Optional: let the desktop app update itself
-Today Claude installs new desktop versions on your PC by hand. For automatic updates (on any PC), the app needs public releases on GitHub.
-That's publishing something publicly, so it needs your OK: tell Claude "publish desktop releases".
-
-## Optional: publish a test version of the desktop app
-Installers for Windows, Mac and Linux are built and waiting in a **draft** (private) release. Nothing is public until you choose.
-1. Open https://github.com/robertpierson/moonlightc/releases
-2. Click **0.1.0** (marked Draft) and look at the files.
-3. If you want people to download it now: click the pencil (**Edit**), tick **Set as a pre-release**, click **Publish release**.
-   The download page on the website then shows the right button for each visitor automatically.
-   (Builds aren't code-signed yet, so Windows/Mac show a warning the first time; the download page explains how to open it.)
 
 ## Optional: turn your PC on from anywhere (needs a small part; costs money, your call)
 Software can't start a PC that's off; something has to press the power button. Pick one:

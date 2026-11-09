@@ -12,7 +12,7 @@ export const metadata: Metadata = { title: "Download · MoonlightC", description
 
 const GROUPS: { platform: Build["platform"]; name: string; note: string }[] = [
   { platform: "windows", name: "Windows", note: "Builds aren't code-signed yet, so Windows may show \"Windows protected your PC\". Click More info, then Run anyway." },
-  { platform: "mac", name: "macOS", note: "Builds aren't signed yet. After opening the .dmg, right-click MoonlightC in Applications and choose Open the first time." },
+  { platform: "mac", name: "macOS", note: "Builds aren't notarized yet. Drag MoonlightC into Applications and open it. If macOS stops it, open System Settings, then Privacy & Security, scroll down and click Open Anyway." },
   { platform: "linux", name: "Linux", note: "arm64 builds also run on Raspberry Pi and on Chromebooks with Linux turned on." },
 ];
 
