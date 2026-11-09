@@ -491,30 +491,6 @@ html[data-night] .scroll-bar {
   background: linear-gradient(90deg, #8fa3c8, #fff);
 }
 
-/* Little chat pieces floating around the hero headline: they arrive one by one, bob gently, and drift as you scroll. */
-.float-card {
-  position: absolute;
-  z-index: 5;
-}
-.float-card > div {
-  animation:
-    float-in 1.1s var(--ease) both,
-    bob 6s ease-in-out infinite;
-  animation-delay: var(--d, 1s), calc(var(--d, 1s) + 1.1s);
-}
-@keyframes float-in {
-  from {
-    opacity: 0;
-    transform: translateY(30px) scale(0.9);
-    filter: blur(8px);
-  }
-}
-@keyframes bob {
-  50% {
-    translate: 0 -10px;
-  }
-}
-
 /* Chips around the demo film that fly outward as the film grows to fill the screen. */
 .scatter {
   position: absolute;
@@ -526,11 +502,6 @@ html[data-night] .scroll-bar {
   .scroll-bar {
     animation: bar linear both;
     animation-timeline: scroll(root);
-  }
-  .float-card {
-    animation: drift linear both;
-    animation-timeline: scroll(root);
-    animation-range: 0 100vh;
   }
 }
 @supports (animation-timeline: view()) {
@@ -549,11 +520,6 @@ html[data-night] .scroll-bar {
 @keyframes bar {
   to {
     transform: scaleX(1);
-  }
-}
-@keyframes drift {
-  to {
-    transform: translateY(var(--py, -120px));
   }
 }
 @keyframes scatter {
