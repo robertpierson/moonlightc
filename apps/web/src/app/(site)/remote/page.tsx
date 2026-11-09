@@ -56,7 +56,7 @@ export default function Remote() {
         <SectionTitle title="Set up in four steps." />
         <ol className="mt-12 grid divide-y divide-[var(--line)] overflow-hidden rounded-3xl bg-white ring-1 ring-[var(--line)]">
           {SETUP.map(([t, b], i) => (
-            <li key={t} className="rise grid grid-cols-[3rem_1fr] gap-4 bg-white p-7 sm:p-8">
+            <li key={t} className="grid grid-cols-[3rem_1fr] gap-4 bg-white p-7 sm:p-8">
               <span className="text-3xl font-medium tracking-tight text-[#aeb6c4]">{i + 1}</span>
               <div>
                 <h3 className="text-xl">{t}</h3>

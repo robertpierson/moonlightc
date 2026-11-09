@@ -53,7 +53,7 @@ export default function Extension() {
             ["Click Load unpacked.", "Pick the moonlightc-chrome-extension folder (the one with manifest.json in it)."],
             ["Share a tab.", "On any tab, click the MoonlightC icon, then Share this tab. Ask the AI in Cowork to use it."],
           ].map(([t, b], i) => (
-            <li key={t} className="rise grid grid-cols-[3rem_1fr] gap-4 bg-white p-7 sm:p-8">
+            <li key={t} className="grid grid-cols-[3rem_1fr] gap-4 bg-white p-7 sm:p-8">
               <span className="text-3xl font-medium tracking-tight text-[#aeb6c4]">{i + 1}</span>
               <div>
                 <h3 className="text-xl">{t}</h3>
