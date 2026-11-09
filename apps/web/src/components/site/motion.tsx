@@ -1,6 +1,7 @@
 "use client";
 
 import Lenis from "lenis";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 /**
@@ -8,6 +9,28 @@ import { useEffect, useRef, useState } from "react";
  * across any element with the class "spot".
  */
 export function SiteMotion() {
+  const path = usePathname();
+  // Tell the header when a night section is right under it: a 2px line just below the header. Re-scanned on every page.
+  useEffect(() => {
+    const root = document.documentElement;
+    const under = new Set<Element>();
+    const night = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) under.add(e.target);
+          else under.delete(e.target);
+        }
+        if (under.size) root.dataset.night = "";
+        else delete root.dataset.night;
+      },
+      { rootMargin: `-64px 0px -${Math.max(0, innerHeight - 66)}px 0px` },
+    );
+    document.querySelectorAll(".night").forEach((n) => night.observe(n));
+    return () => {
+      night.disconnect();
+      delete root.dataset.night;
+    };
+  }, [path]);
   useEffect(() => {
     const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
     const lenis = reduced ? null : new Lenis({ lerp: 0.11, smoothWheel: true });

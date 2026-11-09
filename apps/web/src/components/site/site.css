@@ -1,8 +1,6 @@
 /* Marketing site: white and brushed silver, deep navy ink. Always light, whatever the device's color mode
    (the web app has its own themes; this site doesn't follow them). */
 .site {
-  /* Lets the header react to night sections further down the page. */
-  timeline-scope: --night;
   color-scheme: light;
   --paper: #ffffff;
   --silver-1: #f5f6f9; /* panels */
@@ -46,26 +44,33 @@
 }
 @supports (animation-timeline: scroll()) {
   .site-header {
-    animation:
-      head linear both,
-      head-night linear none;
-    animation-timeline: scroll(root), --night;
-    animation-range:
-      0 120px,
-      contain 0% contain 100%;
+    animation: head linear both;
+    animation-timeline: scroll(root);
+    animation-range: 0 120px;
   }
 }
-/* While a night section fills the screen, the header is dark glass with light text. Outside it, this does nothing
-   (no fill), and pages without a night section never run it. */
-@keyframes head-night {
-  from,
+@keyframes head {
   to {
-    background: rgb(10 15 28 / 0.72);
-    border-bottom-color: rgb(255 255 255 / 0.08);
-    color: #f2f4f8;
-    --ink: #f2f4f8;
-    --mist: #aab2c3;
+    background: rgb(255 255 255 / 0.8);
+    border-bottom-color: var(--line);
+    backdrop-filter: blur(16px) saturate(1.5);
   }
+}
+/* While a night section is under the header (SiteMotion sets data-night), it turns to dark glass with light text. */
+.site-header {
+  transition:
+    background-color 0.35s var(--ease),
+    color 0.35s var(--ease),
+    border-color 0.35s var(--ease);
+}
+html[data-night] .site-header {
+  /* !important beats the scroll animation's white glass without switching that animation off and on. */
+  background: rgb(10 15 28 / 0.72) !important;
+  border-bottom-color: rgb(255 255 255 / 0.08) !important;
+  backdrop-filter: blur(16px) saturate(1.4) !important;
+  color: #f2f4f8;
+  --ink: #f2f4f8;
+  --mist: #aab2c3;
 }
 .nav-link[aria-current="page"] {
   color: var(--ink);

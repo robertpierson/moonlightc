@@ -92,3 +92,12 @@ test("Try it now: a question typed on the website waits in the app's message box
   await page.reload();
   await expect(page.getByLabel("Message", { exact: true })).not.toHaveValue("What's a good name for a cat?");
 });
+
+test("the header gets its frosted backdrop once you scroll, and goes dark over night sections", async ({ page }) => {
+  await page.goto("/remote");
+  const bg = () => page.locator(".site-header").evaluate((h) => getComputedStyle(h).backgroundColor);
+  await page.evaluate(() => scrollTo(0, 400));
+  await expect.poll(bg).toMatch(/rgba\(255, 255, 255, 0\.8\)/);
+  await page.evaluate(() => scrollTo(0, document.querySelector(".night")!.getBoundingClientRect().top + scrollY + innerHeight));
+  await expect.poll(bg).toMatch(/rgba\(10, 15, 28/);
+});
