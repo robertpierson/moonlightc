@@ -1,13 +1,29 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { DEMO_CHAPTERS } from "./pages";
+import { DEMO_CAMERA, DEMO_CHAPTERS } from "./pages";
 
 
 /**
  * The real app on film. Plays while it's on screen (from `from` to the end, then again), and pauses when it isn't.
  * The chapter buttons jump to a part. Under reduced motion it waits for Play.
  */
+/** Where the camera is at time t: zoom and offset (as % of the frame), eased between the points in DEMO_CAMERA. */
+export function cameraAt(t: number) {
+  const k = DEMO_CAMERA;
+  let i = k.findLastIndex((p) => p[0] <= t);
+  if (i < 0) i = 0;
+  const a = k[i];
+  const b = k[Math.min(i + 1, k.length - 1)];
+  const u = b[0] > a[0] ? Math.min(1, (t - a[0]) / (b[0] - a[0])) : 0;
+  const e = u * u * (3 - 2 * u);
+  const [s, x, y] = [1, 2, 3].map((j) => a[j] + (b[j] - a[j]) * e);
+  // Put the focus point in the middle, but never show past the frame's edges.
+  const lim = (s - 1) * 50;
+  const clamp = (v: number) => Math.max(-lim, Math.min(lim, v));
+  return { s, tx: clamp(-s * (x - 0.5) * 100), ty: clamp(-s * (y - 0.5) * 100) };
+}
+
 export function DemoVideo({ from = 0, chapters = DEMO_CHAPTERS, className = "", frameClassName = "rounded-xl", chipsClassName = "" }: { from?: number; chapters?: typeof DEMO_CHAPTERS; className?: string; frameClassName?: string; chipsClassName?: string }) {
   const ref = useRef<HTMLVideoElement>(null);
   const [now, setNow] = useState(from);
@@ -25,6 +41,38 @@ export function DemoVideo({ from = 0, chapters = DEMO_CHAPTERS, className = "", 
     io.observe(v);
     return () => io.disconnect();
   }, [from, userPaused]);
+
+  // The camera follows the film while it plays (and after a jump); it stays wide under reduced motion.
+  useEffect(() => {
+    const v = ref.current;
+    if (!v || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    let raf = 0;
+    const aim = () => {
+      const { s, tx, ty } = cameraAt(v.currentTime);
+      v.style.transform = `translate(${tx}%, ${ty}%) scale(${s})`;
+    };
+    const loop = () => {
+      aim();
+      raf = requestAnimationFrame(loop);
+    };
+    const play = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(loop);
+    };
+    const stop = () => {
+      cancelAnimationFrame(raf);
+      aim();
+    };
+    v.addEventListener("play", play);
+    v.addEventListener("pause", stop);
+    v.addEventListener("seeked", aim);
+    return () => {
+      cancelAnimationFrame(raf);
+      v.removeEventListener("play", play);
+      v.removeEventListener("pause", stop);
+      v.removeEventListener("seeked", aim);
+    };
+  }, []);
 
   const active = chapters.findLastIndex((c) => now >= c.t - 0.05);
   const jump = (t: number) => {
@@ -55,7 +103,7 @@ export function DemoVideo({ from = 0, chapters = DEMO_CHAPTERS, className = "", 
           playsInline
           preload="metadata"
           aria-label="MoonlightC in use: asking for a trip plan, switching models, then building and using a tip calculator in the Code tab"
-          className="block aspect-[16/10] w-full"
+          className="block aspect-[16/10] w-full origin-center will-change-transform"
           onTimeUpdate={(e) => setNow(e.currentTarget.currentTime)}
           onPlay={() => setPaused(false)}
           onPause={() => setPaused(true)}
@@ -93,7 +141,7 @@ export function DemoVideo({ from = 0, chapters = DEMO_CHAPTERS, className = "", 
               <span
                 aria-hidden
                 className="absolute inset-x-0 bottom-0 h-0.5 origin-left bg-white/60"
-                style={{ transform: `scaleX(${Math.min(1, (now - c.t) / ((chapters[i + 1]?.t ?? 26) - c.t))})` }}
+                style={{ transform: `scaleX(${Math.min(1, (now - c.t) / ((chapters[i + 1]?.t ?? 27) - c.t))})` }}
               />
             )}
           </button>
