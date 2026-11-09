@@ -49,26 +49,24 @@ export function Landing({ release }: { release: Release | null }) {
       <Arrival />
       <SiteHeader />
       <main className="relative">
-        {/* Hero: the headline over a silver sky, and a moon wider than the screen rising over the bottom half. */}
-        <section className="hero sky relative -mt-16 overflow-hidden">
-          <div aria-hidden className="hero-moon pointer-events-none absolute inset-0 origin-bottom">
-            <Moon className="absolute inset-0 h-full w-full" />
-          </div>
-          <div className="hero-copy relative mx-auto flex h-[50%] max-w-5xl flex-col items-center justify-end px-4 text-center sm:px-6">
-            <h1 className="text-[clamp(3rem,8.5vw,6rem)] leading-[1.0]">
+        {/* Hero: the headline and buttons on a silver sky, then a moon wider than the screen rising below them. */}
+        <section className="hero sky relative -mt-16 flex flex-col overflow-hidden pt-16">
+          <div className="relative z-10 mx-auto flex max-w-5xl flex-col items-center px-4 pt-[clamp(2.5rem,9vh,6rem)] text-center sm:px-6">
+            <h1 className="text-[clamp(3rem,8.2vw,6.25rem)] leading-[0.98]">
               <Words text="Every AI," />
               <br />
               <Words text="one window." start={2} />
             </h1>
-            <p className="fade-up mt-5 max-w-[40ch] text-lg text-[var(--mist)] sm:text-xl" style={{ "--d": "0.6s" } as React.CSSProperties}>
+            <p className="fade-up mt-6 max-w-[40ch] text-lg text-[var(--mist)] sm:text-xl" style={{ "--d": "0.6s" } as React.CSSProperties}>
               Claude, GPT, Gemini, Grok and hundreds more in one app, with your own keys. Free and open source.
             </p>
-          </div>
-          <div className="hero-copy relative mt-8 flex flex-wrap justify-center gap-3 px-4">
-            <div className="fade-up flex flex-wrap justify-center gap-3" style={{ "--d": "0.8s" } as React.CSSProperties}>
+            <div className="fade-up mt-8 flex flex-wrap justify-center gap-3" style={{ "--d": "0.8s" } as React.CSSProperties}>
               <PrimaryDownload release={release} className="btn-primary flex-col px-7 py-3 text-base [&>span]:opacity-80" />
               <SecondButton release={release} />
             </div>
+          </div>
+          <div aria-hidden className="hero-moon pointer-events-none relative -mt-[calc(160px-clamp(1.5rem,5vh,3.5rem))] min-h-[22rem] flex-1 [mask-image:linear-gradient(black_60%,transparent)]">
+            <Moon className="absolute inset-0 h-full w-full" />
           </div>
         </section>
 

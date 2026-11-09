@@ -12,7 +12,7 @@
   --tide: #24365f; /* links, accents: a deep, quiet navy */
   --line: rgb(14 22 40 / 0.09);
   --moon-lit: #ffffff;
-  --moon-dark: #b4bccb;
+  --moon-dark: #7f899c;
   --chrome: linear-gradient(180deg, #ffffff 0%, #eff1f5 55%, #dfe3ea 100%);
   --g-brand: linear-gradient(180deg, #2c3b5e 0%, #1b2744 55%, #121b31 100%);
   --g-night: linear-gradient(165deg, #1e2a46 0%, #141d33 55%, #0e1527 100%);
@@ -115,35 +115,23 @@
 
 /* Hero: a pale silver sky, and a moon wider than the screen rising over its bottom half. */
 .sky {
-  background:
-    radial-gradient(70% 55% at 50% 100%, rgb(255 255 255 / 0.9), transparent 70%),
-    linear-gradient(180deg, #d3d9e4 0%, #e6e9f0 40%, #f3f4f8 75%, #ffffff 100%);
+  background: linear-gradient(180deg, #d5dbe5 0%, #e7eaf0 38%, #f4f5f8 70%, #ffffff 100%);
 }
 .hero {
   height: 100svh;
   min-height: 38rem;
 }
 @supports (animation-timeline: scroll()) {
+  /* The moon keeps rising a little as you scroll away. The words stay put and crisp. */
   .hero-moon {
     animation: moon-rise linear both;
     animation-timeline: scroll(root);
     animation-range: 0 100svh;
   }
-  .hero-copy {
-    animation: copy-out linear both;
-    animation-timeline: scroll(root);
-    animation-range: 0 70svh;
-  }
 }
 @keyframes moon-rise {
   to {
-    transform: translateY(-14%) scale(1.06);
-  }
-}
-@keyframes copy-out {
-  to {
-    opacity: 0;
-    transform: translateY(-48px) scale(0.97);
+    transform: translateY(-10%);
   }
 }
 
