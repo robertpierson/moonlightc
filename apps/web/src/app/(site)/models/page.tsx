@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Cta, PageHero, SectionTitle, SITE_VIEWPORT, SitePage } from "@/components/site/chrome";
 import { AutoRoutes, ModelMenu, QuickConnect } from "@/components/site/demos";
-import { COMPANIES } from "@/components/site/landing";
-import { DEMO_CHAPTERS } from "@/components/site/pages";
+import { COMPANIES, DEMO_CHAPTERS } from "@/components/site/pages";
+import { TopicQuestions, WatchLesson } from "@/components/site/more-sections";
 import { DemoVideo, StickySteps } from "@/components/site/scenes";
 
 export const metadata: Metadata = { title: "Models · MoonlightC", description: "Claude, GPT, Gemini, Grok and more in one app, with your own keys." };
@@ -68,6 +68,10 @@ export default function Models() {
           ))}
         </div>
       </section>
+
+      <WatchLesson id="connect" title="Connect a key in a minute." />
+      <WatchLesson id="switch" />
+      <TopicQuestions topic="Keys and costs" />
 
       <Cta title="Your keys, every model." body="Open the web app and add your first key. It takes about a minute.">
         <Link prefetch={false} href="/app" className="btn-silver px-7 py-3">

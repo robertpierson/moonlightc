@@ -1,16 +1,4 @@
-import {
-  AppWindow,
-  Binoculars,
-  Brain,
-  ChatCircleText,
-  Devices,
-  EyeSlash,
-  FolderSimple,
-  ImageSquare,
-  Microphone,
-  PlugsConnected,
-  PuzzlePiece,
-} from "@phosphor-icons/react/ssr";
+import Image from "next/image";
 import Link from "next/link";
 import { Arrival } from "./arrival";
 import { AskBox } from "./ask-box";
@@ -20,99 +8,21 @@ import { Moon } from "./moon";
 import { CountUp } from "./motion";
 import { DemoVideo } from "./scenes";
 import { BRANDS, BrandMark } from "./brands";
+import { COMPANIES } from "./pages";
+import { QUESTIONS, QuestionList } from "./questions";
+import { LearnTeaser } from "./more-sections";
 
-export const COMPANIES = [
-  "Anthropic",
-  "OpenAI",
-  "Google Gemini",
-  "xAI",
-  "Mistral",
-  "DeepSeek",
-  "Groq",
-  "Together AI",
-  "Perplexity",
-  "Cohere",
-  "OpenRouter",
-  "Azure OpenAI",
-  "AWS Bedrock",
-];
-
-const FAQ = [
-  [
-    "Is MoonlightC free?",
-    "Yes. It's free and open source under the MIT license. You pay the AI companies directly for what you use, at their prices. We don't add a markup or limits.",
-  ],
-  [
-    "Where are my keys stored?",
-    "On your device. If you sign in, they also sync to your account, stored encrypted. When you send a message, the key goes with that one request to the AI company and is never logged.",
-  ],
-  [
-    "Can I use my Claude Pro or ChatGPT Plus subscription?",
-    "Not directly: those companies don't let other apps use subscription sign-ins. Use an API key, or one OpenRouter key for hundreds of models. If you use Claude Code on your PC, MoonlightC can run it for you with your own sign-in.",
-  ],
-  [
-    "Does it work on my phone?",
-    "Yes. Open the web app in your phone's browser and add it to your home screen. It works like an app, with your chats synced when you sign in.",
-  ],
-  ["Can I change it?", "Yes. The code is on GitHub. Fork it, change it, run your own copy."],
-];
 
 const EVERYTHING = [
-  {
-    icon: ChatCircleText,
-    title: "Chat",
-    body: "Every model your keys unlock, in one conversation. Switch whenever you like.",
-  },
-  {
-    icon: FolderSimple,
-    title: "Projects",
-    body: "Folders of chats with their own instructions, files and tools.",
-  },
-  {
-    icon: Binoculars,
-    title: "Deep research",
-    body: "It plans the questions, reads the sources and writes a report with citations.",
-  },
-  {
-    icon: AppWindow,
-    title: "Live previews",
-    body: "Web pages, charts and React components open beside the chat, ready to edit.",
-  },
-  {
-    icon: ImageSquare,
-    title: "Studio",
-    body: "Make images, video and voice with fal, Replicate or ElevenLabs keys.",
-  },
-  {
-    icon: PlugsConnected,
-    title: "Connections",
-    body: "GitHub, Google, Notion, Slack and any MCP server, with your OK before it acts.",
-  },
-  {
-    icon: PuzzlePiece,
-    title: "Claude plugins",
-    body: "Install skills, slash commands and connectors made for Claude.",
-  },
-  {
-    icon: Brain,
-    title: "Memory",
-    body: "It remembers what you tell it to, and you can see and delete every fact.",
-  },
-  {
-    icon: Microphone,
-    title: "Voice",
-    body: "Talk instead of typing, and have answers read aloud.",
-  },
-  {
-    icon: EyeSlash,
-    title: "Private mode",
-    body: "A chat that's never saved anywhere.",
-  },
-  {
-    icon: Devices,
-    title: "Every device",
-    body: "Web, Windows, Mac, Linux and your phone, synced when you sign in.",
-  },
+  { shot: "chat", title: "Chat", body: "Every model your keys unlock, in one conversation." },
+  { shot: "models", title: "One menu for every model", body: "Switch whenever you like, mid-chat." },
+  { shot: "projects", title: "Projects", body: "Folders of chats with their own instructions and files." },
+  { shot: "code", title: "Apps that run", body: "Describe an app and use it right away, beside the chat." },
+  { shot: "memory", title: "Memory you control", body: "Off until you turn it on. See and delete every fact." },
+  { shot: "private", title: "Private mode", body: "A chat that's never saved anywhere." },
+  { shot: "connections", title: "Connections", body: "GitHub, Google, Notion, Slack and any MCP server, with your OK before it acts." },
+  { shot: "plugins", title: "Claude plugins", body: "Install skills, slash commands and connectors made for Claude." },
+  { shot: "theme", title: "Make it yours", body: "Themes, layouts and which sections you see." },
 ];
 
 const EXPLORE = [
@@ -248,12 +158,16 @@ export function Landing() {
             </div>
             <div className="mt-12 [mask-image:linear-gradient(90deg,transparent,#000_8%,#000_92%,transparent)]">
               <div className="gallery-track flex w-max gap-5 pr-[10vw] pl-[max(1rem,calc((100vw-72rem)/2+1.5rem))]">
-                {EVERYTHING.map(({ icon: Icon, title, body }) => (
-                  <article key={title} className="card spot flex h-[19rem] w-[19rem] shrink-0 flex-col rounded-[1.75rem] p-7 sm:w-[21rem]">
-                    <Icon className="size-9 text-[var(--tide)]" weight="light" aria-hidden />
-                    <h3 className="mt-auto text-[1.6rem] leading-tight">{title}</h3>
-                    <p className="mt-2 text-[var(--mist)]">{body}</p>
-                  </article>
+                {EVERYTHING.map(({ shot, title, body }) => (
+                  <figure key={title} className="w-[20rem] shrink-0 sm:w-[30rem]">
+                    <div className="card overflow-hidden rounded-3xl p-2">
+                      <Image src={`/shots/${shot}.webp`} alt={`MoonlightC: ${title}`} width={1280} height={800} className="h-auto w-full rounded-[1.1rem]" />
+                    </div>
+                    <figcaption className="mt-4 px-1">
+                      <span className="block text-lg font-medium">{title}</span>
+                      <span className="mt-1 block text-[var(--mist)]">{body}</span>
+                    </figcaption>
+                  </figure>
                 ))}
               </div>
             </div>
@@ -294,23 +208,20 @@ export function Landing() {
           </div>
         </section>
 
+        <LearnTeaser />
+
         <section aria-labelledby="faq" className="faq mx-auto max-w-3xl px-4 pt-32 sm:px-6">
           <h2 id="faq" className="text-center text-[clamp(2rem,4.5vw,2.75rem)]">
             Questions
           </h2>
-          <div className="mt-10 border-t border-[var(--line)]">
-            {FAQ.map(([q, a]) => (
-              <details key={q} className="border-b border-[var(--line)]">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-5 text-lg font-medium">
-                  {q}
-                  <span aria-hidden className="plus text-2xl leading-none font-light text-[var(--faint)]">
-                    +
-                  </span>
-                </summary>
-                <p className="pb-5 text-[var(--mist)]">{a}</p>
-              </details>
-            ))}
+          <div className="mt-10">
+            <QuestionList items={QUESTIONS[0].items} />
           </div>
+          <p className="mt-6 text-center">
+            <Link href="/questions" className="text-sm font-medium text-[var(--tide)] underline-offset-4 hover:underline">
+              See all questions
+            </Link>
+          </p>
         </section>
 
         <Cta title="Every AI, on every device you own." body="Start in your browser in a minute. Add the desktop app when you want your PC in the mix.">

@@ -56,6 +56,15 @@ export default function App() {
 }
 `;
 
+// For the lessons on the website's Learn page.
+const VOLCANO = `Think of a volcano like a shaken soda bottle.
+
+Deep underground, rock gets so hot it melts into **magma**. Magma is full of gas, and it's lighter than the rock around it, so it slowly rises. When enough pressure builds up, it bursts through the surface: that's an eruption.
+
+**Quiz:** why does magma rise instead of staying put?`;
+
+const BIRTHDAY = `Happy birthday to the best sister anyone could ask for! Thanks for every late-night talk, every borrowed sweater, and every time you had my back. I hope this year is as kind to you as you are to everyone else. Love you lots!`;
+
 const send = (res, body, delta, finish = null) =>
   res.write(`data: ${JSON.stringify({ id: "demo", object: "chat.completion.chunk", created: 0, model: body.model, choices: [{ index: 0, delta, finish_reason: finish }] })}\n\n`);
 
@@ -74,7 +83,15 @@ createServer(async (req, res) => {
 
   if (!body.stream) {
     // Chat titles and summaries.
-    const text = /chicago|trip/i.test(prompt) ? "Chicago trip on a budget" : /tip/i.test(prompt) ? "Tip calculator" : "New chat";
+    const text = /chicago|trip/i.test(prompt)
+      ? "Chicago trip on a budget"
+      : /tip/i.test(prompt)
+        ? "Tip calculator"
+        : /volcano/i.test(prompt)
+          ? "How volcanoes erupt"
+          : /birthday/i.test(prompt)
+            ? "Birthday message"
+            : "New chat";
     res.setHeader("content-type", "application/json");
     return res.end(JSON.stringify({ id: "demo", object: "chat.completion", created: 0, model: body.model, choices: [{ index: 0, message: { role: "assistant", content: text }, finish_reason: "stop" }], usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 } }));
   }
@@ -93,7 +110,11 @@ createServer(async (req, res) => {
       ? PACK
       : /chicago|trip/i.test(prompt)
         ? TRIP
-        : "Happy to help. What would you like to do next?";
+        : /volcano/i.test(prompt)
+          ? VOLCANO
+          : /birthday/i.test(prompt)
+            ? BIRTHDAY
+            : "Happy to help. What would you like to do next?";
   send(res, body, { role: "assistant", content: "" });
   await sleep(600); // a moment of "thinking"
   // Stream a few characters at a time, like a fast model.

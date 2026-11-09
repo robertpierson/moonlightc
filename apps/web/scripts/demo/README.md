@@ -9,3 +9,11 @@ a stand-in server with written samples, so no AI company is paid. Re-film after 
 4. In that folder:
    `ffmpeg -f concat -safe 0 -i frames.txt -vf "fps=30,scale=1920:1200:flags=lanczos,format=yuv420p" -c:v libx264 -preset slow -crf 21 -g 30 -movflags +faststart -an public/demo/moonlightc-demo.mp4`
    and a poster: `ffmpeg -ss 6.9 -i public/demo/moonlightc-demo.mp4 -frames:v 1 -q:v 3 public/demo/poster.jpg`
+
+## Learn page lessons and website screenshots
+
+`node scripts/demo/lessons.mjs <empty folder> [lesson,lesson]` (same two servers as above; set `BASE` if the app isn't on :3000)
+films each lesson into its own folder (frames.txt + steps.json) and saves screenshots to `<folder>/shots`. For each lesson:
+`ffmpeg -f concat -safe 0 -i frames.txt -vf "fps=30,scale=1280:800:flags=lanczos,format=yuv420p" -c:v libx264 -preset slow -crf 25 -g 30 -movflags +faststart -an public/learn/<lesson>.mp4`,
+a poster with `ffmpeg -sseof -0.3 -i public/learn/<lesson>.mp4 -frames:v 1 -vf scale=1280:-1 -c:v libwebp -quality 78 public/learn/<lesson>.webp`,
+and copy steps.json times into `src/components/site/lessons.ts`. Screenshots: convert to `public/shots/<name>.webp` the same way.

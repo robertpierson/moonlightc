@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { WatchLesson } from "@/components/site/more-sections";
 import Link from "next/link";
 import { Cta, PageHero, SITE_VIEWPORT, SitePage } from "@/components/site/chrome";
 import { CodeModes, CodeTerminal, LocalModels } from "@/components/site/demos";
@@ -61,6 +62,9 @@ export default function Code() {
           },
         ]}
       />
+
+      <WatchLesson id="code" title="Watch it build an app." />
+      <WatchLesson id="projects" />
 
       <Cta title="Start a project." body="Open the Code tab, describe what you want, and try it a minute later.">
         <Link prefetch={false} href="/app" className="btn-silver px-7 py-3">

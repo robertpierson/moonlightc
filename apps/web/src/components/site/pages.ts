@@ -8,6 +8,20 @@ export const PAGES = [
   ["/download", "Download"],
 ] as const;
 
+/** AI companies MoonlightC connects to with a key. */
+export const COMPANIES = ["Anthropic", "OpenAI", "Google Gemini", "xAI", "Mistral", "DeepSeek", "Groq", "Together AI", "Perplexity", "Cohere", "OpenRouter", "Azure OpenAI", "AWS Bedrock"];
+
+/** Everything else, in the header's "More" drop-down. */
+export const MORE = [
+  ["/learn", "Learn"],
+  ["/questions", "Questions"],
+  ["https://github.com/robertpierson/moonlightc/releases", "What's new"],
+  ["https://github.com/robertpierson/moonlightc", "Source code"],
+  ["https://github.com/robertpierson/moonlightc/issues/new", "Report a problem"],
+  ["/privacy", "Privacy"],
+  ["/terms", "Terms"],
+] as const;
+
 /** Where each part starts in public/demo/moonlightc-demo.mp4 (from scripts/demo/record.mjs's chapters.json). */
 export const DEMO_CHAPTERS = [
   { t: 0, label: "Ask anything" },

@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { TopicQuestions } from "@/components/site/more-sections";
+import { Bell, ShieldCheck, Timer } from "@phosphor-icons/react/ssr";
 import Link from "next/link";
 import { Cta, PageHero, SectionTitle, SITE_VIEWPORT, SitePage } from "@/components/site/chrome";
 import { PhoneConnected, PhonePcOnline, PhonePickPc, PhoneTwoStep, RemoteScreen } from "@/components/site/demos";
@@ -40,13 +42,16 @@ export default function Remote() {
       <section className="mx-auto max-w-6xl px-4 pt-24 sm:px-6">
         <SectionTitle title="Safe by default." />
         <div className="mt-14 grid gap-5 md:grid-cols-3">
-          {[
-            ["You approve every device.", "A new device can't connect until you allow it on the PC."],
-            ["You always know.", "The PC shows a banner while someone is connected, with a button to end it right away."],
-            ["It ends by itself.", "Sessions close when you leave, and after a stretch of no use."],
-          ].map(([t, b]) => (
-            <div key={t} className="card rounded-3xl p-8">
-              <h3 className="text-xl">{t}</h3>
+          {(
+            [
+              [ShieldCheck, "You approve every device.", "A new device can't connect until you allow it on the PC."],
+              [Bell, "You always know.", "The PC shows a banner while someone is connected, with a button to end it right away."],
+              [Timer, "It ends by itself.", "Sessions close when you leave, and after a stretch of no use."],
+            ] as const
+          ).map(([Icon, t, b]) => (
+            <div key={t}>
+              <Icon className="size-8 text-[var(--tide)]" weight="light" aria-hidden />
+              <h3 className="mt-4 text-xl">{t}</h3>
               <p className="mt-2 text-[var(--mist)]">{b}</p>
             </div>
           ))}
@@ -61,6 +66,8 @@ export default function Remote() {
           <StickySteps device="phone" steps={SETUP} />
         </div>
       </section>
+
+      <TopicQuestions topic="The desktop app and remote control" />
 
       <Cta title="Bring your PC along." body="Install the desktop app on the PC you want to reach. It's free.">
         <Link href="/download" className="btn-silver px-7 py-3">

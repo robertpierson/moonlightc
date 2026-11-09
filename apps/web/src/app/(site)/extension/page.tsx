@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { TopicQuestions } from "@/components/site/more-sections";
+import { Eye, Flag, Keyboard, Timer } from "@phosphor-icons/react/ssr";
 import Image from "next/image";
 import { Cta, PageHero, SectionTitle, SITE_VIEWPORT, SitePage } from "@/components/site/chrome";
 import { BrowserTab } from "@/components/site/demos";
@@ -31,14 +33,17 @@ export default function Extension() {
 
       <section className="mx-auto max-w-6xl px-4 pt-16 sm:px-6">
         <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-          {[
-            ["Only tabs you share.", "Nothing is visible to the AI until you click Share this tab."],
-            ["Always marked.", "A banner on every shared tab, with a Stop button."],
-            ["One key to stop.", "Alt+Shift+M stops sharing every tab at once."],
-            ["Ends on its own.", "Sharing stops after 15 minutes without use."],
-          ].map(([t, b]) => (
-            <div key={t} className="card rounded-3xl p-7">
-              <h3 className="text-lg">{t}</h3>
+          {(
+            [
+              [Eye, "Only tabs you share.", "Nothing is visible to the AI until you click Share this tab."],
+              [Flag, "Always marked.", "A banner on every shared tab, with a Stop button."],
+              [Keyboard, "One key to stop.", "Alt+Shift+M stops sharing every tab at once."],
+              [Timer, "Ends on its own.", "Sharing stops after 15 minutes without use."],
+            ] as const
+          ).map(([Icon, t, b]) => (
+            <div key={t}>
+              <Icon className="size-8 text-[var(--tide)]" weight="light" aria-hidden />
+              <h3 className="mt-4 text-lg">{t}</h3>
               <p className="mt-2 text-[var(--mist)]">{b}</p>
             </div>
           ))}
@@ -82,6 +87,8 @@ export default function Extension() {
           ))}
         </ol>
       </section>
+
+      <TopicQuestions topic="The Chrome extension" />
 
       <Cta title="Give the AI a hand." body="Free, open source, and it never sees a tab you didn't share.">
         <a href={ZIP} download className="btn-silver px-7 py-3">

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Desktop, Globe, PuzzlePiece } from "@phosphor-icons/react/ssr";
+import { TopicQuestions } from "@/components/site/more-sections";
+import Image from "next/image";
 import Link from "next/link";
 import { PrimaryDownload } from "@/components/site/os-download";
 import { InstallApp } from "@/components/site/install-app";
@@ -46,13 +47,13 @@ export default async function DownloadPage() {
         <section aria-label="Three ways to use MoonlightC" className="grid gap-5 md:grid-cols-3">
           {[
             {
-              icon: Desktop,
+              shot: "/shots/chat.webp",
               title: "Desktop app",
               body: "Windows, Mac and Linux. Adds remote control, models on your PC and Claude Code.",
               action: release?.builds.length ? <a href="#desktop">See every download</a> : <span>Not released yet. The web app works today.</span>,
             },
             {
-              icon: Globe,
+              shot: "/shots/models.webp",
               title: "Web app",
               body: "Any browser, any device. Install it like an app.",
               action: (
@@ -62,17 +63,19 @@ export default async function DownloadPage() {
               ),
             },
             {
-              icon: PuzzlePiece,
+              shot: "/extension/1-shared-tab.webp",
               title: "Chrome extension",
               body: "Let the AI read and use the tabs you share.",
               action: <a href="#ext">How to install it</a>,
             },
-          ].map(({ icon: Icon, title, body, action }) => (
-            <article key={title} className="card spot flex flex-col rounded-[1.75rem] p-7">
-              <Icon className="size-9 text-[var(--tide)]" weight="light" aria-hidden />
-              <h2 className="mt-6 text-2xl">{title}</h2>
-              <p className="mt-2 flex-1 text-[var(--mist)]">{body}</p>
-              <p className="mt-5 text-sm font-medium text-[var(--tide)] [&_a]:underline-offset-4 [&_a:hover]:underline">{action}</p>
+          ].map(({ shot, title, body, action }) => (
+            <article key={title}>
+              <div className="card overflow-hidden rounded-3xl p-2">
+                <Image src={shot} alt={`MoonlightC: ${title}`} width={1280} height={800} className="aspect-[16/10] h-auto w-full rounded-[1.1rem] object-cover object-left-top" />
+              </div>
+              <h2 className="mt-5 px-1 text-2xl">{title}</h2>
+              <p className="mt-1 px-1 text-[var(--mist)]">{body}</p>
+              <p className="mt-3 px-1 text-sm font-medium text-[var(--tide)] [&_a]:underline-offset-4 [&_a:hover]:underline">{action}</p>
             </article>
           ))}
         </section>
@@ -135,7 +138,7 @@ export default async function DownloadPage() {
           </h2>
           <p className="mt-2 max-w-[60ch] text-[var(--mist)]">It opens in its own window, gets an icon, and starts even when you&apos;re offline.</p>
           <InstallApp />
-          <dl className="mt-6 grid gap-5 md:grid-cols-2">
+          <dl className="mt-10 grid gap-x-8 gap-y-8 sm:grid-cols-2 lg:grid-cols-4">
             {[
               [
                 "Chrome or Edge on a computer",
@@ -145,7 +148,7 @@ export default async function DownloadPage() {
               ["Safari on iPhone or iPad", "Open the web app, tap the Share button, then Add to Home Screen, then Add."],
               ["Safari on a Mac", "Open the web app, choose File, then Add to Dock."],
             ].map(([t, d]) => (
-              <div key={t} className="card spot rounded-3xl p-6">
+              <div key={t}>
                 <dt className="font-medium">{t}</dt>
                 <dd className="mt-1 text-[var(--mist)]">{d}</dd>
               </div>
@@ -171,6 +174,9 @@ export default async function DownloadPage() {
             <li>On any tab, click the MoonlightC icon and choose Share this tab.</li>
           </ol>
         </section>
+        <div className="-mx-4 sm:-mx-6">
+          <TopicQuestions topic="The desktop app and remote control" />
+        </div>
       </main>
       <SiteFooter />
     </div>
