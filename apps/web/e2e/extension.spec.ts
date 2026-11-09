@@ -24,6 +24,13 @@ test.beforeAll(async () => {
 });
 test.afterAll(() => context?.close());
 
+/** Clicks Allow or Deny in the extension's window. The window closes itself right away, so wait for that instead of
+ * letting the click race it (the click lands; the "page closed" error was only the race). */
+async function answer(prompt: Page, name: "Allow" | "Deny") {
+  await prompt.getByRole("button", { name }).waitFor();
+  await Promise.all([prompt.waitForEvent("close"), prompt.getByRole("button", { name }).evaluate((b: HTMLElement) => b.click())]);
+}
+
 async function send(app: Page, text: string) {
   await app.getByLabel("Message", { exact: true }).fill(text);
   await app.getByRole("button", { name: "Send message" }).click();
@@ -67,14 +74,14 @@ test("the AI reads a shared tab, clicks, and risky clicks wait for the person", 
   await send(app, "buy it");
   let prompt = await ask;
   await slow(prompt.getByRole("heading")).toHaveText('The AI wants to click "Buy now"');
-  await prompt.getByRole("button", { name: "Deny" }).click();
+  await answer(prompt, "Deny");
   await slow(app.locator('[data-role="assistant"]').last()).toContainText("said no");
   await slow(shop.locator("#msg")).toHaveText("Hi there!");
 
   ask = context.waitForEvent("page");
   await send(app, "buy it");
   prompt = await ask;
-  await prompt.getByRole("button", { name: "Allow" }).click();
+  await answer(prompt, "Allow");
   await slow(shop.locator("#msg")).toHaveText("Bought!");
   await slow(app.locator('[data-role="assistant"]').last()).toContainText("Buy now");
 });
