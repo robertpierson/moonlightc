@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { Cta, PageHero, SectionTitle, SITE_VIEWPORT, SitePage } from "@/components/site/chrome";
 import { BrowserTab } from "@/components/site/demos";
 
@@ -40,6 +41,24 @@ export default function Extension() {
               <h3 className="text-lg">{t}</h3>
               <p className="mt-2 text-[var(--mist)]">{b}</p>
             </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-6xl px-4 pt-32 sm:px-6">
+        <SectionTitle title="The real thing." body="Screenshots of the extension itself: a shared tab, the menu, and the window that asks before anything risky." />
+        <div className="mt-12 grid gap-5 md:grid-cols-3">
+          {[
+            ["/extension/1-shared-tab.webp", "A shared tab, with the banner and its Stop button."],
+            ["/extension/2-popup.webp", "The menu: share a tab, stop sharing, and see what the AI did."],
+            ["/extension/3-confirm.webp", "Risky steps wait here until you click Allow."],
+          ].map(([src, caption]) => (
+            <figure key={src} className="rise">
+              <div className="card overflow-hidden rounded-3xl p-2">
+                <Image src={src} alt={caption} width={1280} height={800} className="h-auto w-full rounded-[1.1rem]" />
+              </div>
+              <figcaption className="mt-3 text-[var(--mist)]">{caption}</figcaption>
+            </figure>
           ))}
         </div>
       </section>

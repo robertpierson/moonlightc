@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { Globe, Monitor, Puzzle } from "lucide-react";
+import Link from "next/link";
 import { PrimaryDownload } from "@/components/site/os-download";
 import { InstallApp } from "@/components/site/install-app";
 import { getLatestRelease, REPO, type Build } from "@/lib/releases";
@@ -26,8 +28,29 @@ export default async function DownloadPage() {
         <PrimaryDownload release={release} className="btn-primary flex-col px-7 py-3.5 text-lg [&>span]:opacity-80" />
       </PageHero>
       <main className="relative mx-auto max-w-5xl px-4 pb-24 sm:px-6">
+        <section aria-label="Three ways to use MoonlightC" className="grid gap-5 md:grid-cols-3">
+          {[
+            {
+              icon: Monitor,
+              title: "Desktop app",
+              body: "Windows, Mac and Linux. Adds remote control, models on your PC and Claude Code.",
+              action: release?.builds.length ? <a href="#desktop">See every download</a> : <span>Not released yet. The web app works today.</span>,
+            },
+            { icon: Globe, title: "Web app", body: "Any browser, any device. Install it like an app.", action: <Link prefetch={false} href="/app">Open web app</Link> },
+            { icon: Puzzle, title: "Chrome extension", body: "Let the AI read and use the tabs you share.", action: <a href="#ext">How to install it</a> },
+          ].map(({ icon: Icon, title, body, action }) => (
+            <article key={title} className="card spot tilt3d rise flex flex-col rounded-[1.75rem] p-7">
+              <span className="grid size-12 place-items-center rounded-2xl [background:var(--g-brand)] text-white shadow-lg shadow-[#0e1628]/20">
+                <Icon className="size-5" aria-hidden />
+              </span>
+              <h2 className="mt-6 text-2xl">{title}</h2>
+              <p className="mt-2 flex-1 text-[var(--mist)]">{body}</p>
+              <p className="mt-5 text-sm font-medium text-[var(--tide)] [&_a]:underline-offset-4 [&_a:hover]:underline">{action}</p>
+            </article>
+          ))}
+        </section>
 
-        <section aria-labelledby="desktop">
+        <section aria-labelledby="desktop" className="mt-28 scroll-mt-24">
           <h2 id="desktop" className="text-[clamp(2rem,4.5vw,3rem)] leading-tight">
             Desktop apps
           </h2>
@@ -75,7 +98,7 @@ export default async function DownloadPage() {
           )}
         </section>
 
-        <section aria-labelledby="web" className="mt-16">
+        <section aria-labelledby="web" className="mt-24">
           <h2 id="web" className="text-[clamp(2rem,4.5vw,3rem)] leading-tight">
             Install the web app
           </h2>
@@ -96,7 +119,7 @@ export default async function DownloadPage() {
           </dl>
         </section>
 
-        <section aria-labelledby="ext" className="mt-16">
+        <section aria-labelledby="ext" className="mt-24 scroll-mt-24">
           <h2 id="ext" className="text-[clamp(2rem,4.5vw,3rem)] leading-tight">
             Chrome extension
           </h2>
