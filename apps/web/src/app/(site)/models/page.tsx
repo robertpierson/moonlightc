@@ -62,7 +62,7 @@ export default function Models() {
         <SectionTitle title={`${COMPANIES.length} companies, one list.`} body="Plus models on your own PC, and any server that speaks the OpenAI API." />
         <div className="mx-auto mt-12 grid max-w-5xl grid-cols-2 overflow-hidden rounded-3xl bg-white ring-1 ring-[var(--line)] sm:grid-cols-3 md:grid-cols-4">
           {[...COMPANIES, "Ollama on your PC", "Your own server"].map((c) => (
-            <div key={c} className="rise px-6 py-7 text-lg font-medium tracking-tight shadow-[inset_-1px_-1px_0_var(--line)]">
+            <div key={c} className="px-6 py-7 text-lg font-medium tracking-tight shadow-[inset_-1px_-1px_0_var(--line)]">
               {c}
             </div>
           ))}

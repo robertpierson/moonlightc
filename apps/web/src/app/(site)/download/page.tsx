@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Globe, Monitor, Puzzle } from "lucide-react";
+import { Desktop, Globe, PuzzlePiece } from "@phosphor-icons/react/ssr";
 import Link from "next/link";
 import { PrimaryDownload } from "@/components/site/os-download";
 import { InstallApp } from "@/components/site/install-app";
@@ -8,12 +8,27 @@ import { PageHero, SITE_VIEWPORT, SiteFooter, SiteHeader } from "@/components/si
 
 export const viewport = SITE_VIEWPORT;
 
-export const metadata: Metadata = { title: "Download · MoonlightC", description: "Get MoonlightC for Windows, macOS, Linux, or install the web app." };
+export const metadata: Metadata = {
+  title: "Download · MoonlightC",
+  description: "Get MoonlightC for Windows, macOS, Linux, or install the web app.",
+};
 
 const GROUPS: { platform: Build["platform"]; name: string; note: string }[] = [
-  { platform: "windows", name: "Windows", note: "Builds aren't code-signed yet, so Windows may show \"Windows protected your PC\". Click More info, then Run anyway." },
-  { platform: "mac", name: "macOS", note: "Builds aren't notarized yet. Drag MoonlightC into Applications and open it. If macOS stops it, open System Settings, then Privacy & Security, scroll down and click Open Anyway." },
-  { platform: "linux", name: "Linux", note: "arm64 builds also run on Raspberry Pi and on Chromebooks with Linux turned on." },
+  {
+    platform: "windows",
+    name: "Windows",
+    note: 'Builds aren\'t code-signed yet, so Windows may show "Windows protected your PC". Click More info, then Run anyway.',
+  },
+  {
+    platform: "mac",
+    name: "macOS",
+    note: "Builds aren't notarized yet. Drag MoonlightC into Applications and open it. If macOS stops it, open System Settings, then Privacy & Security, scroll down and click Open Anyway.",
+  },
+  {
+    platform: "linux",
+    name: "Linux",
+    note: "arm64 builds also run on Raspberry Pi and on Chromebooks with Linux turned on.",
+  },
 ];
 
 const archLabel = (a: Build["arch"], platform: Build["platform"]) =>
@@ -25,24 +40,36 @@ export default async function DownloadPage() {
     <div className="site relative min-h-dvh overflow-x-clip">
       <SiteHeader />
       <PageHero title="Get MoonlightC" body="On your computer, in your browser, and in Chrome. Free on every one of them.">
-        <PrimaryDownload release={release} className="btn-primary flex-col px-7 py-3.5 text-lg [&>span]:opacity-80" />
+        <PrimaryDownload release={release} className="btn-primary px-7 py-3.5 text-lg" />
       </PageHero>
       <main className="relative mx-auto max-w-5xl px-4 pb-24 sm:px-6">
         <section aria-label="Three ways to use MoonlightC" className="grid gap-5 md:grid-cols-3">
           {[
             {
-              icon: Monitor,
+              icon: Desktop,
               title: "Desktop app",
               body: "Windows, Mac and Linux. Adds remote control, models on your PC and Claude Code.",
               action: release?.builds.length ? <a href="#desktop">See every download</a> : <span>Not released yet. The web app works today.</span>,
             },
-            { icon: Globe, title: "Web app", body: "Any browser, any device. Install it like an app.", action: <Link prefetch={false} href="/app">Open web app</Link> },
-            { icon: Puzzle, title: "Chrome extension", body: "Let the AI read and use the tabs you share.", action: <a href="#ext">How to install it</a> },
+            {
+              icon: Globe,
+              title: "Web app",
+              body: "Any browser, any device. Install it like an app.",
+              action: (
+                <Link prefetch={false} href="/app">
+                  Open web app
+                </Link>
+              ),
+            },
+            {
+              icon: PuzzlePiece,
+              title: "Chrome extension",
+              body: "Let the AI read and use the tabs you share.",
+              action: <a href="#ext">How to install it</a>,
+            },
           ].map(({ icon: Icon, title, body, action }) => (
-            <article key={title} className="card spot tilt3d rise flex flex-col rounded-[1.75rem] p-7">
-              <span className="grid size-12 place-items-center rounded-2xl [background:var(--g-brand)] text-white shadow-lg shadow-[#0e1628]/20">
-                <Icon className="size-5" aria-hidden />
-              </span>
+            <article key={title} className="card spot flex flex-col rounded-[1.75rem] p-7">
+              <Icon className="size-9 text-[var(--tide)]" weight="light" aria-hidden />
               <h2 className="mt-6 text-2xl">{title}</h2>
               <p className="mt-2 flex-1 text-[var(--mist)]">{body}</p>
               <p className="mt-5 text-sm font-medium text-[var(--tide)] [&_a]:underline-offset-4 [&_a:hover]:underline">{action}</p>
@@ -57,7 +84,11 @@ export default async function DownloadPage() {
           {release && release.builds.length > 0 ? (
             <>
               <p className="mt-2 text-[var(--mist)]">
-                Version {release.version}, released {new Date(release.publishedAt).toLocaleDateString("en-US", { dateStyle: "long" })}.{" "}
+                Version {release.version}, released{" "}
+                {new Date(release.publishedAt).toLocaleDateString("en-US", {
+                  dateStyle: "long",
+                })}
+                .{" "}
                 <a href={release.notesUrl} className="underline underline-offset-4 hover:text-[var(--ink)]">
                   What&apos;s new
                 </a>
@@ -67,7 +98,7 @@ export default async function DownloadPage() {
                   const builds = release.builds.filter((b) => b.platform === g.platform);
                   if (builds.length === 0) return null;
                   return (
-                    <div key={g.platform} className="card spot rise rounded-3xl p-6">
+                    <div key={g.platform} className="card spot rounded-3xl p-6">
                       <h3 className="text-xl">{g.name}</h3>
                       <ul className="mt-3 grid gap-2">
                         {builds.map((b) => (
@@ -76,7 +107,7 @@ export default async function DownloadPage() {
                               <span>
                                 {b.kind}, {archLabel(b.arch, b.platform)}
                               </span>
-                              <span className="text-[var(--mist)]">{(b.size / 1e6).toFixed(0)} MB</span>
+                              <span className="whitespace-nowrap text-[var(--mist)]">{(b.size / 1e6).toFixed(0)} MB</span>
                             </a>
                           </li>
                         ))}
@@ -106,12 +137,15 @@ export default async function DownloadPage() {
           <InstallApp />
           <dl className="mt-6 grid gap-5 md:grid-cols-2">
             {[
-              ["Chrome or Edge on a computer", "Open the web app, then click the install icon at the right end of the address bar (a monitor with a down arrow), and choose Install."],
+              [
+                "Chrome or Edge on a computer",
+                "Open the web app, then click the install icon at the right end of the address bar (a monitor with a down arrow), and choose Install.",
+              ],
               ["Chrome on Android", "Open the web app, tap the ⋮ menu, then Add to Home screen, then Install."],
               ["Safari on iPhone or iPad", "Open the web app, tap the Share button, then Add to Home Screen, then Add."],
               ["Safari on a Mac", "Open the web app, choose File, then Add to Dock."],
             ].map(([t, d]) => (
-              <div key={t} className="card spot rise rounded-3xl p-6">
+              <div key={t} className="card spot rounded-3xl p-6">
                 <dt className="font-medium">{t}</dt>
                 <dd className="mt-1 text-[var(--mist)]">{d}</dd>
               </div>
@@ -124,7 +158,8 @@ export default async function DownloadPage() {
             Chrome extension
           </h2>
           <p className="mt-2 max-w-[60ch] text-[var(--mist)]">
-            Let the AI read and use browser tabs you share with it: it can read a page, click, type and open links. Buying, sending or deleting always waits for your OK.
+            Let the AI read and use browser tabs you share with it: it can read a page, click, type and open links. Buying, sending or deleting always waits for
+            your OK.
           </p>
           <a href="/downloads/moonlightc-chrome-extension.zip" download className="btn-primary mt-5 px-6 py-3">
             Download the extension

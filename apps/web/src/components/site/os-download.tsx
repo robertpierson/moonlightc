@@ -27,7 +27,9 @@ function useDetected(): Detected | null {
   return useSyncExternalStore(
     noop,
     () => {
-      const nav = navigator as Navigator & { userAgentData?: { platform?: string } };
+      const nav = navigator as Navigator & {
+        userAgentData?: { platform?: string };
+      };
       return cachedDetect(navigator.userAgent, nav.userAgentData?.platform ?? "");
     },
     () => null,
@@ -65,18 +67,20 @@ export function PrimaryDownload({ release, className }: { release: Release | nul
   const build = release && d ? pickBuild(release.builds, d) : undefined;
   if (build) {
     return (
-      <a href={build.url} className={className} onClick={() => track("download", { os: build.platform })}>
+      <a
+        href={build.url}
+        className={className}
+        title={`Version ${release!.version}, ${build.kind}, ${(build.size / 1e6).toFixed(0)} MB`}
+        onClick={() => track("download", { os: build.platform })}
+      >
         Download for {NAMES[d!.platform === "chromeos" ? "linux" : d!.platform]}
-        <span className="block text-xs font-normal opacity-75">
-          v{release!.version} · {build.kind} · {(build.size / 1e6).toFixed(0)} MB
-        </span>
       </a>
     );
   }
   return (
     <Link prefetch={false} href="/app" className={className}>
-      Open the web app{d && d.platform !== "unknown" ? ` on ${NAMES[d.platform]}` : ""}
-      <span className="block text-xs font-normal opacity-75">Works in any modern browser. Install it like an app.</span>
+      Open the web app
+      {d && d.platform !== "unknown" ? ` on ${NAMES[d.platform]}` : ""}
     </Link>
   );
 }

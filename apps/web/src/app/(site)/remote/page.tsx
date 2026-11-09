@@ -45,7 +45,7 @@ export default function Remote() {
             ["You always know.", "The PC shows a banner while someone is connected, with a button to end it right away."],
             ["It ends by itself.", "Sessions close when you leave, and after a stretch of no use."],
           ].map(([t, b]) => (
-            <div key={t} className="card rise rounded-3xl p-8">
+            <div key={t} className="card rounded-3xl p-8">
               <h3 className="text-xl">{t}</h3>
               <p className="mt-2 text-[var(--mist)]">{b}</p>
             </div>

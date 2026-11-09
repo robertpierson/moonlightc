@@ -5,8 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 /**
- * Site-wide feel: smooth, weighted scrolling (off under reduced motion), and a soft light that follows the pointer
- * across any element with the class "spot".
+ * Site-wide feel: smooth, weighted scrolling (off under reduced motion), and the header's night mode.
  */
 export function SiteMotion() {
   const path = usePathname();
@@ -40,26 +39,38 @@ export function SiteMotion() {
       raf = requestAnimationFrame(loop);
     };
     if (lenis) raf = requestAnimationFrame(loop);
-    const move = (e: PointerEvent) => {
-      const el = (e.target as Element | null)?.closest?.<HTMLElement>(".spot");
-      if (!el) return;
-      const r = el.getBoundingClientRect();
-      el.style.setProperty("--x", `${e.clientX - r.left}px`);
-      el.style.setProperty("--y", `${e.clientY - r.top}px`);
-      // Cards that lean toward the pointer, a few degrees at most.
-      if (el.classList.contains("tilt3d") && !reduced) {
-        el.style.setProperty("--ry", `${((e.clientX - r.left) / r.width - 0.5) * 6}deg`);
-        el.style.setProperty("--rx", `${(0.5 - (e.clientY - r.top) / r.height) * 6}deg`);
-      }
-    };
-    addEventListener("pointermove", move, { passive: true });
     return () => {
       cancelAnimationFrame(raf);
       lenis?.destroy();
-      removeEventListener("pointermove", move);
     };
   }, []);
   return null;
+}
+
+/** Writes how far the surrounding section has been scrolled through (0 to 1) into a CSS variable on it. */
+export function ScrollProgress({ name }: { name: string }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    const section = ref.current?.closest("section");
+    if (!section) return;
+    let raf = 0;
+    const update = () => {
+      raf = 0;
+      const r = section.getBoundingClientRect();
+      const p = Math.min(1, Math.max(0, -r.top / Math.max(1, r.height - innerHeight)));
+      section.style.setProperty(name, p.toFixed(4));
+    };
+    const queue = () => (raf ||= requestAnimationFrame(update));
+    update();
+    addEventListener("scroll", queue, { passive: true });
+    addEventListener("resize", queue);
+    return () => {
+      cancelAnimationFrame(raf);
+      removeEventListener("scroll", queue);
+      removeEventListener("resize", queue);
+    };
+  }, [name]);
+  return <span ref={ref} hidden />;
 }
 
 /** A number that counts up from zero the first time it comes into view. Text that isn't a number shows as is. */

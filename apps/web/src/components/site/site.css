@@ -13,8 +13,8 @@
   --line: rgb(14 22 40 / 0.09);
   --moon-lit: #ffffff;
   --moon-dark: #7f899c;
-  --chrome: linear-gradient(180deg, #ffffff 0%, #eff1f5 55%, #dfe3ea 100%);
-  --g-brand: linear-gradient(180deg, #2c3b5e 0%, #1b2744 55%, #121b31 100%);
+  --chrome: #ffffff;
+  --g-brand: #1b2744;
   --g-night: linear-gradient(165deg, #1e2a46 0%, #141d33 55%, #0e1527 100%);
   --ease: cubic-bezier(0.22, 0.8, 0.2, 1);
   background: var(--paper);
@@ -99,31 +99,22 @@ html[data-night] .site-header {
     box-shadow 0.25s;
 }
 .btn-primary {
-  background: var(--g-brand);
+  background: #1b2744;
   color: #fff;
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.22),
-    inset 0 -1px 0 rgb(0 0 0 / 0.25),
-    0 10px 26px -12px rgb(14 22 40 / 0.7);
+  transition:
+    transform 0.25s var(--ease),
+    background-color 0.2s;
 }
-.btn-primary::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(105deg, transparent 35%, rgb(255 255 255 / 0.22) 50%, transparent 65%);
-  transform: translateX(-120%);
-  transition: transform 0.8s var(--ease);
-}
-.btn-primary:hover::after {
-  transform: translateX(120%);
+.btn-primary:hover {
+  background: #24365f;
 }
 .btn-silver {
-  background: var(--chrome);
+  background: #fff;
   color: var(--ink);
-  box-shadow:
-    inset 0 1px 0 #fff,
-    0 0 0 1px rgb(14 22 40 / 0.1),
-    0 6px 18px -10px rgb(14 22 40 / 0.35);
+  box-shadow: 0 0 0 1px rgb(14 22 40 / 0.14);
+}
+.btn-silver:hover {
+  box-shadow: 0 0 0 1px rgb(14 22 40 / 0.3);
 }
 .btn-primary:hover,
 .btn-silver:hover {
@@ -202,20 +193,11 @@ html[data-night] .site-header {
   letter-spacing: -0.06em;
   text-align: center;
   white-space: nowrap;
-  background: linear-gradient(180deg, #d6dbe4 0%, #eef0f4 60%, #ffffff 100%);
+  background: #e8ebf0; /* solid; painted through the letters because it's decoration, not text to read */
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
   user-select: none;
-}
-
-/* Big headlines in brushed metal: each word carries a soft top-to-bottom sheen (per word, because the words animate). */
-.metal .word {
-  background: linear-gradient(180deg, #3a4668 0%, #121b31 48%, #0e1628 62%, #2b3756 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  padding-bottom: 0.08em; /* room for descenders inside the clipped background */
 }
 
 /* Headline: each word arrives out of a blur, one after another. */
@@ -272,20 +254,6 @@ html[data-night] .site-header {
     animation-timeline: --scene;
     animation-range: contain 50% contain 70%;
   }
-  .rise {
-    animation: rise linear both;
-    animation-timeline: view();
-    animation-range: entry 0% cover 30%;
-  }
-  .ink-in {
-    background: linear-gradient(90deg, var(--ink) 50%, #c5cbd6 50%) 100% 0 / 200% 100% no-repeat;
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    animation: ink linear both;
-    animation-timeline: view();
-    animation-range: entry 30% cover 50%;
-  }
   /* Giant words that slide sideways as you scroll past. */
   .slide-x {
     animation: slide-x linear both;
@@ -316,23 +284,12 @@ html[data-night] .site-header {
     transform: translateY(20px);
   }
 }
-@keyframes rise {
-  from {
-    opacity: 0;
-    transform: translateY(56px) scale(0.98);
-  }
-}
-@keyframes ink {
-  to {
-    background-position: 0 0;
-  }
-}
 @keyframes slide-x {
   from {
-    transform: translateX(8%);
+    transform: translateX(0);
   }
   to {
-    transform: translateX(-62%);
+    transform: translateX(-55%);
   }
 }
 
@@ -384,7 +341,7 @@ html[data-night] .site-header {
   inset: 0;
   transform-origin: top;
   border-radius: inherit;
-  background: linear-gradient(#24365f, #6b7fa8);
+  background: #24365f;
   transition: transform 0.8s var(--ease);
 }
 .step-dot {
@@ -485,17 +442,10 @@ html[data-night] .site-header {
   height: 2px;
   transform: scaleX(0);
   transform-origin: 0 50%;
-  background: linear-gradient(90deg, #24365f, #8fa3c8);
+  background: #24365f;
 }
 html[data-night] .scroll-bar {
-  background: linear-gradient(90deg, #8fa3c8, #fff);
-}
-
-/* Chips around the demo film that fly outward as the film grows to fill the screen. */
-.scatter {
-  position: absolute;
-  z-index: 4;
-  display: none; /* only where the scroll effect can move them out of the film's way */
+  background: #fff;
 }
 
 @supports (animation-timeline: scroll()) {
@@ -505,12 +455,6 @@ html[data-night] .scroll-bar {
   }
 }
 @supports (animation-timeline: view()) {
-  .scatter {
-    display: block;
-    animation: scatter linear both;
-    animation-timeline: --scene;
-    animation-range: contain 0% contain 45%;
-  }
   .slide-x-rev {
     animation: slide-x-rev linear both;
     animation-timeline: view();
@@ -522,36 +466,23 @@ html[data-night] .scroll-bar {
     transform: scaleX(1);
   }
 }
-@keyframes scatter {
-  to {
-    transform: translate(var(--sx), var(--sy)) scale(0.85);
-    opacity: 0;
-  }
-}
 @keyframes slide-x-rev {
   from {
-    transform: translateX(-55%);
+    transform: translateX(-45%);
   }
   to {
-    transform: translateX(5%);
+    transform: translateX(0);
   }
 }
 
 /* Cards. Silver for most; one deep night card per page at most. */
 .card {
-  background:
-    radial-gradient(80% 70% at 100% 0%, rgb(36 54 95 / 0.06), transparent 70%),
-    linear-gradient(180deg, #f7f8fb 0%, #edf0f4 100%);
-  box-shadow:
-    inset 0 1px 0 #fff,
-    0 0 0 1px var(--line);
+  background: #f4f5f8;
+  box-shadow: 0 0 0 1px var(--line);
 }
 .card-night {
-  background:
-    radial-gradient(70% 60% at 20% 0%, rgb(255 255 255 / 0.08), transparent 70%),
-    var(--g-night);
+  background: #141d33;
   color: #eef1f6;
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1);
 }
 .card-link {
   transition:
@@ -560,19 +491,7 @@ html[data-night] .scroll-bar {
 }
 .card-link:hover {
   transform: translateY(-4px);
-  box-shadow:
-    inset 0 1px 0 #fff,
-    0 0 0 1px var(--line),
-    0 24px 50px -28px rgb(14 22 40 / 0.45);
-}
-.tilt3d {
-  transform: perspective(1000px);
-  transition:
-    transform 0.25s var(--ease),
-    box-shadow 0.4s var(--ease);
-}
-.tilt3d:hover {
-  transform: perspective(1000px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateY(-4px);
+  box-shadow: 0 0 0 1px rgb(14 22 40 / 0.2);
 }
 .card-link .arrow {
   transition: transform 0.4s var(--ease);
@@ -581,25 +500,10 @@ html[data-night] .scroll-bar {
   transform: translateX(4px);
 }
 
-/* A soft light that follows the pointer across cards (position set by SiteMotion). */
 .spot {
   position: relative;
   isolation: isolate;
 }
-.spot::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  border-radius: inherit;
-  background: radial-gradient(420px circle at var(--x, 50%) var(--y, 0%), rgb(255 255 255 / 0.9), transparent 60%);
-  opacity: 0;
-  transition: opacity 0.4s var(--ease);
-}
-.spot:hover::before {
-  opacity: 1;
-}
-
 /* Night: the page darkens around the film of the app (which is dark), then brightens again after it. The words
    change color in step, so they're readable at every moment. Browsers without scroll animations just get the night. */
 .night {
@@ -773,19 +677,119 @@ html[data-night] .scroll-bar {
   border-radius: 8px;
 }
 
+/* Rows that slide sideways: full to both edges, fading out as they leave. */
+.edge-fade {
+  mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+}
+
+/* A brand mark (an SVG file) painted in the current text color. */
+.brand-mark {
+  display: inline-block;
+  flex: none;
+  width: 1em;
+  height: 1em;
+  background: currentColor;
+  mask: var(--m) center / contain no-repeat;
+}
+
+/* The stone wall: moon stones fill the screen; scrolling (--sp, 0 to 1) pushes them out in a wave from the middle. */
+.stone-scene {
+  --sp: 0;
+  height: 300svh;
+}
+.stone-sticky {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+.stone-reveal {
+  position: relative;
+  padding-inline: 1rem;
+  text-align: center;
+  --o: clamp(0, (var(--sp) - 0.42) * 2.6, 1);
+  opacity: var(--o);
+  transform: scale(calc(0.94 + var(--o) * 0.06));
+}
+.stone-wall {
+  --h: calc(100svh / 6);
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.stone-row {
+  display: flex;
+  flex: none;
+  gap: calc(var(--h) * 0.05);
+  margin-block: calc(var(--h) * -0.03);
+}
+.stone-row:nth-child(even) {
+  translate: calc(var(--h) * 0.45) 0;
+}
+.stone {
+  --l: clamp(0, (var(--sp) - 0.05 - var(--w) * 0.5) / 0.4, 1);
+  z-index: calc(var(--l) * 100); /* stones in flight pass over the ones still in the wall */
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45em;
+  width: calc(var(--h) * var(--r));
+  height: var(--h);
+  border-radius: var(--br);
+  font-size: clamp(12px, calc(var(--h) * 0.115), 19px);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: #3a4357;
+  background: radial-gradient(120% 100% at 32% 22%, #fff 0%, var(--c) 50%, var(--c2) 100%);
+  box-shadow:
+    inset -0.5em -0.7em 1.4em rgb(30 40 64 / 0.14),
+    inset 0.3em 0.4em 0.6em rgb(255 255 255 / 0.85),
+    0 0.7em 1.4em -0.7em rgb(14 22 40 / 0.35);
+  transform: translate(calc(var(--tx) * var(--l) * var(--l) * 85vw), calc(var(--ty) * var(--l) * var(--l) * 85svh)) rotate(calc(var(--rot) * var(--l))) scale(calc(1 - var(--l) * 0.3));
+  opacity: calc(1 - clamp(0, (var(--l) - 0.55) * 2.2, 1));
+}
+.stone[data-dark] {
+  color: #fff;
+  background: radial-gradient(120% 100% at 32% 22%, #3d4d75 0%, #1f2b4a 50%, #121a2e 100%);
+  box-shadow:
+    inset -0.5em -0.7em 1.4em rgb(0 0 0 / 0.3),
+    inset 0.3em 0.4em 0.6em rgb(255 255 255 / 0.12),
+    0 0.7em 1.4em -0.7em rgb(14 22 40 / 0.5);
+}
+.stone-mark {
+  width: 1.7em;
+  height: 1.7em;
+}
 @media (prefers-reduced-motion: reduce) {
+  .stone-scene {
+    height: auto;
+  }
+  .stone-sticky {
+    position: relative;
+    height: auto;
+    padding-block: 7rem;
+  }
+  .stone-wall {
+    display: none;
+  }
+  .stone-reveal {
+    opacity: 1;
+    transform: none;
+  }
   .site *,
   .site *::before,
   .site *::after {
     animation: none !important;
     transition: none !important;
-  }
-  .ink-in {
-    color: var(--ink);
-    background: none;
-  }
-  .scatter {
-    display: none;
   }
   .scene,
   .scene-short {

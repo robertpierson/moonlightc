@@ -37,7 +37,7 @@ export default function Extension() {
             ["One key to stop.", "Alt+Shift+M stops sharing every tab at once."],
             ["Ends on its own.", "Sharing stops after 15 minutes without use."],
           ].map(([t, b]) => (
-            <div key={t} className="card rise rounded-3xl p-7">
+            <div key={t} className="card rounded-3xl p-7">
               <h3 className="text-lg">{t}</h3>
               <p className="mt-2 text-[var(--mist)]">{b}</p>
             </div>
@@ -53,7 +53,7 @@ export default function Extension() {
             ["/extension/2-popup.webp", "The menu: share a tab, stop sharing, and see what the AI did."],
             ["/extension/3-confirm.webp", "Risky steps wait here until you click Allow."],
           ].map(([src, caption]) => (
-            <figure key={src} className="rise">
+            <figure key={src} className="">
               <div className="card overflow-hidden rounded-3xl p-2">
                 <Image src={src} alt={caption} width={1280} height={800} className="h-auto w-full rounded-[1.1rem]" />
               </div>

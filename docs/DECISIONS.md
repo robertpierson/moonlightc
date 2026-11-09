@@ -172,3 +172,8 @@ Alternatives: one theme for both (the site followed the device before); a site t
 What: the demo is filmed from the real web app; only the AI's replies come from a local stand-in server, and the page says so.
 Why: real AI calls would cost money (owner: don't spend), and scripted answers keep the video the same every time it's re-filmed.
 Alternatives: hand-built animated mockups only (looked fake to the owner); filming with a real key (costs money, answers change).
+
+## 2026-11-09: Website drops gradients and template effects; real icons
+What: solid navy buttons and solid text (no gradient headlines, button shine, cursor glow, 3D card tilt or fade-up on every card); line icons from Phosphor; AI brand marks from Lobe Icons (MIT, in public/brands); home "Download" goes to the Download page.
+Why: owner said the gradient text and two-line download button looked AI-generated and asked for real icons and a professional, clean look.
+Alternatives: keep the gradients but tone them down (still read as templated); Simple Icons for brands (has no OpenAI mark).
