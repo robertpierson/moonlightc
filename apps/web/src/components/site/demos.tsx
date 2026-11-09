@@ -226,6 +226,103 @@ const MODES = [
   ["Bypass", "No questions. For throwaway projects only."],
 ];
 
+/* Phone screens for the Remote control page's set-up steps. Light app UI, sized for the 19rem phone frame. */
+const PhoneTop = ({ title }: { title: string }) => <div className="px-1 pb-3 text-[15px] font-semibold text-[var(--ink)]">{title}</div>;
+
+export function PhonePcOnline() {
+  return (
+    <div aria-hidden className="pointer-events-none w-full self-start text-[12px]">
+      <PhoneTop title="Your PCs" />
+      <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-[var(--line)]">
+        <div className="flex items-center gap-3">
+          <span className="grid size-10 place-items-center rounded-xl [background:var(--g-brand)] text-white">▣</span>
+          <div className="flex-1">
+            <div className="text-[14px] font-medium text-[var(--ink)]">Home PC</div>
+            <div className="flex items-center gap-1.5 text-[var(--mist)]">
+              <span className="relative flex size-2">
+                <span className="absolute inset-0 animate-ping rounded-full bg-emerald-500/60" />
+                <span className="size-2 rounded-full bg-emerald-500" />
+              </span>
+              Online, in the tray
+            </div>
+          </div>
+        </div>
+      </div>
+      <p className="mt-4 px-1 text-[var(--mist)]">Installed on Windows. It stays reachable while it runs.</p>
+    </div>
+  );
+}
+
+export function PhoneTwoStep() {
+  const [ref, step] = useStep<HTMLDivElement>(8, 450);
+  return (
+    <div ref={ref} aria-hidden className="pointer-events-none w-full self-start text-[12px]">
+      <PhoneTop title="Two-step sign-in" />
+      <p className="px-1 text-[var(--mist)]">Enter the 6-digit code from your authenticator app.</p>
+      <div className="mt-5 grid grid-cols-6 gap-1.5">
+        {Array.from({ length: 6 }, (_, i) => (
+          <span key={i} className={`grid h-11 place-items-center rounded-xl bg-white text-[17px] font-semibold text-[var(--ink)] ring-1 transition-all duration-300 ${i === step ? "ring-2 ring-[#24365f]" : "ring-[var(--line)]"}`}>
+            {i < step ? "•" : ""}
+          </span>
+        ))}
+      </div>
+      <div className={`mt-5 rounded-xl py-3 text-center text-[13px] font-medium text-white transition-colors duration-500 ${step >= 6 ? "[background:var(--g-brand)]" : "bg-[#aab3c3]"}`}>
+        {step >= 7 ? "Signed in ✓" : "Verify"}
+      </div>
+    </div>
+  );
+}
+
+export function PhonePickPc() {
+  return (
+    <div aria-hidden className="pointer-events-none w-full self-start text-[12px]">
+      <PhoneTop title="Connect to a PC" />
+      {[
+        ["Home PC", "Online", true],
+        ["Studio laptop", "Offline", false],
+      ].map(([n, s, on]) => (
+        <div key={n as string} className={`mb-2 flex items-center gap-3 rounded-2xl bg-white p-3.5 shadow-sm ring-1 ring-[var(--line)] ${on ? "" : "opacity-60"}`}>
+          <span className={`size-2 rounded-full ${on ? "bg-emerald-500" : "bg-[#aab3c3]"}`} />
+          <div className="flex-1">
+            <div className="text-[13px] font-medium text-[var(--ink)]">{n}</div>
+            <div className="text-[var(--mist)]">{s}</div>
+          </div>
+          {on && <span className="animate-pulse rounded-full [background:var(--g-brand)] px-3 py-1.5 text-[11px] font-medium text-white">Connect</span>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function PhoneConnected() {
+  return (
+    <div aria-hidden className="pointer-events-none w-full self-start text-[12px]">
+      <div className="mb-3 flex items-center gap-2 rounded-2xl bg-white p-3 shadow-sm ring-1 ring-[var(--line)]">
+        <span className="grid size-6 place-items-center rounded-full bg-emerald-500 text-[11px] text-white">✓</span>
+        <span className="text-[var(--ink)]">Home PC allowed this phone</span>
+      </div>
+      <div className="relative aspect-[10/16] overflow-hidden rounded-2xl bg-[radial-gradient(80%_80%_at_70%_20%,#5a6f99,#1e2a46_60%,#0e1527)] shadow-lg">
+        <div className="absolute top-[10%] left-[8%] h-[34%] w-[70%] rounded-md bg-white/95 p-2 shadow-xl">
+          <div className="h-1.5 w-1/3 rounded bg-[#c9d1dd]" />
+          {[90, 70, 80].map((w) => (
+            <div key={w} className="mt-1.5 h-1.5 rounded bg-[#e3e7ee]" style={{ width: `${w}%` }} />
+          ))}
+        </div>
+        <div className="absolute top-[50%] left-[22%] h-[26%] w-[70%] rounded-md bg-[#0d121d] p-2 font-mono text-[9px] text-[#b9c6e4] shadow-xl">
+          PS C:\&gt; npm run build
+          <br />
+          <span className="text-white/60">✓ built in 4.2s</span>
+        </div>
+        <div className="absolute inset-x-0 bottom-0 flex justify-around bg-white/20 py-2 text-[10px] text-white backdrop-blur">
+          <span>Keyboard</span>
+          <span>Touchpad</span>
+          <span>End</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** The Code tab's permission modes, cycling. */
 export function CodeModes() {
   const [ref, step] = useStep<HTMLDivElement>(MODES.length, 1600);

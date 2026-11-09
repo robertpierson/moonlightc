@@ -34,6 +34,7 @@ export default function Code() {
       </section>
 
       <StickySteps
+        device="laptop"
         steps={[
           {
             title: "Claude Code, on your PC.",

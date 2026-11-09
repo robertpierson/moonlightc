@@ -356,14 +356,219 @@ html[data-night] .site-header {
 }
 .step-visual {
   opacity: 0;
-  transform: scale(0.97) translateY(12px);
+  transform: scale(0.94) translateY(16px);
+  filter: blur(6px);
   transition:
-    opacity 0.6s var(--ease),
-    transform 0.6s var(--ease);
+    opacity 0.7s var(--ease),
+    transform 0.7s var(--ease),
+    filter 0.7s var(--ease);
 }
 .step-visual[data-active] {
   opacity: 1;
   transform: none;
+  filter: none;
+}
+
+/* The line beside the steps fills as you read down; each step's dot lights up when you reach it. */
+.step-rail {
+  position: absolute;
+  top: 12vh;
+  bottom: 12vh;
+  left: 0;
+  width: 2px;
+  border-radius: 2px;
+  background: #dfe3ea;
+}
+.step-rail > span {
+  position: absolute;
+  inset: 0;
+  transform-origin: top;
+  border-radius: inherit;
+  background: linear-gradient(#24365f, #6b7fa8);
+  transition: transform 0.8s var(--ease);
+}
+.step-dot {
+  position: absolute;
+  left: -5px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: inset 0 0 0 2px #cfd5df;
+  transition:
+    box-shadow 0.5s var(--ease),
+    transform 0.5s var(--ease);
+}
+.step[data-active] .step-dot,
+.step[data-done] .step-dot {
+  box-shadow: inset 0 0 0 6px #24365f;
+}
+.step[data-active] .step-dot {
+  transform: scale(1.25);
+}
+
+/* Device frames that hold the step pictures. */
+.device-phone {
+  border-radius: 3.25rem;
+  padding: 0.7rem;
+  background: linear-gradient(160deg, #2a3756, #0e1628 60%);
+  box-shadow:
+    0 60px 100px -40px rgb(7 23 48 / 0.55),
+    inset 0 0 0 2px #3b4a6c,
+    inset 0 0 0 4px #0e1628;
+}
+.device-phone .screen {
+  position: relative;
+  border-radius: 2.6rem;
+  overflow: hidden;
+  background: linear-gradient(180deg, #f6f7fa, #e9ecf2);
+}
+.device-phone .screen::before {
+  content: "";
+  position: absolute;
+  z-index: 5;
+  top: 0.6rem;
+  left: 50%;
+  width: 6.5rem;
+  height: 1.7rem;
+  translate: -50% 0;
+  border-radius: 1rem;
+  background: #0e1628;
+}
+.device-phone .screen::after {
+  content: "";
+  position: absolute;
+  bottom: 0.5rem;
+  left: 50%;
+  width: 7rem;
+  height: 0.3rem;
+  translate: -50% 0;
+  border-radius: 1rem;
+  background: #0e1628;
+  opacity: 0.3;
+}
+.device-laptop .lid {
+  border-radius: 1.4rem 1.4rem 0.4rem 0.4rem;
+  padding: 0.75rem;
+  background: linear-gradient(180deg, #2a3756, #0e1628);
+  box-shadow: 0 50px 90px -40px rgb(7 23 48 / 0.55), inset 0 0 0 2px #3b4a6c;
+}
+.device-laptop .screen {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  border-radius: 0.6rem;
+  overflow: hidden;
+  background: radial-gradient(90% 90% at 75% 15%, #5a6f99, #1e2a46 60%, #0e1527);
+}
+.device-laptop .base {
+  height: 0.9rem;
+  margin-inline: -6%;
+  border-radius: 0 0 1.2rem 1.2rem;
+  background: linear-gradient(180deg, #d5dbe5, #9aa4b4);
+  box-shadow: 0 30px 40px -24px rgb(7 23 48 / 0.5);
+}
+.device-laptop .base::before {
+  content: "";
+  display: block;
+  width: 18%;
+  height: 0.35rem;
+  margin-inline: auto;
+  border-radius: 0 0 0.5rem 0.5rem;
+  background: #aab3c3;
+}
+
+/* Reading progress along the bottom edge of the header. */
+.scroll-bar {
+  position: absolute;
+  inset-inline: 0;
+  bottom: -1px;
+  height: 2px;
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  background: linear-gradient(90deg, #24365f, #8fa3c8);
+}
+html[data-night] .scroll-bar {
+  background: linear-gradient(90deg, #8fa3c8, #fff);
+}
+
+/* Little chat pieces floating around the hero headline: they arrive one by one, bob gently, and drift as you scroll. */
+.float-card {
+  position: absolute;
+  z-index: 5;
+}
+.float-card > div {
+  animation:
+    float-in 1.1s var(--ease) both,
+    bob 6s ease-in-out infinite;
+  animation-delay: var(--d, 1s), calc(var(--d, 1s) + 1.1s);
+}
+@keyframes float-in {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.9);
+    filter: blur(8px);
+  }
+}
+@keyframes bob {
+  50% {
+    translate: 0 -10px;
+  }
+}
+
+/* Chips around the demo film that fly outward as the film grows to fill the screen. */
+.scatter {
+  position: absolute;
+  z-index: 4;
+  display: none; /* only where the scroll effect can move them out of the film's way */
+}
+
+@supports (animation-timeline: scroll()) {
+  .scroll-bar {
+    animation: bar linear both;
+    animation-timeline: scroll(root);
+  }
+  .float-card {
+    animation: drift linear both;
+    animation-timeline: scroll(root);
+    animation-range: 0 100vh;
+  }
+}
+@supports (animation-timeline: view()) {
+  .scatter {
+    display: block;
+    animation: scatter linear both;
+    animation-timeline: --scene;
+    animation-range: contain 0% contain 45%;
+  }
+  .slide-x-rev {
+    animation: slide-x-rev linear both;
+    animation-timeline: view();
+    animation-range: cover 0% cover 100%;
+  }
+}
+@keyframes bar {
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes drift {
+  to {
+    transform: translateY(var(--py, -120px));
+  }
+}
+@keyframes scatter {
+  to {
+    transform: translate(var(--sx), var(--sy)) scale(0.85);
+    opacity: 0;
+  }
+}
+@keyframes slide-x-rev {
+  from {
+    transform: translateX(-55%);
+  }
+  to {
+    transform: translateX(5%);
+  }
 }
 
 /* Cards. Silver for most; one deep night card per page at most. */
@@ -612,6 +817,9 @@ html[data-night] .site-header {
   .ink-in {
     color: var(--ink);
     background: none;
+  }
+  .scatter {
+    display: none;
   }
   .scene,
   .scene-short {

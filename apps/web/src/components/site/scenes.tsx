@@ -155,7 +155,7 @@ export function DemoVideo({ from = 0, chapters = DEMO_CHAPTERS, className = "", 
  * Apple-style steps: the words scroll by on one side while the picture on the other side stays put and changes to
  * match the step you're reading. On phones each picture sits above its step instead.
  */
-export function StickySteps({ steps }: { steps: { title: string; body: string; visual: React.ReactNode }[] }) {
+export function StickySteps({ steps, device = "card" }: { steps: { title: string; body: string; visual: React.ReactNode }[]; device?: "card" | "phone" | "laptop" }) {
   const [active, setActive] = useState(0);
   const refs = useRef<(HTMLDivElement | null)[]>([]);
   useEffect(() => {
@@ -168,25 +168,54 @@ export function StickySteps({ steps }: { steps: { title: string; body: string; v
     refs.current.forEach((el) => el && io.observe(el));
     return () => io.disconnect();
   }, []);
+  const pictures = steps.map((s, i) => (
+    <div key={s.title} aria-hidden={i !== active} data-active={i === active ? "" : undefined} className={`step-visual col-start-1 row-start-1 grid place-items-center ${device === "phone" ? "p-4 pt-12" : device === "laptop" ? "p-3 [&>*]:scale-[.86]" : "p-8"}`}>
+      {s.visual}
+    </div>
+  ));
   return (
     <div className="mx-auto grid max-w-6xl gap-10 px-4 sm:px-6 md:grid-cols-2 md:gap-16">
-      <div>
+      <div className="relative md:pl-10">
+        <div aria-hidden className="step-rail hidden md:block">
+          <span style={{ transform: `scaleY(${(active + 1) / steps.length})` }} />
+        </div>
         {steps.map((s, i) => (
-          <div key={s.title} ref={(el) => void (refs.current[i] = el)} data-i={i} data-active={i === active ? "" : undefined} className="step flex flex-col justify-center py-10 md:min-h-[78vh] md:py-0">
-            <div className="card mb-8 grid aspect-[4/3] place-items-center overflow-hidden rounded-3xl p-6 md:hidden">{s.visual}</div>
+          <div
+            key={s.title}
+            ref={(el) => void (refs.current[i] = el)}
+            data-i={i}
+            data-active={i === active ? "" : undefined}
+            data-done={i < active ? "" : undefined}
+            className="step relative flex flex-col justify-center py-10 md:min-h-[78vh] md:py-0"
+          >
+            <span aria-hidden className="step-dot top-1/2 hidden -translate-x-10 -translate-y-1/2 md:block" />
+            {device === "phone" ? (
+              <div className="device-phone mx-auto mb-8 w-[17rem] md:hidden">
+                <div className="screen grid h-[31rem] place-items-center p-4 pt-12">{s.visual}</div>
+              </div>
+            ) : (
+              <div className="card mb-8 grid aspect-[4/3] place-items-center overflow-hidden rounded-3xl p-6 md:hidden">{s.visual}</div>
+            )}
             <h3 className="text-[clamp(1.9rem,3.4vw,3.1rem)] leading-[1.08]">{s.title}</h3>
             <p className="mt-5 max-w-[40ch] text-lg text-[var(--mist)] xl:text-xl">{s.body}</p>
           </div>
         ))}
       </div>
       <div className="hidden md:block">
-        <div className="card sticky top-[calc(50vh-17rem)] grid h-[34rem] overflow-hidden rounded-[2rem]">
-          {steps.map((s, i) => (
-            <div key={s.title} aria-hidden={i !== active} data-active={i === active ? "" : undefined} className="step-visual col-start-1 row-start-1 grid place-items-center p-8">
-              {s.visual}
+        {device === "phone" ? (
+          <div className="device-phone sticky top-[calc(50vh-19.5rem)] mx-auto w-[19.5rem]">
+            <div className="screen grid h-[37.5rem]">{pictures}</div>
+          </div>
+        ) : device === "laptop" ? (
+          <div className="device-laptop sticky top-[calc(50vh-12rem)]">
+            <div className="lid">
+              <div className="screen grid">{pictures}</div>
             </div>
-          ))}
-        </div>
+            <div className="base" />
+          </div>
+        ) : (
+          <div className="card sticky top-[calc(50vh-17rem)] grid h-[34rem] overflow-hidden rounded-[2rem]">{pictures}</div>
+        )}
       </div>
     </div>
   );

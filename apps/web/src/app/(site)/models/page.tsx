@@ -19,6 +19,7 @@ export default function Models() {
       </PageHero>
 
       <StickySteps
+        device="laptop"
         steps={[
           {
             title: "Add a key once.",

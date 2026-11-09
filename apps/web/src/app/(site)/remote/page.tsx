@@ -1,16 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Cta, PageHero, SectionTitle, SITE_VIEWPORT, SitePage } from "@/components/site/chrome";
-import { RemoteScreen } from "@/components/site/demos";
+import { PhoneConnected, PhonePcOnline, PhonePickPc, PhoneTwoStep, RemoteScreen } from "@/components/site/demos";
+import { StickySteps } from "@/components/site/scenes";
 
 export const metadata: Metadata = { title: "Remote control · MoonlightC", description: "See and use your home PC from your phone or Chromebook, safely." };
 export const viewport = SITE_VIEWPORT;
 
 const SETUP = [
-  ["Install the desktop app on your PC.", "It runs quietly in the tray and keeps the PC reachable."],
-  ["Sign in with two-step sign-in.", "Remote control only works on accounts with a second step, like an authenticator code."],
-  ["Open MoonlightC on another device.", "Your phone, a Chromebook, a work laptop. Pick your PC and connect."],
-  ["Allow it on the PC.", "The first time, the PC asks. Nothing connects until you say yes."],
+  { title: "Install the desktop app on your PC.", body: "It runs quietly in the tray and keeps the PC reachable.", visual: <PhonePcOnline /> },
+  { title: "Sign in with two-step sign-in.", body: "Remote control only works on accounts with a second step, like an authenticator code.", visual: <PhoneTwoStep /> },
+  { title: "Open MoonlightC on another device.", body: "Your phone, a Chromebook, a work laptop. Pick your PC and connect.", visual: <PhonePickPc /> },
+  { title: "Allow it on the PC.", body: "The first time, the PC asks. Nothing connects until you say yes.", visual: <PhoneConnected /> },
 ];
 
 export default function Remote() {
@@ -52,19 +53,13 @@ export default function Remote() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-4xl px-4 pt-32 sm:px-6">
-        <SectionTitle title="Set up in four steps." />
-        <ol className="mt-12 grid divide-y divide-[var(--line)] overflow-hidden rounded-3xl bg-white ring-1 ring-[var(--line)]">
-          {SETUP.map(([t, b], i) => (
-            <li key={t} className="grid grid-cols-[3rem_1fr] gap-4 bg-white p-7 sm:p-8">
-              <span className="text-3xl font-medium tracking-tight text-[#aeb6c4]">{i + 1}</span>
-              <div>
-                <h3 className="text-xl">{t}</h3>
-                <p className="mt-1 text-[var(--mist)]">{b}</p>
-              </div>
-            </li>
-          ))}
-        </ol>
+      <section className="pt-32">
+        <div className="px-4 sm:px-6">
+          <SectionTitle title="Set up in four steps." />
+        </div>
+        <div className="mt-6">
+          <StickySteps device="phone" steps={SETUP} />
+        </div>
       </section>
 
       <Cta title="Bring your PC along." body="Install the desktop app on the PC you want to reach. It's free.">

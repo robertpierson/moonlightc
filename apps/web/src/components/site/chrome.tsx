@@ -36,6 +36,7 @@ export function MoonMark({ className = "size-6" }: { className?: string }) {
 export function SiteHeader() {
   return (
     <header className="site-header sticky top-0 z-50">
+      <div aria-hidden className="scroll-bar" />
       <div className="mx-auto flex h-16 max-w-6xl items-center gap-8 px-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2 text-[17px] font-semibold tracking-tight">
           <MoonMark />

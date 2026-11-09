@@ -12,6 +12,8 @@ import { DemoVideo } from "./scenes";
 
 export const COMPANIES = ["Anthropic", "OpenAI", "Google Gemini", "xAI", "Mistral", "DeepSeek", "Groq", "Together AI", "Perplexity", "Cohere", "OpenRouter", "Azure OpenAI", "AWS Bedrock"];
 
+const MODEL_FAMILIES = ["Claude", "GPT", "Gemini", "Grok", "Llama", "Qwen", "Gemma", "DeepSeek", "Mistral", "Command", "Sonar", "Kimi", "GLM"];
+
 const FAQ = [
   ["Is MoonlightC free?", "Yes. It's free and open source under the MIT license. You pay the AI companies directly for what you use, at their prices. We don't add a markup or limits."],
   [
@@ -46,6 +48,42 @@ const EXPLORE = [
   { href: "/code", title: "Build with AI", body: "Describe an app and watch it run. Or run Claude Code in your own projects.", demo: <CodeTerminal key="c" /> },
   { href: "/extension", title: "AI in your browser", body: "Share a tab and the AI reads, clicks and types there. Risky steps wait for you.", demo: <BrowserTab key="b" /> },
 ];
+
+/** Pieces of a real conversation floating around the headline (wide screens only; decoration, hidden from screen readers). */
+function HeroBubbles() {
+  const card = "rounded-2xl px-4 py-3 text-left text-[14px] leading-snug shadow-[0_24px_50px_-20px_rgb(14_22_40/0.35)]";
+  const label = "mb-0.5 block text-[11px] font-medium";
+  return (
+    <div aria-hidden className="pointer-events-none absolute inset-0 z-[5] hidden xl:block">
+      <div className="float-card top-[19%] left-[max(2rem,calc(50%-41rem))]" style={{ "--py": "-180px" } as React.CSSProperties}>
+        <div className={`${card} w-60 bg-white text-[var(--ink)] ring-1 ring-[var(--line)]`} style={{ "--d": "1.1s" } as React.CSSProperties}>
+          <span className={`${label} text-[var(--faint)]`}>You</span>
+          Plan 3 days in Tokyo on a budget.
+        </div>
+      </div>
+      <div className="float-card top-[15%] right-[max(2rem,calc(50%-41rem))]" style={{ "--py": "-240px" } as React.CSSProperties}>
+        <div className={`${card} w-64 text-white [background:var(--g-brand)]`} style={{ "--d": "1.5s" } as React.CSSProperties}>
+          <span className={`${label} text-white/70`}>Claude</span>
+          Day 1: Asakusa at sunrise, street food in Ameyoko, then the free view from the Metropolitan Building.
+        </div>
+      </div>
+      <div className="float-card top-[47%] left-[max(3rem,calc(50%-38rem))]" style={{ "--py": "-90px" } as React.CSSProperties}>
+        <div className={`${card} flex items-center gap-2 rounded-full bg-white/90 py-2.5 text-[13px] text-[var(--ink)] ring-1 ring-[var(--line)] backdrop-blur`} style={{ "--d": "1.9s" } as React.CSSProperties}>
+          <span className="size-2 rounded-full bg-[#4f7bd9]" />
+          Switched to Gemini, same chat
+        </div>
+      </div>
+      <div className="float-card top-[44%] right-[max(3rem,calc(50%-39rem))]" style={{ "--py": "-140px" } as React.CSSProperties}>
+        <div className={`${card} w-56 bg-[#0d121d] font-mono text-[12px] text-[#b9c6e4]`} style={{ "--d": "2.3s" } as React.CSSProperties}>
+          <span className="block text-white/50">tip-calculator.html</span>
+          <span className="mt-1 flex items-center gap-1.5 text-white">
+            <span className="size-2 rounded-full bg-emerald-400" /> Running
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /** Next to the download button: the web app, or (when there's no desktop build to offer yet) every way to install. */
 export function SecondButton({ release }: { release: Release | null }) {
@@ -82,6 +120,7 @@ export function Landing({ release }: { release: Release | null }) {
               <SecondButton release={release} />
             </div>
           </div>
+          <HeroBubbles />
           <div aria-hidden className="hero-moon pointer-events-none relative -mt-[calc(160px-clamp(1.5rem,5vh,3.5rem))] min-h-[22rem] flex-1 [mask-image:linear-gradient(black_60%,transparent)]">
             <div className="moon-in absolute inset-0">
               <Moon className="absolute inset-0 h-full w-full" />
@@ -99,6 +138,18 @@ export function Landing({ release }: { release: Release | null }) {
                 See it work.
               </h2>
               <p className="on-night-soft mx-auto mt-3 max-w-[40ch] text-lg">The real app, start to finish, in 25 seconds.</p>
+            </div>
+            <div aria-hidden className="pointer-events-none hidden lg:block">
+              {[
+                ["Claude", "top-[36%] left-[18%]", "-30vw", "-20vh"],
+                ["GPT", "top-[30%] right-[19%]", "30vw", "-24vh"],
+                ["Gemini", "bottom-[24%] left-[16%]", "-32vw", "22vh"],
+                ["Your keys, your devices", "bottom-[20%] right-[15%]", "30vw", "24vh"],
+              ].map(([t, pos, sx, sy]) => (
+                <span key={t} className={`scatter ${pos} rounded-full bg-white px-5 py-2.5 text-[15px] font-medium text-[var(--ink)] shadow-[0_20px_40px_-16px_rgb(14_22_40/0.4)] ring-1 ring-[var(--line)]`} style={{ "--sx": sx, "--sy": sy } as React.CSSProperties}>
+                  {t}
+                </span>
+              ))}
             </div>
             <div className="w-[min(100%,72rem,calc((100svh-15rem)*1.6))]">
               <DemoVideo frameClassName="scene-grow rounded-[1.25rem] shadow-[0_50px_120px_-40px_rgb(14_22_40/0.6)] ring-1 ring-black/5" chipsClassName="scene-caption" />
@@ -125,6 +176,14 @@ export function Landing({ release }: { release: Release | null }) {
               <span key={c} className={i % 2 ? "text-[#848da0]" : ""}>
                 {c}
                 {i < COMPANIES.length - 1 && "."}
+              </span>
+            ))}
+          </div>
+          <div aria-hidden className="slide-x-rev mt-4 flex w-max gap-[0.9em] text-[clamp(1.8rem,5vw,4rem)] leading-none font-normal tracking-[-0.04em] whitespace-nowrap text-[#848da0]">
+            {MODEL_FAMILIES.map((m) => (
+              <span key={m} className="flex items-center gap-[0.9em]">
+                {m}
+                <span className="size-[0.22em] rounded-full bg-[#b9c1ce]" />
               </span>
             ))}
           </div>

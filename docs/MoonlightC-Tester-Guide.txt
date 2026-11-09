@@ -1,0 +1,39 @@
+MOONLIGHTC TESTER GUIDE
+About 20 minutes. If something breaks, send a screenshot and one line on what you clicked.
+
+BEFORE YOU START: GET A FREE AI KEY (2 min)
+1. Go to https://aistudio.google.com/apikey and sign in with Google.
+2. Click "Create API key" and copy it. It's free, no card needed.
+
+1. WEBSITE (2 min)
+1. Open https://moonlightc.vercel.app and scroll to the bottom.
+2. Click every page in the top menu. Note anything broken, slow or ugly.
+
+2. WEB APP (5 min)
+1. Click "Open web app".
+2. Click the key icon ("Models and keys"), pick Gemini, paste your key, click "Check key and connect".
+3. Ask it something. Then switch to a different model mid-chat and ask a follow-up.
+4. Refresh the page. Is your chat still there?
+
+3. DESKTOP APP (5 min)
+1. On the home page click "Download for Windows" (or Mac).
+2. Install it.
+   Windows: if it says "Windows protected your PC", click "More info", then "Run anyway".
+   Mac: if it's blocked, go to System Settings > Privacy & Security and click "Open Anyway".
+3. Open it, connect your key, and send a chat.
+
+4. CODE (3 min)
+1. In the app, open "Code".
+2. Type: "Make a tip calculator." Does it build something you can use?
+
+5. CHROME EXTENSION (3 min)
+1. On the website's Download page, click "Download the extension" and unzip it.
+2. In Chrome go to chrome://extensions, turn on "Developer mode" (top right),
+   click "Load unpacked", and pick the unzipped folder.
+3. Open any website, click the MoonlightC icon, choose "Share this tab".
+4. In MoonlightC ask: "What's on the tab I shared?"
+
+WHAT TO SEND BACK
+- Your device (Windows, Mac, phone) and browser.
+- Anything that broke, with a screenshot.
+- The one thing that felt most confusing.
