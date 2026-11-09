@@ -177,3 +177,12 @@ Alternatives: hand-built animated mockups only (looked fake to the owner); filmi
 What: solid navy buttons and solid text (no gradient headlines, button shine, cursor glow, 3D card tilt or fade-up on every card); line icons from Phosphor; AI brand marks from Lobe Icons (MIT, in public/brands); home "Download" goes to the Download page.
 Why: owner said the gradient text and two-line download button looked AI-generated and asked for real icons and a professional, clean look.
 Alternatives: keep the gradients but tone them down (still read as templated); Simple Icons for brands (has no OpenAI mark).
+
+## 2026-11-09: Remote control tuned toward Moonlight, within what a browser allows
+What:
+- The viewer asks the PC to start sharp (x-google-start-bitrate).
+- The PC allows 20 Mbps on direct routes (8 through the relay) and marks video high-priority on the network.
+- The PC reports its encoder over the existing data channel.
+- The viewer shows Speed details: estimated delay with a breakdown, resolution, data rate, and whether the video chip is used where Chrome exposes it.
+Why: owner asked for Moonlight-like speed. Moonlight's custom UDP protocol and native decoders aren't available to web pages. WebRTC already gives UDP transport, hardware encode/decode, no jitter buffer and lossy mouse moves (all in place before this).
+Alternatives: a native streaming helper in the desktop app (C++/Rust, much bigger, needs signed builds); WebCodecs + WebTransport (needs a server per stream; no peer-to-peer).

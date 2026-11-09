@@ -3,6 +3,7 @@
 import { reportError } from "./analytics";
 import type { MooncBridge } from "./desktop";
 import { claudeText } from "./claude-code";
+import { relayInUse } from "./relay-stats";
 import { getState } from "./store";
 import { supabase } from "./supabase/client";
 import { gathered, hifiAudio, iceServers, noRelayReason, routeKinds, type Req } from "./remote";
@@ -142,20 +143,41 @@ export function createHostHandler(
           rtc.set(req.from, { pc, stream });
           stream.getTracks().forEach((t) => pc.addTrack(t, stream));
           // Room for sharp, smooth video and clear sound on a good connection (WebRTC lowers it when the network is slow).
-          const tune = () =>
+          // Like Moonlight: up to 20 Mbps on a direct route; 8 through the relay, which has a monthly allowance.
+          const tune = (videoMax = 20_000_000) =>
             pc.getSenders().forEach((s) => {
               const p = s.getParameters();
               if (!p.encodings?.length) return;
-              p.encodings[0].maxBitrate = s.track?.kind === "audio" ? 192_000 : 8_000_000;
-              if (s.track?.kind === "video") p.encodings[0].maxFramerate = 60;
+              const e = p.encodings[0] as RTCRtpEncodingParameters & { priority?: string; networkPriority?: string };
+              e.maxBitrate = s.track?.kind === "audio" ? 192_000 : videoMax;
+              if (s.track?.kind === "video") e.maxFramerate = 60;
+              // Marked urgent on the network, so routers and Wi-Fi send it ahead of downloads.
+              e.priority = e.networkPriority = "high";
               s.setParameters(p).catch(() => {});
             });
           pc.addEventListener("connectionstatechange", () => {
             if (pc.connectionState === "failed" || pc.connectionState === "closed") closeRtc(req.from);
           });
+          // Every 2 s: tell the viewer how this PC encodes (its Speed details), and stay modest on the relay.
+          let reply: RTCDataChannel | undefined;
+          let onRelay = false;
+          let before: { time: number; frames: number } | undefined;
+          const report = setInterval(async () => {
+            if (pc.connectionState === "closed") return clearInterval(report);
+            const all = [...((await pc.getStats().catch(() => undefined))?.values() ?? [])] as Record<string, unknown>[];
+            const out = all.find((x) => x.type === "outbound-rtp" && x.kind === "video");
+            if (relayInUse(all) !== onRelay) tune((onRelay = !onRelay) ? 8_000_000 : 20_000_000);
+            if (!out || reply?.readyState !== "open") return;
+            const now = { time: Number(out.totalEncodeTime ?? 0), frames: Number(out.framesEncoded ?? 0) };
+            const frames = before ? now.frames - before.frames : 0;
+            const encodeMs = before && frames > 0 ? Math.round(((now.time - before.time) / frames) * 10000) / 10 : undefined;
+            before = now;
+            reply.send(JSON.stringify({ stats: { hw: typeof out.powerEfficientEncoder === "boolean" ? out.powerEfficientEncoder : undefined, encoder: out.encoderImplementation, encodeMs } }));
+          }, 2000);
           // Mouse and keyboard over the same direct connection (much faster than the server channel);
           // every event is still checked by the desktop app ("use the mouse and keyboard" must be allowed).
-          pc.addEventListener("datachannel", (e) =>
+          pc.addEventListener("datachannel", (e) => {
+            if (e.channel.label === "input") reply = e.channel;
             e.channel.addEventListener("message", (m) => {
               try {
                 const a = JSON.parse(String(m.data));
@@ -180,8 +202,8 @@ export function createHostHandler(
                 }
                 b.remote.input(req.from, a).catch(() => {});
               } catch {}
-            }),
-          );
+            });
+          });
           step = "video setup";
           await pc.setRemoteDescription({ type: "offer", sdp: String(p.sdp ?? "") });
           const answer = await pc.createAnswer();

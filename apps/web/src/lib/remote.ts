@@ -190,6 +190,19 @@ export const noRelayReason = () => relayWhy;
 /** Opus at music quality in stereo (the default is tuned for voices on calls). */
 export const hifiAudio = (sdp?: string) => (sdp ?? "").replace(/useinbandfec=1/g, "useinbandfec=1;stereo=1;sprop-stereo=1;maxaveragebitrate=192000");
 
+/**
+ * Asks the PC to start its video near full quality instead of climbing up from a blurry picture over the first
+ * seconds. Chrome reads x-google-start-bitrate from the other side's description, so the viewer adds it to the offer
+ * it sends (its own copy stays untouched). Kilobits a second.
+ */
+export function fastStart(sdp: string | undefined, kbps = 6000) {
+  if (!sdp) return sdp;
+  const video = new Set([...sdp.matchAll(/a=rtpmap:(\d+) (?:H264|VP8|VP9|AV1)\/90000/g)].map((m) => m[1]));
+  return sdp.replace(/a=fmtp:(\d+) ([^\r\n]*)/g, (line, pt: string, params: string) =>
+    video.has(pt) && !params.includes("x-google-start-bitrate") ? `${line};x-google-start-bitrate=${kbps}` : line,
+  );
+}
+
 /** Wait until the connection knows all its possible network paths (so one message carries everything). */
 // Up to 10 s: on strict networks the relay route (over the web port) can take several seconds to find.
 export function gathered(pc: RTCPeerConnection, ms = 10_000) {

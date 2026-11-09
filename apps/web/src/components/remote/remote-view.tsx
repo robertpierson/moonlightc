@@ -10,10 +10,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
-import { gathered, forgetRelay, hifiAudio, iceServers, isOnline, noRelayReason, routeKinds, whereAmI, joinChannel, leaveChannel, RemoteClient, subscribed, TIER_LABELS, uploadToPc, type Tier } from "@/lib/remote";
+import { gathered, fastStart, forgetRelay, hifiAudio, iceServers, isOnline, noRelayReason, routeKinds, whereAmI, joinChannel, leaveChannel, RemoteClient, subscribed, TIER_LABELS, uploadToPc, type Tier } from "@/lib/remote";
 import { desktop } from "@/lib/desktop";
 import { supabase } from "@/lib/supabase/client";
-import { relayInUse, selectedPair } from "@/lib/relay-stats";
+import { type Speed, videoSpeed } from "@/lib/relay-stats";
 import { useDevices } from "./your-computers";
 
 type Tab = "screen" | "terminal" | "files";
@@ -203,28 +203,27 @@ function Screen({ client, control, mini, files }: { client: RemoteClient; contro
   // Like Parsec's overlay: frames a second, round-trip delay, and whether the relay is in use.
   const livePc = useRef<RTCPeerConnection | undefined>(undefined);
   const relaySeconds = useRef(0);
-  const [stats, setStats] = useState<{ fps?: number; ms?: number; relay?: boolean }>({});
+  const [stats, setStats] = useState<Speed>({ relay: false });
+  // What the PC reports about its side (newer desktop apps): whether its graphics chip encodes, and how long that takes.
+  const [pcSide, setPcSide] = useState<{ hw?: boolean; encodeMs?: number; encoder?: string }>({});
   useEffect(() => {
     if (live !== "video") return;
+    let before: Record<string, unknown>[] | undefined;
     const t = setInterval(async () => {
       const pc = livePc.current;
       if (!pc) return;
       const r = await pc.getStats().catch(() => undefined);
       if (!r) return;
       const all = [...r.values()] as Record<string, unknown>[];
-      const video = all.find((x) => x.type === "inbound-rtp" && x.kind === "video");
-      const pair = selectedPair(all);
-      const relay = relayInUse(all);
+      const s = videoSpeed(all, before);
+      before = all;
       // Each minute on the relay counts toward its free monthly amount (see /api/turn).
-      if (relay && ++relaySeconds.current % 60 === 0) void supabase().rpc("add_relay_minute");
-      setStats({
-        fps: typeof video?.framesPerSecond === "number" ? Math.round(video.framesPerSecond) : undefined,
-        ms: typeof pair?.currentRoundTripTime === "number" ? Math.round(pair.currentRoundTripTime * 1000) : undefined,
-        relay,
-      });
+      if (s.relay && ++relaySeconds.current % 60 === 0) void supabase().rpc("add_relay_minute");
+      setStats(s);
     }, 1000);
     return () => clearInterval(t);
   }, [live]);
+  const [showSpeed, setShowSpeed] = useState(false);
   const heldMods = useRef(new Set<string>());
   const winKey = useRef({ down: false, used: false });
   const wheel = useRef<{ acc: number; raf?: number }>({ acc: 0 });
@@ -320,6 +319,13 @@ function Screen({ client, control, mini, files }: { client: RemoteClient; contro
       if (!simple && h264.length && vt.setCodecPreferences) vt.setCodecPreferences([...h264, ...codecs.filter((c) => c.mimeType !== "video/H264")]);
       if (!simple) pc.addTransceiver("audio", { direction: "recvonly" });
       dc.current = pc.createDataChannel("input");
+      // Newer PCs answer on it with how they encode (shown in Speed details).
+      dc.current.addEventListener("message", (m) => {
+        try {
+          const s = JSON.parse(String(m.data)).stats;
+          if (s) setPcSide({ hw: typeof s.hw === "boolean" ? s.hw : undefined, encodeMs: typeof s.encodeMs === "number" ? s.encodeMs : undefined, encoder: typeof s.encoder === "string" ? s.encoder : undefined });
+        } catch {}
+      });
       moves.current = pc.createDataChannel("moves", { ordered: false, maxRetransmits: 0 });
       const conn = pc;
       conn.addEventListener("track", (e) => e.track.kind === "audio" && setHasAudio(true));
@@ -327,7 +333,7 @@ function Screen({ client, control, mini, files }: { client: RemoteClient; contro
       const offer = await conn.createOffer();
       await conn.setLocalDescription({ type: "offer", sdp: simple ? offer.sdp : hifiAudio(offer.sdp) });
       await gathered(conn);
-      const r = await client.call<{ sdp: string }>("rtc.offer", { sdp: conn.localDescription?.sdp, noAudio: simple }, 30_000);
+      const r = await client.call<{ sdp: string }>("rtc.offer", { sdp: simple ? conn.localDescription?.sdp : fastStart(conn.localDescription?.sdp), noAudio: simple }, 30_000);
       await conn.setRemoteDescription({ type: "answer", sdp: r.sdp });
       // Show frames as soon as they arrive (no extra buffering), for the lowest delay.
       conn.getReceivers().forEach((rc) => {
@@ -736,7 +742,32 @@ function Screen({ client, control, mini, files }: { client: RemoteClient; contro
       )}
       <div className={mini ? "hidden" : "flex flex-wrap items-center gap-2"}>
         <span className="text-xs text-muted-foreground" role="status">
-          {live === "video" ? `Live video${stats.fps !== undefined ? ` · ${stats.fps} fps` : ""}${stats.ms !== undefined ? ` · ${stats.ms} ms` : ""}${stats.relay ? " · via relay" : ""}` : live === "pictures" ? `Pictures (live video didn't start${why ? `: ${why}` : ""})` : "Connecting…"}
+          {live === "video"
+            ? `Live video${stats.fps !== undefined ? ` · ${stats.fps} fps` : ""}${stats.delayMs !== undefined ? ` · about ${stats.delayMs + (pcSide.encodeMs ?? 0)} ms behind` : stats.rttMs !== undefined ? ` · ${stats.rttMs} ms` : ""}${stats.relay ? " · via relay" : ""}`
+            : live === "pictures"
+              ? `Pictures (live video didn't start${why ? `: ${why}` : ""})`
+              : "Connecting…"}
+          {live === "video" && (
+            <button className="ml-2 underline" aria-expanded={showSpeed} onClick={() => setShowSpeed((v) => !v)}>
+              Speed details
+            </button>
+          )}
+          {live === "video" && showSpeed && (
+            <span className="mt-1 block">
+              {[
+                stats.delayMs !== undefined &&
+                  `Delay about ${stats.delayMs + (pcSide.encodeMs ?? 0)} ms: network ${Math.round((stats.rttMs ?? 0) / 2)} ms, waiting ${stats.bufferMs} ms, decoding ${stats.decodeMs} ms${pcSide.encodeMs !== undefined ? `, PC encoding ${pcSide.encodeMs} ms` : ""}`,
+                stats.w && stats.h && `Picture ${stats.w}×${stats.h}${stats.fps !== undefined ? ` at ${stats.fps} fps` : ""}`,
+                stats.mbps !== undefined && `${stats.mbps} Mbps`,
+                stats.hwDecode !== undefined && `This device decodes with ${stats.hwDecode ? "its video chip" : "its processor"}`,
+                pcSide.hw !== undefined && `The PC encodes with ${pcSide.hw ? "its graphics chip" : "its processor"}`,
+                stats.relay ? "Through the relay (a direct route was blocked)" : "Direct connection",
+              ]
+                .filter(Boolean)
+                .join(". ")}
+              .
+            </span>
+          )}
           {live === "pictures" && (
             <button
               className="ml-2 underline"
