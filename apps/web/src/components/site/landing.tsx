@@ -19,7 +19,7 @@ import { BrowserTab, CodeTerminal, ModelMenu, RemoteScreen } from "./demos";
 import { Moon } from "./moon";
 import { CountUp } from "./motion";
 import { DemoVideo } from "./scenes";
-import { BRANDS, BrandMark, StoneWall } from "./stones";
+import { BRANDS, BrandMark } from "./brands";
 
 export const COMPANIES = [
   "Anthropic",
@@ -236,8 +236,6 @@ export function Landing() {
             ))}
           </div>
         </section>
-
-        <StoneWall />
 
         {/* Everything else in the app, travelling sideways as you scroll down. */}
         <section aria-labelledby="all" className="gallery">

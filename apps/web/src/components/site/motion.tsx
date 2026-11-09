@@ -47,32 +47,6 @@ export function SiteMotion() {
   return null;
 }
 
-/** Writes how far the surrounding section has been scrolled through (0 to 1) into a CSS variable on it. */
-export function ScrollProgress({ name }: { name: string }) {
-  const ref = useRef<HTMLSpanElement>(null);
-  useEffect(() => {
-    const section = ref.current?.closest("section");
-    if (!section) return;
-    let raf = 0;
-    const update = () => {
-      raf = 0;
-      const r = section.getBoundingClientRect();
-      const p = Math.min(1, Math.max(0, -r.top / Math.max(1, r.height - innerHeight)));
-      section.style.setProperty(name, p.toFixed(4));
-    };
-    const queue = () => (raf ||= requestAnimationFrame(update));
-    update();
-    addEventListener("scroll", queue, { passive: true });
-    addEventListener("resize", queue);
-    return () => {
-      cancelAnimationFrame(raf);
-      removeEventListener("scroll", queue);
-      removeEventListener("resize", queue);
-    };
-  }, [name]);
-  return <span ref={ref} hidden />;
-}
-
 /** A number that counts up from zero the first time it comes into view. Text that isn't a number shows as is. */
 export function CountUp({ value }: { value: string }) {
   const m = value.match(/^(\d+)(.*)$/);
