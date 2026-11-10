@@ -64,7 +64,6 @@ export default function Code() {
       />
 
       <WatchLesson id="code" title="Watch it build an app." />
-      <WatchLesson id="projects" />
 
       <Cta title="Start a project." body="Open the Code tab, describe what you want, and try it a minute later.">
         <Link prefetch={false} href="/app" className="btn-silver px-7 py-3">

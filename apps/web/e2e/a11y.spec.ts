@@ -17,7 +17,7 @@ for (const scheme of ["light", "dark"] as const) {
   test.describe(`${scheme} mode`, () => {
     test.use({ colorScheme: scheme });
 
-    for (const path of ["/", "/download", "/privacy"]) {
+    for (const path of ["/", "/models", "/download", "/learn", "/questions", "/privacy"]) {
       test(`page ${path}`, async ({ page }) => {
         await page.goto(path);
         expect(await audit(page)).toEqual([]);

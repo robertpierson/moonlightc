@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Cta, PageHero, SectionTitle, SITE_VIEWPORT, SitePage } from "@/components/site/chrome";
 import { LessonPlayer } from "@/components/site/lesson";
 import { LESSONS } from "@/components/site/lessons";
+import { POSTERS } from "@/components/site/media";
 
 export const metadata: Metadata = { title: "Learn · MoonlightC", description: "Short lessons filmed in the real MoonlightC app. Click any step to jump to it." };
 export const viewport = SITE_VIEWPORT;
@@ -59,7 +60,7 @@ export default function Learn() {
             <li key={l.id}>
               <a href={`#${l.id}`} className="group block">
                 <div className="card overflow-hidden rounded-3xl p-1.5 transition-transform duration-300 group-hover:-translate-y-1">
-                  <Image src={`/learn/${l.id}.webp`} alt="" width={1280} height={800} className="h-auto w-full rounded-[1.2rem]" />
+                  <Image src={POSTERS[l.id]} alt="" sizes="(min-width: 1024px) 17rem, (min-width: 640px) 45vw, 92vw" className="h-auto w-full rounded-[1.2rem]" />
                 </div>
                 <p className="mt-3 text-sm text-[var(--faint)]">Lesson {i + 1}</p>
                 <p className="font-medium group-hover:underline group-hover:underline-offset-4">{l.title}</p>
@@ -76,7 +77,7 @@ export default function Learn() {
             {l.title}
           </h2>
           <p className="mt-2 mb-8 max-w-[60ch] text-lg text-[var(--mist)]">{l.intro}</p>
-          <LessonPlayer src={`/learn/${l.id}.mp4`} poster={`/learn/${l.id}.webp`} steps={l.steps} label={`Lesson: ${l.title}`} />
+          <LessonPlayer src={`/learn/${l.id}.mp4`} poster={POSTERS[l.id].src} steps={l.steps} label={`Lesson: ${l.title}`} />
           <Link prefetch={false} href="/app" className="mt-6 inline-block text-sm font-medium text-[var(--tide)] underline-offset-4 hover:underline">
             Try it in the web app
           </Link>

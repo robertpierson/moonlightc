@@ -3,6 +3,7 @@ import { TopicQuestions } from "@/components/site/more-sections";
 import Image from "next/image";
 import Link from "next/link";
 import { PrimaryDownload } from "@/components/site/os-download";
+import { SHOTS } from "@/components/site/media";
 import { InstallApp } from "@/components/site/install-app";
 import { getLatestRelease, REPO, type Build } from "@/lib/releases";
 import { PageHero, SITE_VIEWPORT, SiteFooter, SiteHeader } from "@/components/site/chrome";
@@ -47,13 +48,13 @@ export default async function DownloadPage() {
         <section aria-label="Three ways to use MoonlightC" className="grid gap-5 md:grid-cols-3">
           {[
             {
-              shot: "/shots/chat.webp",
+              shot: SHOTS.chat,
               title: "Desktop app",
               body: "Windows, Mac and Linux. Adds remote control, models on your PC and Claude Code.",
               action: release?.builds.length ? <a href="#desktop">See every download</a> : <span>Not released yet. The web app works today.</span>,
             },
             {
-              shot: "/shots/models.webp",
+              shot: SHOTS.models,
               title: "Web app",
               body: "Any browser, any device. Install it like an app.",
               action: (

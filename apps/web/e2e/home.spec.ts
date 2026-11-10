@@ -26,6 +26,19 @@ test("download page offers the right next step for this device", async ({ page, 
   await expect(page.getByText("Safari on iPhone or iPad")).toBeVisible();
 });
 
+test("learn: clicking a lesson step jumps the film there; the More menu reaches Learn and Questions", async ({ page, isMobile }) => {
+  await page.goto("/learn");
+  await expect(page.getByRole("heading", { name: "Learn MoonlightC" })).toBeVisible();
+  const lesson = page.locator("#connect");
+  await lesson.getByRole("button", { name: /Ask anything/ }).click();
+  await expect.poll(() => lesson.locator("video").evaluate((v: HTMLVideoElement) => v.currentTime)).toBeGreaterThan(8);
+  await expect(lesson.getByRole("button", { name: /Ask anything/ })).toHaveAttribute("aria-current", "step");
+  if (isMobile) await page.getByLabel("Menu").click();
+  else await page.getByText("More", { exact: true }).click();
+  await page.getByRole("link", { name: "Questions", exact: true }).first().click();
+  await expect(page.getByRole("heading", { level: 1, name: "Questions" })).toBeVisible();
+});
+
 test("PWA: manifest and service worker are served", async ({ request }) => {
   const m = await (await request.get("/manifest.webmanifest")).json();
   expect(m.name).toBe("MoonlightC");

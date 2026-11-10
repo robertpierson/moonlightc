@@ -183,11 +183,17 @@ html[data-night] .site-header {
   }
 }
 
-/* The footer ends on a giant brushed-silver wordmark, cut off by the bottom of the page. */
+/* The footer ends on a giant pale wordmark, as wide as the page's content and cut off by the bottom of the page. */
 .wordmark {
   margin-top: 1rem;
-  height: clamp(4rem, 13vw, 11rem);
-  font-size: clamp(5rem, 17.5vw, 15.5rem);
+  container-type: inline-size;
+  user-select: none;
+}
+.wordmark span {
+  display: block;
+  height: 0.71em;
+  overflow: hidden;
+  font-size: 20cqw; /* the word is 4.94em wide in Geist at this weight and spacing */
   line-height: 0.95;
   font-weight: 600;
   letter-spacing: -0.06em;
@@ -197,7 +203,6 @@ html[data-night] .site-header {
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  user-select: none;
 }
 
 /* Headline: each word arrives out of a blur, one after another. */

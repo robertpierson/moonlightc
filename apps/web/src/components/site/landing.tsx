@@ -8,6 +8,7 @@ import { Moon } from "./moon";
 import { CountUp } from "./motion";
 import { DemoVideo } from "./scenes";
 import { BRANDS, BrandMark } from "./brands";
+import { SHOTS } from "./media";
 import { COMPANIES } from "./pages";
 import { QUESTIONS, QuestionList } from "./questions";
 import { LearnTeaser } from "./more-sections";
@@ -161,7 +162,7 @@ export function Landing() {
                 {EVERYTHING.map(({ shot, title, body }) => (
                   <figure key={title} className="w-[20rem] shrink-0 sm:w-[30rem]">
                     <div className="card overflow-hidden rounded-3xl p-2">
-                      <Image src={`/shots/${shot}.webp`} alt={`MoonlightC: ${title}`} width={1280} height={800} className="h-auto w-full rounded-[1.1rem]" />
+                      <Image src={SHOTS[shot]} alt={`MoonlightC: ${title}`} sizes="(min-width: 640px) 30rem, 20rem" className="h-auto w-full rounded-[1.1rem]" />
                     </div>
                     <figcaption className="mt-4 px-1">
                       <span className="block text-lg font-medium">{title}</span>

@@ -71,6 +71,12 @@ export function SiteFooter() {
               {label}
             </Link>
           ))}
+          <Link href="/learn" className="hover:text-[var(--ink)]">
+            Learn
+          </Link>
+          <Link href="/questions" className="hover:text-[var(--ink)]">
+            Questions
+          </Link>
           <a href={`https://github.com/${REPO}`} className="hover:text-[var(--ink)]">
             GitHub
           </a>
@@ -83,7 +89,7 @@ export function SiteFooter() {
         </nav>
       </div>
       <div aria-hidden className="wordmark mx-auto max-w-6xl overflow-hidden px-4 sm:px-6">
-        MoonlightC
+        <span>MoonlightC</span>
       </div>
     </footer>
   );

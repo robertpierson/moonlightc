@@ -186,3 +186,8 @@ What:
 - The viewer shows Speed details: estimated delay with a breakdown, resolution, data rate, and whether the video chip is used where Chrome exposes it.
 Why: owner asked for Moonlight-like speed. Moonlight's custom UDP protocol and native decoders aren't available to web pages. WebRTC already gives UDP transport, hardware encode/decode, no jitter buffer and lossy mouse moves (all in place before this).
 Alternatives: a native streaming helper in the desktop app (C++/Rust, much bigger, needs signed builds); WebCodecs + WebTransport (needs a server per stream; no peer-to-peer).
+
+## 2026-11-10: App pictures on the website are imported, not linked by path
+What: screenshots and lesson posters are imported in `src/components/site/media.ts`, so each address carries a fingerprint of the file.
+Why: re-filmed pictures saved under the same name kept showing the old version, because the image optimizer caches by address.
+Alternatives: renaming files on every re-film (easy to forget); turning image optimization off (slower pages).

@@ -10,9 +10,10 @@ const out = process.argv[2];
 const only = process.argv[3]?.split(","); // optional: film just these lessons (the connect lesson always runs first)
 const BASE = process.env.BASE ?? "http://localhost:3000";
 fs.mkdirSync(path.join(out, "shots"), { recursive: true });
-const W = 1280;
-const H = 800;
-const SCALE = 1.5;
+// A smaller window filmed at 2x: the app's text comes out large enough to read when the film is shown small.
+const W = +(process.env.W ?? 960);
+const H = +(process.env.H ?? 600);
+const SCALE = 2;
 const browser = await chromium.launch({ channel: "chromium", headless: true });
 const page = await browser.newPage({ viewport: { width: W, height: H }, deviceScaleFactor: SCALE, colorScheme: "dark" });
 const pause = (ms) => page.waitForTimeout(ms);
@@ -210,6 +211,9 @@ if (want("memory"))
     page.once("dialog", (d) => d.accept("I'm vegetarian and I live in Chicago."));
     await page.getByRole("button", { name: "Add", exact: true }).click();
     await page.getByRole("list", { name: "Memories" }).waitFor();
+    await pause(700);
+    const save = page.getByRole("button", { name: "Save changes" });
+    if (await save.isVisible()) await save.click();
     await pause(1500);
     await shot("memory");
     step(2);
@@ -236,6 +240,8 @@ if (want("theme"))
     await shot("theme");
     step(2);
     await radios.nth(0).click();
+    await pause(900);
+    await page.getByRole("button", { name: "Save changes" }).click();
     await pause(1200);
     await page.keyboard.press("Escape");
   });

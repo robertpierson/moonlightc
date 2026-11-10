@@ -17,3 +17,6 @@ films each lesson into its own folder (frames.txt + steps.json) and saves screen
 `ffmpeg -f concat -safe 0 -i frames.txt -vf "fps=30,scale=1280:800:flags=lanczos,format=yuv420p" -c:v libx264 -preset slow -crf 25 -g 30 -movflags +faststart -an public/learn/<lesson>.mp4`,
 a poster with `ffmpeg -sseof -0.3 -i public/learn/<lesson>.mp4 -frames:v 1 -vf scale=1280:-1 -c:v libwebp -quality 78 public/learn/<lesson>.webp`,
 and copy steps.json times into `src/components/site/lessons.ts`. Screenshots: convert to `public/shots/<name>.webp` the same way.
+
+The lessons are filmed in a 960x600 window at 2x so the app's text is readable when the film is shown small. New
+screenshots or posters need no renaming: `src/components/site/media.ts` imports them, so their addresses change with the file.

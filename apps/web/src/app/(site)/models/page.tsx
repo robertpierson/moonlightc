@@ -1,5 +1,7 @@
+import { HardDrives } from "@phosphor-icons/react/ssr";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { BrandMark, COMPANY_MARK } from "@/components/site/brands";
 import { Cta, PageHero, SectionTitle, SITE_VIEWPORT, SitePage } from "@/components/site/chrome";
 import { AutoRoutes, ModelMenu, QuickConnect } from "@/components/site/demos";
 import { COMPANIES, DEMO_CHAPTERS } from "@/components/site/pages";
@@ -60,9 +62,10 @@ export default function Models() {
 
       <section className="pt-32">
         <SectionTitle title={`${COMPANIES.length} companies, one list.`} body="Plus models on your own PC, and any server that speaks the OpenAI API." />
-        <div className="mx-auto mt-12 grid max-w-5xl grid-cols-2 overflow-hidden rounded-3xl bg-white ring-1 ring-[var(--line)] sm:grid-cols-3 md:grid-cols-4">
+        <div className="mx-auto mt-12 grid max-w-6xl grid-cols-2 overflow-hidden rounded-3xl bg-white ring-1 ring-[var(--line)] sm:grid-cols-3 lg:grid-cols-5">
           {[...COMPANIES, "Ollama on your PC", "Your own server"].map((c) => (
-            <div key={c} className="px-6 py-7 text-lg font-medium tracking-tight shadow-[inset_-1px_-1px_0_var(--line)]">
+            <div key={c} className="flex items-center gap-3 px-5 py-7 font-medium tracking-tight shadow-[inset_-1px_-1px_0_var(--line)] last:col-span-2 sm:last:col-span-1">
+              {COMPANY_MARK[c] ? <BrandMark icon={COMPANY_MARK[c]} className="size-6 text-[var(--tide)]" /> : <HardDrives className="size-6 text-[var(--tide)]" weight="light" aria-hidden />}
               {c}
             </div>
           ))}
@@ -70,7 +73,6 @@ export default function Models() {
       </section>
 
       <WatchLesson id="connect" title="Connect a key in a minute." />
-      <WatchLesson id="switch" />
       <TopicQuestions topic="Keys and costs" />
 
       <Cta title="Your keys, every model." body="Open the web app and add your first key. It takes about a minute.">
