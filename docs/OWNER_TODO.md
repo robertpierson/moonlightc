@@ -209,3 +209,11 @@ by itself and MoonlightC starts by itself (both are already set up).
    (or whenever you want it on before school).
 6. Press **F10**, then **OK**, to save. The PC restarts.
 Simpler alternative: just don't shut it down at night (MoonlightC keeps it from sleeping).
+
+## Use free AI (Free in the model menu)
+1. Go to https://aistudio.google.com/app/apikey and sign in with your Google account.
+2. Click **Create API key**, then click the copy button next to the new key.
+3. In MoonlightC, click the key icon (**Models and keys**) at the top of the chat.
+4. Under **Start free**, click **Google Gemini**, paste the key into **Paste your key**, click **Check key and connect**.
+5. Optional, for more free answers per day: do the same with Groq (https://console.groq.com/keys, **Create API Key**).
+6. Open the model menu, pick **Free**, and ask anything. Each answer says which model wrote it.
