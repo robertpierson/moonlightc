@@ -40,13 +40,17 @@ export function coolDown(skipped: { id: string; wait: number }[] | undefined, no
   } catch {}
 }
 
+/** Every free model on offer, by key: what "Every free model" goes through and what "Only the ones I pick" lists. */
+export const freeChoices = (connections: SavedConnection[]) =>
+  connections.filter(inFree).map((conn) => ({ conn, models: freeCandidates(conn.providerId, conn.models) })).filter((x) => x.models.length);
+
 /**
- * The models Free tries, in order: the best of each company first, then the second best of each. Models resting after
- * a limit go last, so they're only tried when everything else fails.
+ * The models Free tries, in order: the best of each company first, then the second best of each (only `picks`, when
+ * the person chose their own). Models resting after a limit go last, so they're only tried when everything else fails.
  */
-export function freePool(connections: SavedConnection[], now = Date.now()): ModelRef[] {
-  const lists = connections.filter(inFree).map((c) => freeCandidates(c.providerId, c.models).map((m) => ({ connectionId: c.id, modelId: m.id })));
-  const all = interleave(lists);
+export function freePool(connections: SavedConnection[], picks?: string[], now = Date.now()): ModelRef[] {
+  const lists = freeChoices(connections).map(({ conn, models }) => models.map((m) => ({ connectionId: conn.id, modelId: m.id })));
+  const all = interleave(lists).filter((r) => !picks || picks.includes(freeId(r)));
   const resting = (r: ModelRef) => (coolMap()[freeId(r)] ?? 0) > now;
   return [...all.filter((r) => !resting(r)), ...all.filter(resting)].slice(0, MAX_TRIES);
 }

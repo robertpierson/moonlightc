@@ -207,7 +207,7 @@ function Inner() {
   const chat = chats.find((c) => c.id === (activeId ?? draft.id)) ?? draft;
   const saved = chats.some((c) => c.id === chat.id);
   const autoReady = useStore((s) => !!findModel(s.autoPicks?.everyday));
-  const freeReady = useStore((s) => freePool(s.connections).length > 0);
+  const freeReady = useStore((s) => freePool(s.connections, s.freePicks).length > 0);
   const valid = (r?: ModelRef) => (isFree(r) ? freeReady : isAuto(r) ? autoReady : !!r && connections.some((c) => c.id === r.connectionId && c.models.some((m) => m.id === r.modelId)));
   const chatConns = connections.filter((c) => c.models.length > 0);
   const fallback = chatConns[0] && { connectionId: chatConns[0].id, modelId: chatConns[0].models[0].id };

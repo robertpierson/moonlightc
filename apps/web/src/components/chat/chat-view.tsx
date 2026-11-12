@@ -189,14 +189,14 @@ export function ChatView({
     const skillsText = skillsInstructions(activePlugins(projectTools().pluginIds));
     // Free: the server tries these in turn and uses the first that answers.
     const pool = isFree(model)
-      ? freePool(getState().connections).flatMap((r) => {
+      ? freePool(getState().connections, getState().freePicks).flatMap((r) => {
           const f = findModel(r);
           return f ? [{ connection: { apiKey: f.conn.apiKey, providerId: f.conn.providerId, baseURL: f.conn.baseURL }, modelId: f.model.id, id: freeId(r) }] : [];
         })
       : undefined;
     const found = findModel(
       pool
-        ? freePool(getState().connections)[0]
+        ? freePool(getState().connections, getState().freePicks)[0]
         : isAuto(model)
           ? resolveAuto(
               classifyTask(lastUserText(), lastUserHasImage()),
@@ -492,7 +492,7 @@ export function ChatView({
 
   const needsSearch = !!mode.research && !hasSearchKey;
   const usable = !!findModel(
-    isFree(model) ? freePool(getState().connections)[0] : isAuto(model) ? getState().autoPicks?.everyday : model,
+    isFree(model) ? freePool(getState().connections, getState().freePicks)[0] : isAuto(model) ? getState().autoPicks?.everyday : model,
   );
   const canSend = usable && !needsSearch;
 
@@ -560,7 +560,7 @@ export function ChatView({
       { text: composeText(expandCommand(text, projectTools().pluginIds), attachments), files },
       request(),
     );
-    const used = findModel(isFree(model) ? freePool(getState().connections)[0] : isAuto(model) ? getState().autoPicks?.everyday : model);
+    const used = findModel(isFree(model) ? freePool(getState().connections, getState().freePicks)[0] : isAuto(model) ? getState().autoPicks?.everyday : model);
     if (used) track("message.sent", { provider: used.conn.providerId, where: getProvider(used.conn.providerId).local ? "local" : "cloud" });
     setInput("");
     setAttachments([]);

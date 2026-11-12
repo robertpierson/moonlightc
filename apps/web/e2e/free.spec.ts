@@ -43,3 +43,29 @@ test("Free: switching a key out of Free removes Free from the model menu", async
   await page.getByRole("combobox", { name: "Choose model" }).click();
   await expect(page.getByRole("option", { name: /^Free/ })).toHaveCount(0);
 });
+
+test("Free: only the models you pick are used", async ({ page }) => {
+  await page.goto("/app");
+  await page.getByRole("button", { name: "Connect a model" }).click();
+  await page.getByLabel("Provider", { exact: true }).click();
+  await page.getByRole("option", { name: /^OpenRouter/ }).click();
+  await page.getByLabel("API key", { exact: true }).fill("sk-or-free-plan-test");
+  await page.getByRole("button", { name: "Check key and connect" }).click();
+  await expect(page.getByText("3 models unlocked")).toBeVisible();
+
+  // Every free model is the default; picking shows the free models (never the paid one) to tick.
+  await expect(page.getByRole("radio", { name: /Every free model/ })).toBeChecked();
+  await page.getByRole("radio", { name: /Only the ones I pick/ }).check();
+  const list = page.getByRole("group", { name: "Free models to use" });
+  await expect(list.getByText("Tick at least one model to use Free.")).toBeVisible();
+  await expect(list.getByRole("checkbox")).toHaveCount(2);
+  await list.getByRole("checkbox", { name: /mock-small-8b/ }).check();
+  await page.keyboard.press("Escape");
+
+  await page.getByRole("combobox", { name: "Choose model" }).click();
+  await expect(page.getByRole("option", { name: /^Free/ })).toContainText("The free model you picked");
+  await page.getByRole("option", { name: /^Free/ }).click();
+  await page.getByLabel("Message", { exact: true }).fill("only mine");
+  await page.getByRole("button", { name: "Send message" }).click();
+  await expect(page.getByText("Free: OpenRouter, mock-small-8b:free")).toBeVisible();
+});

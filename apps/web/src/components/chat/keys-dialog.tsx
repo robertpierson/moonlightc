@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { desktop } from "@/lib/desktop";
-import { freeCompanies, inFree } from "@/lib/free-models";
+import { freeChoices, freeCompanies, freeId, inFree } from "@/lib/free-models";
 import { Switch } from "@/components/ui/switch";
 import { startOpenRouterSignIn } from "@/lib/openrouter-auth";
 import { update, updateNow, useStore, type SavedConnection } from "@/lib/store";
@@ -479,6 +479,8 @@ export function KeysPanel() {
         </ul>
       )}
 
+      <FreeSettings connections={connections} />
+
       <section aria-label="Start free" className="grid gap-2 rounded-lg border p-3">
         <h3 className="text-sm font-medium">Start free</h3>
         <p className="text-xs text-muted-foreground">
@@ -643,5 +645,54 @@ export function KeysPanel() {
       </form>
       <SearchKeySection />
     </div>
+  );
+}
+
+/** How Free picks models: every free model (the default, the most free use), or only the ones the person ticks. */
+function FreeSettings({ connections }: { connections: SavedConnection[] }) {
+  const picks = useStore((s) => s.freePicks);
+  const choices = freeChoices(connections);
+  if (!choices.length) return null;
+  const setPicks = (next: string[] | undefined) => update((s) => ({ ...s, freePicks: next }));
+  const toggle = (id: string, on: boolean) => setPicks(on ? [...(picks ?? []), id] : (picks ?? []).filter((x) => x !== id));
+  return (
+    <section aria-label="Free models" className="grid gap-2 rounded-lg border p-3 text-sm">
+      <h3 className="font-medium">Free in the model menu</h3>
+      <label className="flex items-start gap-2">
+        <input type="radio" name="free-mode" className="mt-1 accent-primary" checked={!picks} onChange={() => setPicks(undefined)} />
+        <span>
+          Every free model <span className="text-muted-foreground">(recommended)</span>
+          <span className="block text-xs text-muted-foreground">
+            Goes through every free model your keys unlock, best first, and skips each one while it&apos;s at its limit. The most free use.
+          </span>
+        </span>
+      </label>
+      <label className="flex items-start gap-2">
+        <input type="radio" name="free-mode" className="mt-1 accent-primary" checked={!!picks} onChange={() => setPicks(picks ?? [])} />
+        <span>
+          Only the ones I pick
+          <span className="block text-xs text-muted-foreground">Free switches between just these.</span>
+        </span>
+      </label>
+      {picks && (
+        <div className="grid max-h-72 gap-3 overflow-y-auto rounded-md border p-2" role="group" aria-label="Free models to use">
+          {choices.map(({ conn, models }) => (
+            <fieldset key={conn.id} className="grid gap-1">
+              <legend className="mb-1 text-xs font-medium text-muted-foreground">{conn.label}</legend>
+              {models.map((m) => {
+                const id = freeId({ connectionId: conn.id, modelId: m.id });
+                return (
+                  <label key={id} className="flex items-center gap-2">
+                    <input type="checkbox" className="accent-primary" checked={picks.includes(id)} onChange={(e) => toggle(id, e.target.checked)} />
+                    <span className="truncate">{m.name || m.id}</span>
+                  </label>
+                );
+              })}
+            </fieldset>
+          ))}
+          {!picks.length && <p className="text-xs text-muted-foreground">Tick at least one model to use Free.</p>}
+        </div>
+      )}
+    </section>
   );
 }

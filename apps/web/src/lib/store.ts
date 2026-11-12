@@ -178,6 +178,8 @@ export interface State {
   pinnedModes?: string[];
   /** Models assigned to each kind of task, used when the model picker is set to Auto. */
   autoPicks?: AutoPicks;
+  /** Free in the model menu: unset = every free model (the default); a list = only these (`${connectionId}|${modelId}`). */
+  freePicks?: string[];
   /** Claude Code plugins installed from GitHub (skills, commands, agents, MCP servers). */
   plugins?: ClaudePlugin[];
   /** Name and picture shown in the app (kept on this device until accounts exist). */

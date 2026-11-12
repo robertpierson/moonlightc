@@ -41,7 +41,8 @@ export function ModelPicker({ value, onChange, plain, label = "Choose model", co
   };
   const browsing = conns.find((c) => c.id === provider);
   const autoReady = useStore((s) => !!findModel(s.autoPicks?.everyday));
-  const freeCount = useStore((s) => (freePool(s.connections).length ? s.connections.filter(inFree).length : 0));
+  const freeCount = useStore((s) => (freePool(s.connections, s.freePicks).length ? s.connections.filter(inFree).length : 0));
+  const freePicked = useStore((s) => (s.freePicks ? freePool(s.connections, s.freePicks).length : 0));
   const current = isFree(value) ? { name: "Free" } : isAuto(value) ? { name: "Auto" } : value && connections.find((c) => c.id === value.connectionId)?.models.find((m) => m.id === value.modelId);
 
   const toggleFav = (r: ModelRef) =>
@@ -135,7 +136,12 @@ export function ModelPicker({ value, onChange, plain, label = "Choose model", co
                       Free <Gift className="size-3.5 text-link" />
                     </div>
                     <div className="truncate text-xs text-muted-foreground">
-                      {freeCount === 1 ? "Your free-plan key" : `Free plans of your ${freeCount} companies`}, switching when one is busy
+                      {freePicked
+                        ? `The ${freePicked === 1 ? "free model" : `${freePicked} free models`} you picked`
+                        : freeCount === 1
+                          ? "Your free-plan key"
+                          : `Free plans of your ${freeCount} companies`}
+                      , switching when one is busy
                     </div>
                   </div>
                 </CommandItem>

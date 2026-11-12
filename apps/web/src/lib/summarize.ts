@@ -13,7 +13,7 @@ export const chatText = (c: Chat) =>
 /** A title or a summary of a chat, written by the chat's own model (or your default one). */
 export async function summarize(chat: Chat, kind: "title" | "summary"): Promise<string> {
   const ref = isFree(chat.model)
-    ? freePool(getState().connections)[0]
+    ? freePool(getState().connections, getState().freePicks)[0]
     : chat.model && !isAuto(chat.model) ? chat.model : isAuto(chat.model) ? resolveAuto("everyday", getState().autoPicks) : getState().lastModel;
   const found = findModel(isAuto(ref) ? undefined : ref);
   if (!found || found.conn.providerId === "home-pc") throw new Error("Pick a model first.");
