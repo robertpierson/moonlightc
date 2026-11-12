@@ -392,6 +392,9 @@ export function Message({
             </Action>
           )}
           {costLabel && <span className="px-1 text-xs text-muted-foreground">{costLabel}</span>}
+          {!isUser && typeof (message.metadata as { answeredBy?: unknown } | undefined)?.answeredBy === "string" && (
+            <span className="px-1 text-xs text-muted-foreground">Free: {(message.metadata as { answeredBy: string }).answeredBy}</span>
+          )}
         </div>
       )}
     </div>

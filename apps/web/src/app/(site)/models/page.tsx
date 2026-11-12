@@ -1,11 +1,11 @@
-import { HardDrives } from "@phosphor-icons/react/ssr";
+import { ArrowsClockwise, Gift, HardDrives, Tag, ToggleRight } from "@phosphor-icons/react/ssr";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BrandMark, COMPANY_MARK } from "@/components/site/brands";
 import { Cta, PageHero, SectionTitle, SITE_VIEWPORT, SitePage } from "@/components/site/chrome";
 import { AutoRoutes, ModelMenu, QuickConnect } from "@/components/site/demos";
 import { COMPANIES, DEMO_CHAPTERS } from "@/components/site/pages";
-import { TopicQuestions, WatchLesson } from "@/components/site/more-sections";
+import { FeatureList, TopicQuestions, WatchLesson } from "@/components/site/more-sections";
 import { DemoVideo, StickySteps } from "@/components/site/scenes";
 
 export const metadata: Metadata = { title: "Models · MoonlightC", description: "Claude, GPT, Gemini, Grok and more in one app, with your own keys." };
@@ -71,6 +71,22 @@ export default function Models() {
           ))}
         </div>
       </section>
+
+      <FeatureList
+        id="free"
+        title="Start for free."
+        body="Six of these companies have free plans. Add a key from one or more and pick Free in the model menu. MoonlightC handles the rest."
+        columns={4}
+        items={[
+          { icon: Gift, title: "Free plans, together", body: "Google Gemini, Groq, Cerebras, Mistral, Cohere, and the free models on OpenRouter." },
+          { icon: ArrowsClockwise, title: "Moves on by itself", body: "When one model is at its free limit or having problems, the next one answers. No error, no retry button." },
+          { icon: Tag, title: "Says who answered", body: "Every answer from Free names the company and model that wrote it." },
+          { icon: ToggleRight, title: "You choose the keys", body: "Each key has an In Free switch. Turn it off for a key with billing on, so it's never charged by accident." },
+        ]}
+      />
+      <p className="mx-auto mt-10 max-w-6xl px-4 text-sm text-[var(--faint)] sm:px-6">
+        Running your own FreeLLMAPI server? Add its address as Custom in Models and keys and every model it serves shows up too.
+      </p>
 
       <WatchLesson id="connect" title="Connect a key in a minute." />
       <TopicQuestions topic="Keys and costs" />

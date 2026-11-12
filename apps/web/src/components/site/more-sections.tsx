@@ -69,3 +69,37 @@ export function LearnTeaser() {
     </section>
   );
 }
+
+/** A titled section of features: an icon, a name and a sentence each, in columns (no boxes). */
+export function FeatureList({
+  id,
+  title,
+  body,
+  items,
+  columns = 3,
+}: {
+  id: string;
+  title: string;
+  body?: string;
+  items: { icon: React.ComponentType<{ className?: string; weight?: "light"; "aria-hidden"?: boolean }>; title: string; body: string }[];
+  columns?: 2 | 3 | 4;
+}) {
+  const cols = columns === 4 ? "sm:grid-cols-2 lg:grid-cols-4" : columns === 2 ? "sm:grid-cols-2" : "sm:grid-cols-2 lg:grid-cols-3";
+  return (
+    <section aria-labelledby={id} className="mx-auto max-w-6xl px-4 pt-32 sm:px-6">
+      <h2 id={id} className="max-w-[18ch] text-[clamp(2.2rem,5.5vw,3.75rem)] leading-[1.05]">
+        {title}
+      </h2>
+      {body && <p className="mt-4 max-w-[60ch] text-lg text-[var(--mist)]">{body}</p>}
+      <ul className={`mt-14 grid gap-x-10 gap-y-12 ${cols}`}>
+        {items.map(({ icon: Icon, title: t, body: b }) => (
+          <li key={t}>
+            <Icon className="size-8 text-[var(--tide)]" weight="light" aria-hidden />
+            <h3 className="mt-4 text-xl">{t}</h3>
+            <p className="mt-2 text-[var(--mist)]">{b}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}

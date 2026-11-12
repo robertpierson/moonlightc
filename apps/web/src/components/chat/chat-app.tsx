@@ -31,6 +31,7 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { findModel, getState, patchChat, saveChat, update, useStore, type Chat, type ModelRef } from "@/lib/store";
 import { isAuto } from "@/lib/auto-model";
+import { freePool, isFree } from "@/lib/free-models";
 import type { Artifact } from "@/lib/artifacts";
 import { availableViews, SectionNav, SettingsButton, WorkspaceSwitch, workspaceOf, type View, type Workspace } from "@/components/desktop/nav";
 import { CodeSidebar } from "@/components/code/code-sidebar";
@@ -206,7 +207,8 @@ function Inner() {
   const chat = chats.find((c) => c.id === (activeId ?? draft.id)) ?? draft;
   const saved = chats.some((c) => c.id === chat.id);
   const autoReady = useStore((s) => !!findModel(s.autoPicks?.everyday));
-  const valid = (r?: ModelRef) => (isAuto(r) ? autoReady : !!r && connections.some((c) => c.id === r.connectionId && c.models.some((m) => m.id === r.modelId)));
+  const freeReady = useStore((s) => freePool(s.connections).length > 0);
+  const valid = (r?: ModelRef) => (isFree(r) ? freeReady : isAuto(r) ? autoReady : !!r && connections.some((c) => c.id === r.connectionId && c.models.some((m) => m.id === r.modelId)));
   const chatConns = connections.filter((c) => c.models.length > 0);
   const fallback = chatConns[0] && { connectionId: chatConns[0].id, modelId: chatConns[0].models[0].id };
   const mode = modes.find((m) => m.id === (saved ? chat.modeId : draftMode)) ?? modes[0];

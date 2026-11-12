@@ -21,6 +21,8 @@ export interface SavedConnection extends Connection {
   label: string;
   models: ModelInfo[];
   addedAt: number;
+  /** false: keep this key out of "Free" in the model menu (companies with a free plan join by default). */
+  freePool?: boolean;
 }
 
 export interface ModelRef {

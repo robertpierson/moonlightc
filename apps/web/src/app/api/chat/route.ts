@@ -1,4 +1,4 @@
-import { getProvider, languageModel, ProviderError, thinkingOptions } from "@moonc/core";
+import { fallbackModel, getProvider, languageModel, ProviderError, thinkingOptions } from "@moonc/core";
 import { fileTools, readGrants } from "@/lib/local-files";
 import { APICallError, convertToModelMessages, isStepCount, jsonSchema, tool, type ToolSet, createUIMessageStreamResponse, streamText, toUIMessageStream, type UIMessage } from "ai";
 import { readConnection } from "@/lib/server-guard";
@@ -13,6 +13,8 @@ interface Body {
   messages: UIMessage[];
   connection: unknown;
   modelId: string;
+  /** "Free": models to try in turn (each from a company with a free plan); the first that answers is used. */
+  pool?: { connection: unknown; modelId: string }[];
   instructions?: string;
   temperature?: number;
   /** How hard the model thinks (low…max), when the model has that setting. */
@@ -155,9 +157,17 @@ export async function POST(req: Request) {
     const tools = { ...files?.tools, ...builtIn, ...mcp?.tools, ...google?.tools, ...accountTools, ...readModTools(body.modTools), ...memoryTool, ...skillTool, ...browserTools, ...homeTools, ...(desktopComputer ? { computer: computerTool } : {}), ...(body.code === true ? codeTools : {}) };
     const hasTools = Object.keys(tools).length > 0;
 
-    const think = thinkingOptions(c.providerId, body.modelId, typeof body.thinking === "string" ? body.thinking : undefined);
+    const pool = readPool(body.pool);
+    let answeredBy = pool?.[0];
+    if (pool) providerName = "The free models";
+    const think = pool ? {} as ReturnType<typeof thinkingOptions> : thinkingOptions(c.providerId, body.modelId, typeof body.thinking === "string" ? body.thinking : undefined);
     const result = streamText({
-      model: languageModel(c, body.modelId),
+      model: pool
+        ? (fallbackModel(
+            pool.map((p) => languageModel(p.connection, p.modelId)) as never[],
+            (i) => (answeredBy = pool[i]),
+          ) as ReturnType<typeof languageModel>)
+        : languageModel(c, body.modelId),
       ...(think.providerOptions ? { providerOptions: think.providerOptions as never } : {}),
       instructions:
         [
@@ -183,7 +193,12 @@ export async function POST(req: Request) {
         sendReasoning: true,
         messageMetadata: ({ part }) =>
           part.type === "finish"
-            ? { usage: part.totalUsage, modelId: body.modelId, createdAt: Date.now() }
+            ? {
+                usage: part.totalUsage,
+                modelId: answeredBy ? answeredBy.modelId : body.modelId,
+                ...(answeredBy ? { answeredBy: `${getProvider(answeredBy.connection.providerId).name}, ${answeredBy.modelId}` } : {}),
+                createdAt: Date.now(),
+              }
             : part.type === "start" && mcp?.errors.length
               ? { connectorErrors: mcp.errors }
               : undefined,
@@ -193,6 +208,18 @@ export async function POST(req: Request) {
   } catch (e) {
     return Response.json({ error: friendlyError(e, providerName) }, { status: 400 });
   }
+}
+
+/** Free's list: only companies with an official free plan (never a custom address), at most 12 tries. */
+function readPool(raw: unknown) {
+  if (raw === undefined) return undefined;
+  if (!Array.isArray(raw) || raw.length === 0 || raw.length > 12) throw new ProviderError("Free needs a key from a company with a free plan. Add one in Models and keys.");
+  return raw.map((p: { connection?: unknown; modelId?: unknown }) => {
+    const connection = readConnection(p?.connection);
+    if (!getProvider(connection.providerId).free) throw new ProviderError(`${getProvider(connection.providerId).name} has no free plan.`);
+    if (typeof p.modelId !== "string" || !p.modelId) throw new ProviderError("Pick a model first.");
+    return { connection, modelId: p.modelId };
+  });
 }
 
 function friendlyError(e: unknown, provider: string): string {

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { TopicQuestions } from "@/components/site/more-sections";
+import { AppleLogo, LinuxLogo, WindowsLogo } from "@phosphor-icons/react/ssr";
+import { FeatureList, TopicQuestions } from "@/components/site/more-sections";
 import Image from "next/image";
 import Link from "next/link";
 import { PrimaryDownload } from "@/components/site/os-download";
@@ -176,6 +177,16 @@ export default async function DownloadPage() {
           </ol>
         </section>
         <div className="-mx-4 sm:-mx-6">
+          <FeatureList
+            id="which"
+            title="Which one do I need?"
+            body="The Download button picks for you. If you'd rather choose:"
+            items={[
+              { icon: WindowsLogo, title: "Windows", body: "Most PCs need x64. Laptops with a Snapdragon chip need ARM64. Both come as an installer (.exe)." },
+              { icon: AppleLogo, title: "Mac", body: "Macs from late 2020 on, with an M chip, need Apple silicon. Older Macs need Intel." },
+              { icon: LinuxLogo, title: "Linux", body: "The AppImage runs almost anywhere. Use .deb on Ubuntu or Debian, .rpm on Fedora or openSUSE. Pick ARM64 for a Raspberry Pi." },
+            ]}
+          />
           <TopicQuestions topic="The desktop app and remote control" />
         </div>
       </main>

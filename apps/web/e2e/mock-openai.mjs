@@ -18,6 +18,12 @@ createServer(async (req, res) => {
     if (b.code !== "good-code" || !b.code_verifier || b.code_challenge_method !== "S256") return (res.statusCode = 403), res.end(JSON.stringify({ error: { message: "Invalid code" } }));
     return res.end(JSON.stringify({ key: "sk-or-mock" }));
   }
+  // A key "on a free plan" (Free in the model menu): two free models, the bigger one always at its limit (429).
+  const freePlan = /free-plan/.test(req.headers.authorization ?? "");
+  if (freePlan && req.method === "GET" && req.url === "/v1/models") {
+    res.setHeader("content-type", "application/json");
+    return res.end(JSON.stringify({ data: [{ id: "mock-big-70b:free" }, { id: "mock-small-8b:free" }, { id: "mock-paid" }] }));
+  }
   if (req.method === "GET" && req.url === "/v1/models") {
     res.setHeader("content-type", "application/json");
     return res.end(JSON.stringify({ data: [{ id: "mock-fast" }, { id: "mock-other" }, ...(credit ? [{ id: "mock-free:free" }] : [])] }));
@@ -28,6 +34,11 @@ createServer(async (req, res) => {
     const body = JSON.parse(raw);
     const last = body.messages.findLast((m) => m.role === "user");
     let prompt = typeof last.content === "string" ? last.content : last.content.map((p) => p.text ?? "").join("");
+    if (body.model === "mock-big-70b:free") {
+      res.statusCode = 429;
+      res.setHeader("content-type", "application/json");
+      return res.end(JSON.stringify({ error: { message: "Rate limit exceeded: free-models-per-min", code: 429 } }));
+    }
     if (credit && /broke/.test(prompt) && !String(body.model).endsWith(":free")) {
       res.statusCode = 402;
       res.setHeader("content-type", "application/json");

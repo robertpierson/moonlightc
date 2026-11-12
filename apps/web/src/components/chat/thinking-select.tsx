@@ -4,13 +4,14 @@ import { THINKING_LABELS, thinkingLevels, type ThinkingLevel } from "@moonc/core
 import { Brain } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { isAuto } from "@/lib/auto-model";
+import { isFree } from "@/lib/free-models";
 import { findModel, update, useStore, type ModelRef } from "@/lib/store";
 
 /** How hard the chosen model thinks. Only shown for models that have that setting; the levels follow the company. */
 export function ThinkingSelect({ model }: { model?: ModelRef }) {
   const thinking = useStore((s) => s.thinking);
   useStore((s) => s.connections); // re-render when models change
-  const found = isAuto(model) ? undefined : findModel(model);
+  const found = isAuto(model) || isFree(model) ? undefined : findModel(model);
   const levels = found ? thinkingLevels(found.conn.providerId, found.model.id) : [];
   if (!levels.length) return null;
   const value = thinking && levels.includes(thinking as ThinkingLevel) ? thinking : "default";

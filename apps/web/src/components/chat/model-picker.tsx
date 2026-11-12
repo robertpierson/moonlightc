@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronLeft, ChevronRight, ChevronsUpDown, Sparkles, Star } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, ChevronsUpDown, Gift, Sparkles, Star } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -8,6 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { featuredModels, getProvider } from "@moonc/core";
 import { DISTROS } from "@/lib/customize";
 import { AUTO, isAuto } from "@/lib/auto-model";
+import { FREE, freePool, inFree, isFree } from "@/lib/free-models";
 import { findModel, update, useStore, type ModelRef } from "@/lib/store";
 
 const refKey = (r: ModelRef) => `${r.connectionId}:${r.modelId}`;
@@ -40,7 +41,8 @@ export function ModelPicker({ value, onChange, plain, label = "Choose model", co
   };
   const browsing = conns.find((c) => c.id === provider);
   const autoReady = useStore((s) => !!findModel(s.autoPicks?.everyday));
-  const current = isAuto(value) ? { name: "Auto" } : value && connections.find((c) => c.id === value.connectionId)?.models.find((m) => m.id === value.modelId);
+  const freeCount = useStore((s) => (freePool(s.connections).length ? s.connections.filter(inFree).length : 0));
+  const current = isFree(value) ? { name: "Free" } : isAuto(value) ? { name: "Auto" } : value && connections.find((c) => c.id === value.connectionId)?.models.find((m) => m.id === value.modelId);
 
   const toggleFav = (r: ModelRef) =>
     update((s) => {
@@ -120,6 +122,21 @@ export function ModelPicker({ value, onChange, plain, label = "Choose model", co
                       Auto <Sparkles className="size-3.5 text-link" />
                     </div>
                     <div className="truncate text-xs text-muted-foreground">Picks the best of your models for each message</div>
+                  </div>
+                </CommandItem>
+              </CommandGroup>
+            )}
+            {!search && (!browsing || conns.length === 1) && freeCount > 0 && !plain && (
+              <CommandGroup>
+                <CommandItem value="free models no cost free plans" onSelect={() => pick(FREE)} className="gap-2">
+                  <Check className={isFree(value) ? "opacity-100" : "opacity-0"} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1">
+                      Free <Gift className="size-3.5 text-link" />
+                    </div>
+                    <div className="truncate text-xs text-muted-foreground">
+                      {freeCount === 1 ? "Your free-plan key" : `Free plans of your ${freeCount} companies`}, switching when one is busy
+                    </div>
                   </div>
                 </CommandItem>
               </CommandGroup>

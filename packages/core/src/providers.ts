@@ -24,6 +24,11 @@ export interface ProviderDef {
   media?: boolean;
   /** Added by the app itself (never offered in "add a key"). */
   hidden?: boolean;
+  /**
+   * The company has an official free plan, so its key can join "Free": "all" when every model is on the free plan,
+   * "tagged" when only models marked free are (OpenRouter's ":free" ids). A key with billing turned on can still cost.
+   */
+  free?: "all" | "tagged";
 }
 
 // Tests point OpenRouter at a local fake; never set in production.
@@ -32,15 +37,16 @@ export const OPENROUTER = (typeof process !== "undefined" && process.env.MOONC_T
 export const PROVIDERS: ProviderDef[] = [
   { id: "anthropic", name: "Anthropic", kind: "anthropic", keyUrl: "https://console.anthropic.com/settings/keys" },
   { id: "openai", name: "OpenAI", kind: "openai", keyUrl: "https://platform.openai.com/api-keys" },
-  { id: "google", name: "Google Gemini", kind: "google", keyUrl: "https://aistudio.google.com/app/apikey" },
-  { id: "openrouter", name: "OpenRouter", kind: "compat", baseURL: `${OPENROUTER}/api/v1`, keyUrl: "https://openrouter.ai/settings/keys" },
+  { id: "google", name: "Google Gemini", kind: "google", keyUrl: "https://aistudio.google.com/app/apikey", free: "all" },
+  { id: "openrouter", name: "OpenRouter", kind: "compat", baseURL: `${OPENROUTER}/api/v1`, keyUrl: "https://openrouter.ai/settings/keys", free: "tagged" },
   { id: "xai", name: "xAI (Grok)", kind: "compat", baseURL: "https://api.x.ai/v1", keyUrl: "https://console.x.ai" },
-  { id: "mistral", name: "Mistral", kind: "compat", baseURL: "https://api.mistral.ai/v1", keyUrl: "https://console.mistral.ai/api-keys" },
+  { id: "mistral", name: "Mistral", kind: "compat", baseURL: "https://api.mistral.ai/v1", keyUrl: "https://console.mistral.ai/api-keys", free: "all" },
   { id: "deepseek", name: "DeepSeek", kind: "compat", baseURL: "https://api.deepseek.com", keyUrl: "https://platform.deepseek.com/api_keys" },
-  { id: "groq", name: "Groq", kind: "compat", baseURL: "https://api.groq.com/openai/v1", keyUrl: "https://console.groq.com/keys" },
+  { id: "groq", name: "Groq", kind: "compat", baseURL: "https://api.groq.com/openai/v1", keyUrl: "https://console.groq.com/keys", free: "all" },
+  { id: "cerebras", name: "Cerebras", kind: "compat", baseURL: "https://api.cerebras.ai/v1", keyUrl: "https://cloud.cerebras.ai", free: "all" },
   { id: "together", name: "Together AI", kind: "compat", baseURL: "https://api.together.xyz/v1", keyUrl: "https://api.together.ai/settings/api-keys" },
   { id: "perplexity", name: "Perplexity", kind: "compat", baseURL: "https://api.perplexity.ai", modelsURL: "https://api.perplexity.ai/v1/models", keyUrl: "https://www.perplexity.ai/account/api/keys" },
-  { id: "cohere", name: "Cohere", kind: "compat", baseURL: "https://api.cohere.ai/compatibility/v1", keyUrl: "https://dashboard.cohere.com/api-keys" },
+  { id: "cohere", name: "Cohere", kind: "compat", baseURL: "https://api.cohere.ai/compatibility/v1", keyUrl: "https://dashboard.cohere.com/api-keys", free: "all" },
   { id: "azure", name: "Azure OpenAI", kind: "azure", keyUrl: "https://portal.azure.com/#view/Microsoft_Azure_ProjectOxford/CognitiveServicesHub/~/OpenAI" },
   { id: "bedrock", name: "AWS Bedrock", kind: "bedrock", keyUrl: "https://console.aws.amazon.com/bedrock/home#/api-keys" },
   { id: "ollama", name: "Ollama (on this computer)", kind: "compat", baseURL: "http://127.0.0.1:11434/v1", keyUrl: "", local: true },

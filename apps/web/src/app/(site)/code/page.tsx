@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { WatchLesson } from "@/components/site/more-sections";
+import { ArrowCounterClockwise, Browser, DownloadSimple, Files, GithubLogo, HandPalm } from "@phosphor-icons/react/ssr";
+import { FeatureList, WatchLesson } from "@/components/site/more-sections";
 import Link from "next/link";
 import { Cta, PageHero, SITE_VIEWPORT, SitePage } from "@/components/site/chrome";
 import { CodeModes, CodeTerminal, LocalModels } from "@/components/site/demos";
@@ -60,6 +61,20 @@ export default function Code() {
               </div>
             ),
           },
+        ]}
+      />
+
+      <FeatureList
+        id="inside"
+        title="Inside the workspace."
+        body="Everything happens in one place: you describe, the AI writes, and you try it right away."
+        items={[
+          { icon: Browser, title: "Live preview", body: "Your app runs beside the chat as soon as the AI writes it. Click around and use it." },
+          { icon: Files, title: "Every file", body: "See the files the AI made and read the code whenever you want." },
+          { icon: ArrowCounterClockwise, title: "Changes you can undo", body: "Each change is listed with what it did. Undo any of them in one click." },
+          { icon: HandPalm, title: "How much it does alone", body: "Ask before every change, let edits through, plan only, or let it run." },
+          { icon: DownloadSimple, title: "Download it", body: "Take the whole project as a .zip and open it anywhere." },
+          { icon: GithubLogo, title: "Put it on GitHub", body: "Connect GitHub and publish the project to your own account." },
         ]}
       />
 

@@ -191,3 +191,12 @@ Alternatives: a native streaming helper in the desktop app (C++/Rust, much bigge
 What: screenshots and lesson posters are imported in `src/components/site/media.ts`, so each address carries a fingerprint of the file.
 Why: re-filmed pictures saved under the same name kept showing the old version, because the image optimizer caches by address.
 Alternatives: renaming files on every re-film (easy to forget); turning image optimization off (slower pages).
+
+## 2026-11-11: "Free" in the model menu, built in (inspired by FreeLLMAPI) rather than bundling FreeLLMAPI
+What:
+- Companies with official free plans are marked in core. Cerebras was added.
+- "Free" sends each message to the person's free-plan keys. The server's fallbackModel moves to the next model on 402/403/404/408/429/5xx or a network failure, before the answer starts.
+- Each answer names the model that wrote it. Each key has an "In Free" switch, on by default, with a warning about keys that have billing turned on.
+Why: owner asked to build FreeLLMAPI into the app. A built-in pool needs no extra server and works on every device, and failover runs on keys the person already pastes here.
+Kept out: FreeLLMAPI's small gateway services, some of which log prompts for training or need ID checks. Only first-party companies with official free plans are included. A running FreeLLMAPI server still works as Custom.
+Alternatives: bundle the FreeLLMAPI server in the desktop app (desktop-only, a second process to keep running); a link-only mention (doesn't build it in).

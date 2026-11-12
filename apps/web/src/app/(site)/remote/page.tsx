@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { TopicQuestions } from "@/components/site/more-sections";
-import { Bell, ShieldCheck, Timer } from "@phosphor-icons/react/ssr";
+import { FeatureList, TopicQuestions } from "@/components/site/more-sections";
+import { Bell, ClockCounterClockwise, Copy, Cpu, Devices, FolderOpen, GameController, MapPin, Monitor, Power, Robot, ShieldCheck, Sliders, TerminalWindow, Timer } from "@phosphor-icons/react/ssr";
 import Link from "next/link";
 import { Cta, PageHero, SectionTitle, SITE_VIEWPORT, SitePage } from "@/components/site/chrome";
 import { PhoneConnected, PhonePcOnline, PhonePickPc, PhoneTwoStep, RemoteScreen } from "@/components/site/demos";
@@ -66,6 +66,35 @@ export default function Remote() {
           <StickySteps device="phone" steps={SETUP} />
         </div>
       </section>
+
+      <FeatureList
+        id="do"
+        title="Everything, from another device."
+        body="Once your PC allows a device, that device can do any of this. You choose which parts each device gets."
+        items={[
+          { icon: Monitor, title: "The screen, live", body: "Click, type and scroll. Phones get a touchpad and a keyboard, and you can zoom in on small text." },
+          { icon: Copy, title: "Copy and paste", body: "Text moves both ways between your device and the PC." },
+          { icon: FolderOpen, title: "Your files", body: "Browse the PC's home folder, open files, and send files to it." },
+          { icon: TerminalWindow, title: "A terminal", body: "Run commands on the PC as if you were sitting at it." },
+          { icon: Robot, title: "Claude Code", body: "Keep working with Claude Code on the PC, signed in with your own account." },
+          { icon: Cpu, title: "Its AI models", body: "Chat with the models running on the PC, from your phone." },
+          { icon: Power, title: "Lock, sleep or restart", body: "Lock the PC, put it to sleep, restart it or shut it down." },
+          { icon: GameController, title: "Game mode", body: "Smooth motion over sharp text, with the mouse captured for games." },
+          { icon: Sliders, title: "Speed details", body: "See how far behind the picture is, its size, and whether the connection is direct." },
+        ]}
+      />
+
+      <FeatureList
+        id="rules"
+        title="Your rules."
+        columns={4}
+        items={[
+          { icon: Devices, title: "Per device", body: "Pick what each device may do: see the screen, use the mouse and keyboard, files, terminal, or chat with the PC's models." },
+          { icon: MapPin, title: "Allowed places", body: "Optionally allow remote control only from certain networks or countries." },
+          { icon: ClockCounterClockwise, title: "Activity", body: "The PC keeps a list of who connected, when, and what they did." },
+          { icon: ShieldCheck, title: "Two-step sign-in", body: "Remote control only works on accounts with a second sign-in step." },
+        ]}
+      />
 
       <TopicQuestions topic="The desktop app and remote control" />
 

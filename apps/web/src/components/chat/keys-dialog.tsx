@@ -23,6 +23,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { desktop } from "@/lib/desktop";
+import { freeCompanies, inFree } from "@/lib/free-models";
+import { Switch } from "@/components/ui/switch";
 import { startOpenRouterSignIn } from "@/lib/openrouter-auth";
 import { update, updateNow, useStore, type SavedConnection } from "@/lib/store";
 
@@ -441,6 +443,18 @@ export function KeysPanel() {
                   · key ending {c.apiKey.slice(-4) || "(none)"}
                 </div>
               </div>
+              {getProvider(c.providerId).free && (
+                <label className="flex items-center gap-1.5 text-xs text-muted-foreground" title="Free in the model menu uses this key's free plan">
+                  In Free
+                  <Switch
+                    aria-label={`Use ${c.label} in Free`}
+                    checked={inFree(c)}
+                    onCheckedChange={(on) =>
+                      update((s) => ({ ...s, connections: s.connections.map((x) => (x.id === c.id ? { ...x, freePool: on } : x)) }))
+                    }
+                  />
+                </label>
+              )}
               <Button
                 variant="ghost"
                 size="icon"
@@ -464,6 +478,35 @@ export function KeysPanel() {
           ))}
         </ul>
       )}
+
+      <section aria-label="Start free" className="grid gap-2 rounded-lg border p-3">
+        <h3 className="text-sm font-medium">Start free</h3>
+        <p className="text-xs text-muted-foreground">
+          These companies have free plans. Add a key from one or more, then pick <strong>Free</strong> in the model menu: each message goes to
+          their free models, and if one is at its limit, the next one answers. A key with billing turned on can still be charged, so switch it
+          out of Free above if that&apos;s the case.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {freeCompanies().map((f) => (
+            <Button
+              key={f.id}
+              type="button"
+              size="sm"
+              variant="outline"
+              aria-pressed={picked === f.id}
+              title={f.onlySome ? "Only its models marked free are used" : undefined}
+              onClick={() => {
+                setProviderId(f.id);
+                setError("");
+                setWaiting(undefined);
+                setPicked(f.id);
+              }}
+            >
+              {f.name}
+            </Button>
+          ))}
+        </div>
+      </section>
 
       <section aria-label="Quick connect" className="grid gap-2">
         <h3 className="text-sm font-medium">Quick connect</h3>
@@ -594,8 +637,8 @@ export function KeysPanel() {
           are billed separately.
         </p>
         <p className="text-xs text-muted-foreground">
-          Free ways to start: a Gemini key (Google&apos;s free tier covers the Flash models), a Groq key, free models on
-          OpenRouter, or models running on your own PC (desktop app &gt; Model library).
+          Free ways to start: keys from the companies under Start free (then pick Free in the model menu), or models running on
+          your own PC (desktop app &gt; Model library). Running your own FreeLLMAPI server? Add it as Custom with its address.
         </p>
       </form>
       <SearchKeySection />

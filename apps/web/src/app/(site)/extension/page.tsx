@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { TopicQuestions } from "@/components/site/more-sections";
-import { Eye, Flag, Keyboard, Timer } from "@phosphor-icons/react/ssr";
+import { FeatureList, TopicQuestions } from "@/components/site/more-sections";
+import { Article, Eye, Flag, Keyboard, Link as LinkIcon, ListChecks, MagnifyingGlass, Textbox, Timer } from "@phosphor-icons/react/ssr";
 import Image from "next/image";
 import { Cta, PageHero, SectionTitle, SITE_VIEWPORT, SitePage } from "@/components/site/chrome";
 import { BrowserTab } from "@/components/site/demos";
@@ -87,6 +87,23 @@ export default function Extension() {
           ))}
         </ol>
       </section>
+
+      <FeatureList
+        id="ask"
+        title="What you can ask it."
+        body="Share a tab, then ask in MoonlightC's Cowork. A few ideas to start with:"
+        columns={4}
+        items={[
+          { icon: Article, title: "Explain this page", body: "Summarize an article, a long email or a terms page, and ask questions about it." },
+          { icon: MagnifyingGlass, title: "Find it for me", body: "Look through a site and point out the part you need." },
+          { icon: Textbox, title: "Fill in this form", body: "It types the answers you give it. Sending waits for your OK." },
+          { icon: ListChecks, title: "Compare these", body: "Open a few links and pull the details side by side." },
+        ]}
+      />
+      <p className="mx-auto mt-10 max-w-6xl px-4 text-sm text-[var(--faint)] sm:px-6">
+        <LinkIcon className="mr-1 inline size-4 align-[-3px]" aria-hidden />
+        It can read a page, click, type and open links. Buying, sending, posting and deleting always wait for you to click Allow.
+      </p>
 
       <TopicQuestions topic="The Chrome extension" />
 

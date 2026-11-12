@@ -14,6 +14,7 @@ import {
   skillsInstructions,
 } from "@/lib/claude-plugins";
 import { classifyTask, isAuto, resolveAuto } from "@/lib/auto-model";
+import { freePool, isFree } from "@/lib/free-models";
 import { estimateCost } from "@moonc/core";
 import {
   DefaultChatTransport,
@@ -186,13 +187,22 @@ export function ChatView({
 
   const request = () => {
     const skillsText = skillsInstructions(activePlugins(projectTools().pluginIds));
+    // Free: the server tries these in turn and uses the first that answers.
+    const pool = isFree(model)
+      ? freePool(getState().connections).flatMap((r) => {
+          const f = findModel(r);
+          return f ? [{ connection: { apiKey: f.conn.apiKey, providerId: f.conn.providerId, baseURL: f.conn.baseURL }, modelId: f.model.id }] : [];
+        })
+      : undefined;
     const found = findModel(
-      isAuto(model)
-        ? resolveAuto(
-            classifyTask(lastUserText(), lastUserHasImage()),
-            getState().autoPicks,
-          )
-        : model,
+      pool
+        ? freePool(getState().connections)[0]
+        : isAuto(model)
+          ? resolveAuto(
+              classifyTask(lastUserText(), lastUserHasImage()),
+              getState().autoPicks,
+            )
+          : model,
     );
     if (!found) return {};
     const { apiKey, providerId, baseURL } = found.conn;
@@ -200,6 +210,7 @@ export function ChatView({
       body: {
         connection: { apiKey, providerId, baseURL },
         modelId: found.model.id,
+        ...(pool ? { pool } : {}),
         thinking: getState().thinking,
         instructions: [
           buildInstructions({
@@ -434,7 +445,7 @@ export function ChatView({
   useEffect(() => {
     if (error) reportError(error.message, "chat");
     const m = error?.message.match(MODEL_PROBLEM);
-    if (!m || !model || isAuto(model)) return;
+    if (!m || !model || isAuto(model) || isFree(model)) return;
     const note = /plan/.test(m[0]) ? "Not on your plan" : /credit/.test(m[0]) ? "Out of credit" : "Not available";
     update((s) => ({ ...s, modelNotes: { ...s.modelNotes, [`${model.connectionId}:${model.modelId}`]: note } }));
   }, [error, model]);
@@ -480,7 +491,7 @@ export function ChatView({
 
   const needsSearch = !!mode.research && !hasSearchKey;
   const usable = !!findModel(
-    isAuto(model) ? getState().autoPicks?.everyday : model,
+    isFree(model) ? freePool(getState().connections)[0] : isAuto(model) ? getState().autoPicks?.everyday : model,
   );
   const canSend = usable && !needsSearch;
 
@@ -548,7 +559,7 @@ export function ChatView({
       { text: composeText(expandCommand(text, projectTools().pluginIds), attachments), files },
       request(),
     );
-    const used = findModel(isAuto(model) ? getState().autoPicks?.everyday : model);
+    const used = findModel(isFree(model) ? freePool(getState().connections)[0] : isAuto(model) ? getState().autoPicks?.everyday : model);
     if (used) track("message.sent", { provider: used.conn.providerId, where: getProvider(used.conn.providerId).local ? "local" : "cloud" });
     setInput("");
     setAttachments([]);
@@ -561,7 +572,7 @@ export function ChatView({
 
   // Out of credit on OpenRouter: one click to a free model there, and the reply is tried again.
   const freeModel = useMemo(() => {
-    const conn = model && !isAuto(model) ? getState().connections.find((c) => c.id === model.connectionId) : undefined;
+    const conn = model && !isAuto(model) && !isFree(model) ? getState().connections.find((c) => c.id === model.connectionId) : undefined;
     if (!conn || !conn.models.some((m) => m.id.endsWith(":free"))) return undefined;
     return { connectionId: conn.id, modelId: firstModel(conn.models) };
   }, [model]);
