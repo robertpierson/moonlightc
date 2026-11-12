@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fallbackModel, freeCandidates, FREE_PROVIDERS, interleave, shouldFailOver, sizeInB } from "./free";
+import { coolFor, fallbackModel, freeCandidates, FREE_PROVIDERS, interleave, shouldFailOver, sizeInB } from "./free";
 
 const m = (id: string, contextLength?: number) => ({ id, name: id, contextLength });
 
@@ -19,7 +19,14 @@ describe("freeCandidates", () => {
   });
   it("prefers bigger models and skips safety and speech models", () => {
     const got = freeCandidates("groq", [m("allam-2-7b"), m("llama-guard-4-12b"), m("llama-3.3-70b-versatile"), m("whisper-large-v3"), m("openai/gpt-oss-120b")]);
-    expect(got.map((x) => x.id)).toEqual(["openai/gpt-oss-120b", "llama-3.3-70b-versatile"]);
+    expect(got.map((x) => x.id)).toEqual(["openai/gpt-oss-120b", "llama-3.3-70b-versatile", "allam-2-7b"]);
+  });
+  it("takes only the flash models from Z.ai", () => {
+    expect(freeCandidates("zai", [m("glm-5.3"), m("glm-5.3-flash"), m("glm-5.3-flashx")]).map((x) => x.id)).toEqual(["glm-5.3-flash"]);
+  });
+  it("skips NVIDIA's safety, embedding and old models", () => {
+    const got = freeCandidates("nvidia", [m("meta/llama2-70b"), m("nvidia/nemotron-4-340b-reward"), m("nvidia/nv-embedqa-mistral-7b-v2"), m("moonshotai/kimi-k2.6"), m("meta/llama-guard-4-12b")]);
+    expect(got.map((x) => x.id)).toEqual(["moonshotai/kimi-k2.6"]);
   });
   it("gives nothing for a company without a free plan", () => expect(freeCandidates("anthropic", [m("claude-x")])).toEqual([]));
   it("reads sizes", () => {
@@ -46,6 +53,16 @@ describe("shouldFailOver", () => {
   it("moves on when the network failed", () => expect(shouldFailOver(new TypeError("fetch failed"))).toBe(true));
 });
 
+describe("coolFor", () => {
+  const err = (statusCode: number, headers?: Record<string, string>) => Object.assign(new Error("x"), { statusCode, responseHeaders: headers });
+  it("uses the company's Retry-After, then a day for not-on-plan, ten minutes for limits, a minute for outages", () => {
+    expect(coolFor(err(429, { "retry-after": "42" }))).toBe(42);
+    expect(coolFor(err(403))).toBe(86400);
+    expect(coolFor(err(429))).toBe(600);
+    expect(coolFor(err(503))).toBe(60);
+  });
+});
+
 describe("fallbackModel", () => {
   const model = (name: string, outcome: "ok" | number) => ({
     specificationVersion: "v4",
@@ -61,6 +78,11 @@ describe("fallbackModel", () => {
     expect(await f.doStream({})).toEqual({ stream: "c" });
     expect(used).toBe(2);
     expect(f.modelId).toBe("free");
+  });
+  it("says which models it passed over", async () => {
+    const passed: number[] = [];
+    await fallbackModel([model("a", 429), model("b", "ok")], undefined, (i) => passed.push(i)).doGenerate({});
+    expect(passed).toEqual([0]);
   });
   it("reports the last error when every model fails", async () => {
     await expect(fallbackModel([model("a", 429), model("b", 429)]).doGenerate({})).rejects.toThrow("b");

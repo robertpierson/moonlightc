@@ -7,7 +7,9 @@ import { PROVIDERS, type ModelInfo } from "./providers";
 /** Providers with an official free plan. */
 export const FREE_PROVIDERS = PROVIDERS.filter((p) => p.free && !p.hidden && !p.local);
 
-const SKIP = /guard|safeguard|prompt-guard|embed|rerank|tts|whisper|audio|vision-preview|image|ocr|distil/i;
+// Not chat models (safety filters, embeddings, speech, parsers) or old generations that answer badly.
+const SKIP =
+  /guard|safety|reward|embed|rerank|retriever|tts|whisper|audio|vision-preview|image|ocr|distil|parse|clip|vila|neva|kosmos|deplot|fuyu|detector|translate|calibration|diffusion|llama2|codellama|starcoder|recurrentgemma|gemma-2b|chatqa|minitron/i;
 
 /** Billions of parameters in an id ("llama-3.3-70b-versatile" -> 70; "8x7b" -> 56), for "bigger first". */
 export function sizeInB(id: string): number {
@@ -18,13 +20,13 @@ export function sizeInB(id: string): number {
 }
 
 /**
- * The free models worth trying from one company, best first: its featured models (newest of each family), then the
+ * Every free chat model worth trying from one company (each has its own daily limit, so more models = more free use), best first: its featured models (newest of each family), then the
  * biggest by parameter count, then the longest context. Never hard-coded names: always from the live model list.
  */
-export function freeCandidates(providerId: string, models: ModelInfo[], max = 2): ModelInfo[] {
+export function freeCandidates(providerId: string, models: ModelInfo[], max = 12): ModelInfo[] {
   const p = PROVIDERS.find((x) => x.id === providerId);
   if (!p?.free) return [];
-  const usable = models.filter((m) => !SKIP.test(m.id) && (p.free === "all" || m.id.endsWith(":free")));
+  const usable = models.filter((m) => !SKIP.test(m.id) && (p.free === "all" || (p.freeModels ?? /:free$/).test(m.id)));
   const featured = featuredModels(providerId, usable);
   const rest = usable
     .filter((m) => !featured.includes(m))
@@ -61,11 +63,23 @@ type Model = {
 };
 
 /**
+ * How long to leave a model alone after this error, in seconds: the company's Retry-After when it sends one, a day
+ * when the model isn't on the plan or is gone (402/403/404), ten minutes for a limit (429), a minute otherwise.
+ */
+export function coolFor(e: unknown): number {
+  const err = e as { statusCode?: number; responseHeaders?: Record<string, string> } | null;
+  const after = Number(err?.responseHeaders?.["retry-after"]);
+  if (after > 0) return Math.min(after, 86400);
+  const s = err?.statusCode;
+  return s === 402 || s === 403 || s === 404 ? 86400 : s === 429 ? 600 : 60;
+}
+
+/**
  * One model made of several: each call goes to the first, and on an error that shouldFailOver() accepts, to the next.
  * Only errors before the answer starts can move on (a stream that fails halfway reports its error). `onUse` hears
- * which model answered.
+ * which model answered; `onSkip` hears each one passed over and why.
  */
-export function fallbackModel<M extends Model>(models: M[], onUse?: (index: number) => void): M {
+export function fallbackModel<M extends Model>(models: M[], onUse?: (index: number) => void, onSkip?: (index: number, error: unknown) => void): M {
   if (!models.length) throw new Error("No models to try.");
   const run = async (method: "doGenerate" | "doStream", options: unknown) => {
     for (let i = 0; ; i++) {
@@ -76,6 +90,7 @@ export function fallbackModel<M extends Model>(models: M[], onUse?: (index: numb
       } catch (e) {
         const stopped = (options as { abortSignal?: AbortSignal } | undefined)?.abortSignal?.aborted;
         if (stopped || i === models.length - 1 || !shouldFailOver(e)) throw e;
+        onSkip?.(i, e);
       }
     }
   };

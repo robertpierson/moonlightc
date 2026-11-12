@@ -9,6 +9,9 @@ const FAMILIES: Record<string, RegExp[]> = {
   xai: [/^grok-\d+(\.\d+)?(-\d{4})?$/i, /^grok-[\d.]+-.*mini/i],
   mistral: [/^mistral-large-latest$/i, /^mistral-medium-latest$/i, /^mistral-small-latest$/i],
   deepseek: [/^deepseek-chat$/i, /^deepseek-reasoner$/i],
+  nvidia: [/^deepseek-ai\/deepseek-v\d/i, /^moonshotai\/kimi-k\d/i, /^z-ai\/glm-\d/i, /^nvidia\/nemotron-[\d.]+-(ultra|super)-\d/i, /^minimaxai\/minimax-m\d/i],
+  "ollama-cloud": [/^kimi-k\d/i, /^deepseek-v\d/i, /^glm-\d/i, /^minimax-m\d/i, /^gpt-oss:120b$/i],
+  zai: [/^glm-[\d.]+-flash$/i],
 };
 const SKIP = /image|tts|audio|live|embedding|vision|customtools|computer-use|thinking-exp|-exp-|search/i;
 

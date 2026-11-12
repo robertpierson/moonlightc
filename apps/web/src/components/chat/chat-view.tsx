@@ -14,7 +14,7 @@ import {
   skillsInstructions,
 } from "@/lib/claude-plugins";
 import { classifyTask, isAuto, resolveAuto } from "@/lib/auto-model";
-import { freePool, isFree } from "@/lib/free-models";
+import { coolDown, freeId, freePool, isFree } from "@/lib/free-models";
 import { estimateCost } from "@moonc/core";
 import {
   DefaultChatTransport,
@@ -191,7 +191,7 @@ export function ChatView({
     const pool = isFree(model)
       ? freePool(getState().connections).flatMap((r) => {
           const f = findModel(r);
-          return f ? [{ connection: { apiKey: f.conn.apiKey, providerId: f.conn.providerId, baseURL: f.conn.baseURL }, modelId: f.model.id }] : [];
+          return f ? [{ connection: { apiKey: f.conn.apiKey, providerId: f.conn.providerId, baseURL: f.conn.baseURL }, modelId: f.model.id, id: freeId(r) }] : [];
         })
       : undefined;
     const found = findModel(
@@ -311,6 +311,7 @@ export function ChatView({
     sendAutomaticallyWhen: (o) =>
       lastAssistantMessageIsCompleteWithToolCalls(o) ||
       lastAssistantMessageIsCompleteWithApprovalResponses(o),
+    onFinish: ({ message }) => coolDown((message.metadata as { skipped?: { id: string; wait: number }[] } | undefined)?.skipped),
     onToolCall: async ({ toolCall }) => {
       if (toolCall.dynamic) return;
       if (toolCall.toolName === "computer" && !desktop() && homeScreenOn()) {

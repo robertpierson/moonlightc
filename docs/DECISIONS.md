@@ -200,3 +200,9 @@ What:
 Why: owner asked to build FreeLLMAPI into the app. A built-in pool needs no extra server and works on every device, and failover runs on keys the person already pastes here.
 Kept out: FreeLLMAPI's small gateway services, some of which log prompts for training or need ID checks. Only first-party companies with official free plans are included. A running FreeLLMAPI server still works as Custom.
 Alternatives: bundle the FreeLLMAPI server in the desktop app (desktop-only, a second process to keep running); a link-only mention (doesn't build it in).
+
+## 2026-11-12 Free: every model, with rest periods (FreeLLMAPI's approach, built in)
+- What: Free now uses every chat model from each free-plan company (not just the best 2), adds NVIDIA, Z.ai (flash models only), Ollama Cloud, SEA-LION and LongCat, and remembers models that hit a limit (company's Retry-After, else 10 min for 429, 1 day for not-on-plan 402/403/404, 1 min for outages) so the next message skips them. Up to 16 tries per message.
+- Why: each model has its own free daily limit, so the total free allowance is the sum over all models and companies (how FreeLLMAPI gets ~7B tokens a month). Owner wanted that inside MoonlightC, not a second app.
+- Not copied: gateways that log prompts for training or need ID/Telegram checks, keyless shared-IP services, multiple accounts per company (against their terms).
+- Alternatives: run FreeLLMAPI and connect it as Custom (still works).

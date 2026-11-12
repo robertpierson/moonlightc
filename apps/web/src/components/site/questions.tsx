@@ -8,7 +8,7 @@ export const QUESTIONS: { topic: string; items: [q: string, a: string][] }[] = [
       ["Is MoonlightC free?", "Yes. It's free and open source under the MIT license. You pay the AI companies directly for what you use, at their prices. We don't add a markup or limits."],
       [
         "Can I use AI without paying anything?",
-        "Yes. Google Gemini, Groq, Cerebras, Mistral, Cohere and OpenRouter have free plans. Add a key from one or more and pick Free in the model menu: when one is at its limit, the next one answers.",
+        "Yes. Google Gemini, Groq, Cerebras, NVIDIA, Mistral, Cohere, Ollama Cloud, Z.ai, SEA-LION, LongCat and OpenRouter have free plans. Add keys from as many as you like and pick Free in the model menu: when one is at its limit, the next one answers, and Free remembers to skip it for a while.",
       ],
       [
         "What do I need to start?",

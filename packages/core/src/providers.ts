@@ -29,6 +29,8 @@ export interface ProviderDef {
    * "tagged" when only models marked free are (OpenRouter's ":free" ids). A key with billing turned on can still cost.
    */
   free?: "all" | "tagged";
+  /** For "tagged": which model ids are on the free plan (default: OpenRouter-style ":free" ids). */
+  freeModels?: RegExp;
 }
 
 // Tests point OpenRouter at a local fake; never set in production.
@@ -44,6 +46,11 @@ export const PROVIDERS: ProviderDef[] = [
   { id: "deepseek", name: "DeepSeek", kind: "compat", baseURL: "https://api.deepseek.com", keyUrl: "https://platform.deepseek.com/api_keys" },
   { id: "groq", name: "Groq", kind: "compat", baseURL: "https://api.groq.com/openai/v1", keyUrl: "https://console.groq.com/keys", free: "all" },
   { id: "cerebras", name: "Cerebras", kind: "compat", baseURL: "https://api.cerebras.ai/v1", keyUrl: "https://cloud.cerebras.ai", free: "all" },
+  { id: "nvidia", name: "NVIDIA", kind: "compat", baseURL: "https://integrate.api.nvidia.com/v1", keyUrl: "https://build.nvidia.com/settings/api-keys", free: "all" },
+  { id: "zai", name: "Z.ai (GLM)", kind: "compat", baseURL: "https://api.z.ai/api/paas/v4", keyUrl: "https://z.ai/manage-apikey/apikey-list", free: "tagged", freeModels: /-flash$/i },
+  { id: "ollama-cloud", name: "Ollama Cloud", kind: "compat", baseURL: "https://ollama.com/v1", keyUrl: "https://ollama.com/settings/keys", free: "all" },
+  { id: "sealion", name: "SEA-LION", kind: "compat", baseURL: "https://api.sea-lion.ai/v1", keyUrl: "https://sea-lion.ai", free: "all" },
+  { id: "longcat", name: "LongCat", kind: "compat", baseURL: "https://api.longcat.chat/openai/v1", keyUrl: "https://longcat.chat/platform", free: "all" },
   { id: "together", name: "Together AI", kind: "compat", baseURL: "https://api.together.xyz/v1", keyUrl: "https://api.together.ai/settings/api-keys" },
   { id: "perplexity", name: "Perplexity", kind: "compat", baseURL: "https://api.perplexity.ai", modelsURL: "https://api.perplexity.ai/v1/models", keyUrl: "https://www.perplexity.ai/account/api/keys" },
   { id: "cohere", name: "Cohere", kind: "compat", baseURL: "https://api.cohere.ai/compatibility/v1", keyUrl: "https://dashboard.cohere.com/api-keys", free: "all" },

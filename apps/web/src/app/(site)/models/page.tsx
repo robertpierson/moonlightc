@@ -78,7 +78,7 @@ export default function Models() {
         body="Six of these companies have free plans. Add a key from one or more and pick Free in the model menu. MoonlightC handles the rest."
         columns={4}
         items={[
-          { icon: Gift, title: "Free plans, together", body: "Google Gemini, Groq, Cerebras, Mistral, Cohere, and the free models on OpenRouter." },
+          { icon: Gift, title: "Free plans, together", body: "Google Gemini, Groq, Cerebras, NVIDIA, Mistral, Cohere, Ollama Cloud, Z.ai, SEA-LION, LongCat, and the free models on OpenRouter." },
           { icon: ArrowsClockwise, title: "Moves on by itself", body: "When one model is at its free limit or having problems, the next one answers. No error, no retry button." },
           { icon: Tag, title: "Says who answered", body: "Every answer from Free names the company and model that wrote it." },
           { icon: ToggleRight, title: "You choose the keys", body: "Each key has an In Free switch. Turn it off for a key with billing on, so it's never charged by accident." },
