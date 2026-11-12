@@ -195,6 +195,7 @@ Current version everywhere: 0.6.34 (desktop installed, web live, extension zip).
 - Owner asked (2026-10-13): never move the mouse/keyboard or show windows on their PC. Locally run desktop e2e with `--grep-invert "computer use|remote control"`; those run in CI. Update desktop: `MoonlightC.exe --quit`, then installer `/S`, then `MoonlightC.exe --hidden`.
 
 ## Notes (last 10)
+2026-11-12: published desktop v0.6.67 as latest (4 CI builds green, extension zip reattached, latest/download links 200). Drafts v0.6.66, v0.6.63, v0.1.0 left unpublished (delete only with owner OK).
 2026-11-12: Free has two modes in Models and keys: Every free model (default) or Only the ones I pick (checklist per key). Unit 116 + e2e 35 pass; screenshot checked. Desktop 0.6.67 (0.6.66 left as an unpublished draft, superseded).
 2026-11-12: Free now works like FreeLLMAPI inside the app: every chat model per free company (up to 12 each), new companies NVIDIA, Z.ai (flash), Ollama Cloud, SEA-LION, LongCat, and models at their limit rest (Retry-After / 10 min / 1 day) so the next message skips them. Unit 151 pass, e2e free+chat+a11y 34 pass. Desktop 0.6.66.
 2026-11-12: published desktop v0.6.65 as latest at the owner's request (Free in the app; PC-side remote speed). All 4 CI builds green; extension zip (unchanged) reattached; latest/download links return 200. Owner installs it themselves; their running app was not touched.
@@ -204,4 +205,3 @@ Current version everywhere: 0.6.34 (desktop installed, web live, extension zip).
 - 2026-11-09: remote speed: viewer fast start + Speed details (live with the website); PC side 20 Mbps direct, high network priority, encoder report (reaches PCs with the next desktop release, needs owner OK). Loopback WebRTC check passed (H.264, 58 fps).
 - 2026-11-09: owner saw the stone wall live and hated it; removed it entirely (kept the no-gradient polish, icons, brand marks, plain Download button). Ask what they dislike before adding big new sections.
 - 2026-11-09: website polish per owner: removed corner chips, gradient text/buttons, card glow/tilt/fade-ups; Phosphor icons + real AI brand marks; home Download goes to /download; new stone wall on home (stones fly out in a wave on scroll); marquee/gallery fade at edges. 32/32 tests pass.
-- 2026-11-09: owner found the floating hero chat bubbles ugly; removed them (component + CSS). Hero is back to headline, buttons, moon. Keep the hero clean.
