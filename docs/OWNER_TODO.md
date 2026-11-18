@@ -2,6 +2,11 @@
 
 Do them in order. When done, tell Claude "done, continue".
 
+## Your OK needed: publish desktop 0.6.68 (1 minute)
+The desktop app carries its own copy of the web app, so this round's features (commands, Appearance levels, budget,
+Studio Compare, Fix it, ready-made modes) reach your installed app only with a new release. It's built and waiting as
+a draft. Reply **"publish 0.6.68"** and Claude publishes it; then install it from the Download page.
+
 ## Try this: the investor round (Nov 18, 2026, 6 minutes)
 1. Open https://moonlightc.vercel.app : cooler steel-silver look with a fine texture. Scroll to the two tabbed sections and click the tabs.
 2. Click **Course** in the top menu. Open a lesson, answer its question, and go back: your progress is saved.
