@@ -63,7 +63,7 @@ function AddConnector({ preset, onDone }: { preset?: "github"; onDone: () => voi
         return onDone();
       }
       save({ ...(base as McpServer), enabled: true, preset, tools, policy: {} });
-      toast.success(`${base.name} connected with ${tools.length} tools. The AI will ask before using each one.`);
+      toast.success(`${base.name} connected with ${tools.length} tool${tools.length === 1 ? "" : "s"}. The AI will ask before using each one.`);
       onDone();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -142,9 +142,11 @@ function ConnectorCard({ s }: { s: McpServer }) {
   const refresh = async () => {
     setBusy(true);
     try {
-      patch(s.id, { tools: await fetchTools({ ...s, accessToken: s.oauth?.tokens?.access_token } as McpServer) });
+      const tools = await fetchTools({ ...s, accessToken: s.oauth?.tokens?.access_token } as McpServer);
+      patch(s.id, { tools });
+      toast.success(`${s.name} works: ${tools.length} tool${tools.length === 1 ? "" : "s"} ready.`);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : String(e));
+      toast.error(e instanceof NeedsSignIn ? `${s.name} needs you to sign in again. Click Sign in again, or remove it and connect it once more.` : `${s.name} isn't answering: ${e instanceof Error ? e.message : String(e)}`);
     } finally {
       setBusy(false);
     }
@@ -164,8 +166,8 @@ function ConnectorCard({ s }: { s: McpServer }) {
         <label className="flex items-center gap-2 text-sm">
           On <Switch checked={s.enabled} onCheckedChange={(v) => patch(s.id, { enabled: v })} aria-label={`Use ${s.name} in chats`} />
         </label>
-        <Button variant="ghost" size="icon-sm" aria-label={`Refresh ${s.name} tools`} onClick={refresh} disabled={busy}>
-          <RefreshCw className={busy ? "animate-spin" : ""} />
+        <Button variant="ghost" size="xs" aria-label={`Check ${s.name}`} title="Check that it works and refresh its tools" onClick={refresh} disabled={busy}>
+          <RefreshCw className={busy ? "animate-spin" : ""} /> Check
         </Button>
         <Button variant="ghost" size="icon-sm" aria-label={`Remove ${s.name}`} onClick={() => update((st) => ({ ...st, mcpServers: (st.mcpServers ?? []).filter((x) => x.id !== s.id) }))}>
           <Trash2 />

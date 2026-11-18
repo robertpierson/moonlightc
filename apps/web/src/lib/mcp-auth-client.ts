@@ -32,7 +32,7 @@ async function save(draft: Draft, oauth: OAuthState) {
       { ...draft, kind: "http", enabled: true, tools, policy: s.mcpServers?.find((x) => x.id === draft.id)?.policy ?? {}, oauth },
     ],
   }));
-  toast.success(`${draft.name} connected with ${tools.length} tools. The AI will ask before using each one.`);
+  toast.success(`${draft.name} connected with ${tools.length} tool${tools.length === 1 ? "" : "s"}. The AI will ask before using each one.`);
 }
 
 /** Start signing in to an MCP server that asked for it. Leaves the page (or opens the browser on desktop). */

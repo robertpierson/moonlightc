@@ -30,8 +30,10 @@ test("add an MCP connector, then the AI uses its tool after the user approves", 
 
   await page.getByLabel("Access token (optional)").fill("test-token");
   await page.getByRole("button", { name: "Connect", exact: true }).click();
-  await expect(page.getByText("Calc connected with 1 tools")).toBeVisible();
+  await expect(page.getByText("Calc connected with 1 tool.")).toBeVisible();
   await expect(page.getByRole("list", { name: "Your connectors" })).toContainText("Calc");
+  await page.getByRole("button", { name: "Check Calc" }).click();
+  await expect(page.getByText("Calc works: 1 tool ready.")).toBeVisible();
 
   await openMenu(page);
   await page.getByRole("button", { name: "Chat", exact: true }).click();
@@ -50,7 +52,7 @@ test("connectors that need a sign-in: discovery, registration, PKCE, then tools"
   await page.getByLabel("Server URL").fill("http://127.0.0.1:4040/mcp");
   await page.getByRole("button", { name: "Connect", exact: true }).click();
   // The fake server's sign-in page approves at once and sends us back to the app.
-  await expect(page.getByText("Notes connected with 1 tools")).toBeVisible({ timeout: 20000 });
+  await expect(page.getByText("Notes connected with 1 tool.")).toBeVisible({ timeout: 20000 });
   await expect(page.getByRole("list", { name: "Your connectors" })).toContainText("Notes");
   await expect(page.getByRole("button", { name: "Sign in again" })).toBeVisible();
   expect(page.url()).not.toContain("mcpauth");
