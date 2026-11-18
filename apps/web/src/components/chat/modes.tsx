@@ -1,5 +1,6 @@
 "use client";
 
+import { MODE_LIBRARY } from "@/lib/mode-library";
 import { ChevronDown, Pencil, Pin, PinOff, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -299,6 +300,39 @@ export function ModesManager() {
       <Button onClick={() => setEditing(blank())}>
         <Plus /> New mode
       </Button>
+      <section aria-labelledby="mode-library-h" className="mt-4 grid gap-2">
+        <h3 id="mode-library-h" className="font-medium">
+          Ready-made modes
+        </h3>
+        <p className="text-sm text-muted-foreground">Add one in a click. It joins your modes, and you can edit it like your own.</p>
+        <ul className="grid gap-2 sm:grid-cols-2">
+          {MODE_LIBRARY.map((m) => {
+            const added = custom.some((c) => c.id === `lib-${m.slug}`);
+            return (
+              <li key={m.slug} className="flex items-start gap-3 rounded-lg border p-3 text-sm">
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium">{m.name}</p>
+                  <p className="text-muted-foreground">{m.about}</p>
+                </div>
+                <Button
+                  size="sm"
+                  variant={added ? "ghost" : "outline"}
+                  disabled={added}
+                  aria-label={added ? `${m.name} added` : `Add ${m.name}`}
+                  onClick={() =>
+                    update((s) => ({
+                      ...s,
+                      modes: [...s.modes, { id: `lib-${m.slug}`, name: m.name, instructions: m.instructions, temperature: m.temperature }],
+                    }))
+                  }
+                >
+                  {added ? "Added" : "Add"}
+                </Button>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
     </div>
   );
 }

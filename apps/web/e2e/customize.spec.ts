@@ -152,3 +152,17 @@ test("appearance levels: Simple shows a few choices, Full control shows fonts, t
   // The level you picked is a view preference, so it stays.
   await expect(page.getByRole("radio", { name: /^Full control/ })).toHaveAttribute("aria-checked", "true");
 });
+
+test("ready-made modes: add one in a click and it joins your modes", async ({ page }) => {
+  await page.goto("/app");
+  await nav(page, "Settings");
+  await page.getByRole("navigation", { name: "Settings" }).getByRole("button", { name: "Modes" }).click();
+  await page.getByRole("button", { name: "Add Interview coach" }).click();
+  await expect(page.getByRole("button", { name: "Interview coach added" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Edit Interview coach" })).toBeVisible();
+  await saveSettings(page);
+  await page.reload();
+  await nav(page, "Settings");
+  await page.getByRole("navigation", { name: "Settings" }).getByRole("button", { name: "Modes" }).click();
+  await expect(page.getByRole("button", { name: "Edit Interview coach" })).toBeVisible();
+});
