@@ -1,6 +1,6 @@
 "use client";
 
-import { Brain, ChartBar, Cpu, MonitorSmartphone, Download, FolderOpen, Gauge, Globe, KeyRound, Laptop, Megaphone, Moon, Sunset, Palette, Plug, Puzzle, Shield, SlidersHorizontal, Sparkles, Sun, KeySquare, Trash2, Upload, UserRound, Wand2, X } from "lucide-react";
+import { Brain, ChartBar, SquareSlash, Cpu, MonitorSmartphone, Download, FolderOpen, Gauge, Globe, KeyRound, Laptop, Megaphone, Moon, Sunset, Palette, Plug, Puzzle, Shield, SlidersHorizontal, Sparkles, Sun, KeySquare, Trash2, Upload, UserRound, Wand2, X } from "lucide-react";
 import { SaveBar } from "./save-bar";
 import { beginEditing, endEditing, emptyAllTrash } from "@/lib/store";
 import { RemoteSettings } from "@/components/remote/remote-settings";
@@ -12,6 +12,7 @@ import { ModelPicker } from "@/components/chat/model-picker";
 import { KeysPanel } from "@/components/chat/keys-dialog";
 import { ModesManager } from "@/components/chat/modes";
 import { ClaudePlugins } from "./claude-plugins";
+import { CommandsSettings } from "./commands";
 import { UsagePanel } from "./usage";
 import { MemoryManager } from "@/components/library/library";
 import { AccountPanel } from "@/components/account/account";
@@ -35,7 +36,7 @@ const Customize = dynamic(() => import("@/components/customize/customize").then(
 const ModsView = dynamic(() => import("@/components/mods/mods-view").then((m) => m.ModsView), { loading: () => <div className="flex-1" /> });
 const LocalModels = dynamic(() => import("@/components/desktop/local-models").then((m) => m.LocalModels), { loading: () => <div className="flex-1" /> });
 
-export type SettingsSection = "profile" | "account" | "general" | "usage" | "memory" | "models" | "auto" | "modes" | "connectors" | "plugins" | "files" | "remote" | "browser" | "local" | "appearance" | "privacy" | "new" | "staff";
+export type SettingsSection = "profile" | "account" | "general" | "usage" | "memory" | "models" | "auto" | "modes" | "commands" | "connectors" | "plugins" | "files" | "remote" | "browser" | "local" | "appearance" | "privacy" | "new" | "staff";
 
 const SECTIONS: { id: SettingsSection; label: string; icon: React.ReactNode; desktopOnly?: boolean; webOnly?: boolean; needsAccounts?: boolean; adminOnly?: boolean }[] = [
   { id: "profile", label: "Profile", icon: <UserRound /> },
@@ -46,6 +47,7 @@ const SECTIONS: { id: SettingsSection; label: string; icon: React.ReactNode; des
   { id: "models", label: "Models & API keys", icon: <KeyRound /> },
   { id: "auto", label: "Auto model", icon: <Sparkles /> },
   { id: "modes", label: "Modes", icon: <Wand2 /> },
+  { id: "commands", label: "Commands", icon: <SquareSlash /> },
   { id: "connectors", label: "Connectors", icon: <Plug /> },
   { id: "plugins", label: "Plugins & mods", icon: <Puzzle /> },
   { id: "files", label: "Files", icon: <FolderOpen />, desktopOnly: true },
@@ -129,6 +131,7 @@ export function Settings({ section, onSection, availableViews, onClose, onChat }
             <ModesManager />
           </Page>
         )}
+        {section === "commands" && <CommandsSettings />}
         {section === "connectors" && <Connections />}
         {section === "plugins" && (
           <div className="min-h-0 flex-1 overflow-y-auto">

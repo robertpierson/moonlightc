@@ -13,8 +13,10 @@ import {
   findSkill,
   skillsInstructions,
 } from "@/lib/claude-plugins";
-import { classifyTask, isAuto, resolveAuto } from "@/lib/auto-model";
-import { coolDown, freeId, freePool, isFree } from "@/lib/free-models";
+import { AUTO, classifyTask, isAuto, resolveAuto } from "@/lib/auto-model";
+import { coolDown, FREE, freeId, freePool, isFree } from "@/lib/free-models";
+import { BUILT_IN, fill, find, matchModel, mine, parse, suggest, type ChatCommand } from "@/lib/commands";
+import { useTheme } from "next-themes";
 import { estimateCost } from "@moonc/core";
 import {
   DefaultChatTransport,
@@ -130,6 +132,7 @@ export function ChatView({
   bigInput,
   projectId,
   cowork,
+  actions,
 }: {
   chat: Chat;
   model?: ModelRef;
@@ -145,6 +148,8 @@ export function ChatView({
   projectId?: string;
   /** Cowork: the AI may use shared folders, this PC's screen and shared browser tabs (each with permission). */
   cowork?: boolean;
+  /** What /new and /model do. */
+  actions?: { newChat: () => void; pickModel: (r: ModelRef) => void };
 }) {
   // Unsent text stays when you click away and come back (per chat, on this device).
   const draftKey = `moonc:draft:${chat.id}`;
@@ -177,6 +182,77 @@ export function ChatView({
 
   // Connectors and skills the chat's project switches on.
   const projectTools = (): { connectorIds?: string[]; pluginIds?: string[] } => getState().projects?.find((p) => p.id === projectId) ?? {};
+
+  // Commands: "/" opens a menu; yours first, then plugins and mods, then built-in ones.
+  const myCommands = useStore((s) => s.myCommands);
+  const mods = useStore((s) => s.mods);
+  const plugins = useStore((s) => s.plugins);
+  const { setTheme, resolvedTheme } = useTheme();
+  const commands = useMemo<ChatCommand[]>(
+    () => [
+      ...mine(myCommands),
+      ...activePlugins(projectTools().pluginIds).flatMap((p) =>
+        p.commands.map((c) => ({ name: c.name, args: c.argumentHint, does: c.description ?? `From ${p.name}`, example: `/${c.name}`, kind: "prompt" as const, from: "Plugin" as const })),
+      ),
+      ...(mods ?? []).filter((m) => m.enabled).flatMap((m) => m.manifest.commands.map((c) => ({ name: c.name.slice(1), does: c.description, example: c.name, kind: "prompt" as const, from: "Mod" as const }))),
+      ...BUILT_IN,
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- projectTools reads the project by id
+    [myCommands, mods, plugins, projectId],
+  );
+  const [menuAt, setMenuAt] = useState(0);
+  const [menuShut, setMenuShut] = useState(false);
+  const menu = menuShut ? [] : suggest(input, commands);
+
+  /** Runs an app command. */
+  const runAction = (name: string, arg: string) => {
+    const say = (t: string) => toast(t);
+    if (name === "help") {
+      setInput("/");
+      setMenuShut(false);
+      return;
+    }
+    setInput("");
+    if (name === "new") return actions ? actions.newChat() : undefined;
+    if (name === "tools") {
+      const on = !getState().webTools;
+      update((s) => ({ ...s, webTools: on }));
+      return say(on ? "Tools on: the AI can search the web, read links and run Python." : "Tools off.");
+    }
+    if (name === "theme") {
+      const want = /^(light|dark|system)$/i.test(arg) ? arg.toLowerCase() : resolvedTheme === "dark" ? "light" : "dark";
+      setTheme(want);
+      return say(`Theme: ${want}.`);
+    }
+    if (name === "model") {
+      if (!arg) {
+        setInput("/model ");
+        return say("Type a model's name after /model, like /model claude, /model free or /model auto.");
+      }
+      const s = getState();
+      if (/^free$/i.test(arg)) {
+        if (!freePool(s.connections, s.freePicks).length) return toast.error("Free needs a key from a company with a free plan. Open Models and keys to add one.");
+        actions?.pickModel(FREE);
+        return say("Switched to Free.");
+      }
+      if (/^auto$/i.test(arg)) {
+        if (!findModel(s.autoPicks?.everyday)) return toast.error("Pick Auto's models in Settings > Auto model first.");
+        actions?.pickModel(AUTO);
+        return say("Switched to Auto.");
+      }
+      const hit = matchModel(arg, s.connections.flatMap((conn) => conn.models.map((m) => ({ ...m, conn }))));
+      if (!hit) return toast.error(`No model matching "${arg}". Your models are in the model menu.`);
+      actions?.pickModel({ connectionId: hit.conn.id, modelId: hit.id });
+      return say(`Switched to ${hit.name}.`);
+    }
+  };
+
+  /** Picking from the menu: a command that needs nothing after it runs now; others wait for your text. */
+  const pickCommand = (c: ChatCommand, run: boolean) => {
+    setMenuShut(true);
+    if (run && !c.args) return void submit(undefined, `/${c.name}`);
+    setInput(`/${c.name} `);
+  };
   const lastUserHasImage = () =>
     !![...messagesRef.current]
       .reverse()
@@ -532,8 +608,12 @@ export function ChatView({
 
   const submit = async (e?: React.FormEvent, said?: string) => {
     e?.preventDefault();
-    const text = (said ?? input).trim();
+    let text = (said ?? input).trim();
+    const typed = parse(text);
+    const cmd = typed && find(typed.name, commands);
+    if (cmd?.kind === "action") return runAction(cmd.name, typed!.input);
     if ((!text && attachments.length === 0) || streaming || !canSend) return;
+    if (cmd && (cmd.from === "Built in" || cmd.from === "Yours")) text = fill(cmd, typed!.input);
     googleTokenRef.current = await googleToken();
     accountsRef.current = {
       spotify: await oauthToken("spotify"),
@@ -789,7 +869,35 @@ export function ChatView({
             </Button>
           </div>
         )}
-        <div className="rounded-2xl border bg-card p-2 shadow-sm focus-within:ring-2 focus-within:ring-ring/40">
+        <div className="relative rounded-2xl border bg-card p-2 shadow-sm focus-within:ring-2 focus-within:ring-ring/40">
+          {menu.length > 0 && (
+            <ul
+              id="command-menu"
+              role="listbox"
+              aria-label="Commands"
+              className="absolute inset-x-0 bottom-full z-20 mb-2 max-h-72 overflow-y-auto rounded-xl border bg-popover p-1 text-popover-foreground shadow-lg"
+            >
+              {menu.map((c, i) => (
+                <li
+                  key={`${c.from}-${c.name}`}
+                  id={`cmd-${c.name}`}
+                  role="option"
+                  aria-selected={i === Math.min(menuAt, menu.length - 1)}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => pickCommand(c, true)}
+                  onMouseMove={() => setMenuAt(i)}
+                  className="flex cursor-pointer items-baseline gap-3 rounded-lg px-3 py-2 text-sm aria-selected:bg-accent aria-selected:text-accent-foreground"
+                >
+                  <span className="font-mono font-medium">/{c.name}</span>
+                  {c.args && <span className="text-muted-foreground">{c.args}</span>}
+                  <span className="ml-auto truncate text-right text-muted-foreground">
+                    {c.does}
+                    {c.from !== "Built in" && <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-xs">{c.from}</span>}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
           {attachments.length > 0 && (
             <ul className="flex flex-wrap gap-2 p-1" aria-label="Attachments">
               {attachments.map((a, i) => (
@@ -837,7 +945,16 @@ export function ChatView({
                     : "Connect a model to start chatting"
               }
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              role="combobox"
+              aria-autocomplete="list"
+              aria-expanded={menu.length > 0}
+              aria-controls="command-menu"
+              aria-activedescendant={menu.length ? `cmd-${menu[Math.min(menuAt, menu.length - 1)].name}` : undefined}
+              onChange={(e) => {
+                setInput(e.target.value);
+                setMenuShut(false);
+                setMenuAt(0);
+              }}
               onPaste={(e) => {
                 if (e.clipboardData.files.length) {
                   e.preventDefault();
@@ -845,6 +962,24 @@ export function ChatView({
                 }
               }}
               onKeyDown={(e) => {
+                if (menu.length) {
+                  const at = Math.min(menuAt, menu.length - 1);
+                  if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+                    e.preventDefault();
+                    setMenuAt((at + (e.key === "ArrowDown" ? 1 : menu.length - 1)) % menu.length);
+                    return;
+                  }
+                  if (e.key === "Tab" || (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing)) {
+                    e.preventDefault();
+                    pickCommand(menu[at], e.key === "Enter");
+                    return;
+                  }
+                  if (e.key === "Escape") {
+                    e.preventDefault();
+                    setMenuShut(true);
+                    return;
+                  }
+                }
                 if (
                   e.key === "Enter" &&
                   !e.shiftKey &&

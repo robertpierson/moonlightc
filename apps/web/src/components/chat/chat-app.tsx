@@ -213,6 +213,11 @@ function Inner() {
   const fallback = chatConns[0] && { connectionId: chatConns[0].id, modelId: chatConns[0].models[0].id };
   const mode = modes.find((m) => m.id === (saved ? chat.modeId : draftMode)) ?? modes[0];
   const model = [chat.model, saved ? undefined : draftModel, mode.model, lastModel, fallback].find(valid);
+  const pickModel = (r: ModelRef) => {
+    update((s) => ({ ...s, lastModel: r }));
+    if (saved) patchChat(chat.id, { model: r });
+    else setDraftModel(r);
+  };
 
   const start = (c: Chat = newChat(), ws: "chat" | "cowork" = workspace === "cowork" ? "cowork" : "chat") => {
     if (blocked()) return;
@@ -338,6 +343,7 @@ ${summary}
   const chatView = (
     <ChatView
       key={chat.id}
+      actions={{ newChat: () => start(), pickModel }}
       cowork={view === "cowork" || view === "remote"}
       chat={chat}
       model={model}
@@ -674,11 +680,7 @@ ${summary}
             setArtifact(undefined);
             setView("chat");
           },
-          pickModel: (r) => {
-            update((s) => ({ ...s, lastModel: r }));
-            if (saved) patchChat(chat.id, { model: r });
-            else setDraftModel(r);
-          },
+          pickModel,
           openKeys: () => setKeysOpen(true),
           openModes: () => setModesOpen(true),
           openSettings: () => openSettings("general"),

@@ -1,5 +1,6 @@
 "use client";
 
+import type { MyCommand } from "./commands";
 import type { Connection, ModelInfo } from "@moonc/core";
 import type { AutoPicks } from "./auto-model";
 import type { ClaudePlugin } from "./claude-plugins";
@@ -182,6 +183,8 @@ export interface State {
   freePicks?: string[];
   /** Claude Code plugins installed from GitHub (skills, commands, agents, MCP servers). */
   plugins?: ClaudePlugin[];
+  /** Your own chat commands ("/name"); {input} is where the text after the name goes. */
+  myCommands?: MyCommand[];
   /** Name and picture shown in the app (kept on this device until accounts exist). */
   profile?: { name?: string; avatar?: string };
   /** Themes the person saved from the theme editor. */
@@ -391,7 +394,7 @@ export function resetState() {
 // ---------- Unsaved changes in Settings (Save / Reset, like Discord) ----------
 // Preference settings edited in Settings show right away but only stick after Save. Actions with their own
 // buttons (adding a key, connecting a service, installing a plugin) still apply immediately.
-export const STAGED_KEYS = ["profile", "look", "distroId", "customDistros", "myThemes", "lastModel", "webTools", "memory", "autoPicks", "pinnedModes", "modes"] as const;
+export const STAGED_KEYS = ["profile", "look", "distroId", "customDistros", "myThemes", "lastModel", "webTools", "memory", "autoPicks", "pinnedModes", "modes", "myCommands"] as const;
 type StagedKey = (typeof STAGED_KEYS)[number];
 let staged: Partial<Pick<State, StagedKey>> | null = null;
 const pick = (s: State) => Object.fromEntries(STAGED_KEYS.map((k) => [k, s[k]])) as Pick<State, StagedKey>;
