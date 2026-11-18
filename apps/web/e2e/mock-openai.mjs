@@ -26,7 +26,7 @@ createServer(async (req, res) => {
   }
   if (req.method === "GET" && req.url === "/v1/models") {
     res.setHeader("content-type", "application/json");
-    return res.end(JSON.stringify({ data: [{ id: "mock-fast" }, { id: "mock-other" }, ...(credit ? [{ id: "mock-free:free" }] : [])] }));
+    return res.end(JSON.stringify({ data: [{ id: "mock-fast" }, { id: "mock-other", context_length: 20, pricing: { prompt: "0.05", completion: "0.05" } }, ...(credit ? [{ id: "mock-free:free" }] : [])] }));
   }
   if (req.method === "POST" && req.url === "/v1/chat/completions") {
     let raw = "";

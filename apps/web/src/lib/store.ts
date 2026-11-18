@@ -185,6 +185,8 @@ export interface State {
   freePicks?: string[];
   /** Claude Code plugins installed from GitHub (skills, commands, agents, MCP servers). */
   plugins?: ClaudePlugin[];
+  /** Monthly spending budget for API keys (USD), and whether to stop sending once it's reached. */
+  budget?: { monthly?: number; stop?: boolean };
   /** Your own chat commands ("/name"); {input} is where the text after the name goes. */
   myCommands?: MyCommand[];
   /** Name and picture shown in the app (kept on this device until accounts exist). */
@@ -396,7 +398,7 @@ export function resetState() {
 // ---------- Unsaved changes in Settings (Save / Reset, like Discord) ----------
 // Preference settings edited in Settings show right away but only stick after Save. Actions with their own
 // buttons (adding a key, connecting a service, installing a plugin) still apply immediately.
-export const STAGED_KEYS = ["profile", "look", "distroId", "customDistros", "myThemes", "lastModel", "webTools", "memory", "autoPicks", "pinnedModes", "modes", "myCommands"] as const;
+export const STAGED_KEYS = ["profile", "look", "distroId", "customDistros", "myThemes", "lastModel", "webTools", "memory", "autoPicks", "pinnedModes", "modes", "myCommands", "budget"] as const;
 type StagedKey = (typeof STAGED_KEYS)[number];
 let staged: Partial<Pick<State, StagedKey>> | null = null;
 const pick = (s: State) => Object.fromEntries(STAGED_KEYS.map((k) => [k, s[k]])) as Pick<State, StagedKey>;

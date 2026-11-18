@@ -70,3 +70,21 @@ export function monthValue(chats: { messages: UIMessage[] }[], models: ModelInfo
 
 /** "10 billion", "3.4 million", "950". */
 export const bigNumber = (n: number) => new Intl.NumberFormat("en", { notation: "compact", compactDisplay: "long", maximumFractionDigits: 1 }).format(n);
+
+/** How full a chat's model memory (context window) is: the last reply's token count, or a rough count from the text. */
+export function contextUse(messages: UIMessage[], contextLength?: number): { used: number; pct: number } | undefined {
+  if (!contextLength || !messages.length) return undefined;
+  const last = [...messages].reverse().find((m) => m.role === "assistant" && (m.metadata as Meta | undefined)?.usage);
+  const u = (last?.metadata as Meta | undefined)?.usage;
+  const used = u
+    ? (u.inputTokens ?? 0) + (u.outputTokens ?? 0)
+    : Math.round(messages.reduce((n, m) => n + m.parts.reduce((k, p) => k + (p.type === "text" ? p.text.length : 0), 0), 0) / 4);
+  return { used, pct: Math.min(1, used / contextLength) };
+}
+
+/** Where this month's spending stands against a monthly budget. */
+export function budgetState(spent: number, monthly?: number): { pct: number; over: boolean; near: boolean } | undefined {
+  if (!monthly || monthly <= 0) return undefined;
+  const pct = spent / monthly;
+  return { pct, over: pct >= 1, near: pct >= 0.8 };
+}

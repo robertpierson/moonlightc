@@ -4,7 +4,8 @@ import { getProvider } from "@moonc/core";
 import { ExternalLink, Loader2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useStore, type SavedConnection } from "@/lib/store";
-import { bigNumber, isAiPlan, money, monthValue, REFERENCE_PRICE, summarizeUsage } from "@/lib/usage";
+import { bigNumber, budgetState, isAiPlan, money, monthValue, REFERENCE_PRICE, summarizeUsage } from "@/lib/usage";
+import { Switch } from "@/components/ui/switch";
 import { monthly, money as currency } from "@/lib/subscriptions";
 import { update } from "@/lib/store";
 import { Button } from "@/components/ui/button";
@@ -164,6 +165,7 @@ function Plans() {
           </div>
         ))}
       </div>
+      <Budget spent={v.spent} />
       <div className="grid gap-2">
         <h3 className="font-medium">Your AI plans</h3>
         {plans.length ? (
@@ -188,6 +190,54 @@ function Plans() {
           </Button>
         </form>
       </div>
+    </section>
+  );
+}
+
+/** A monthly budget for API keys: a warning near it, and (if you like) no more paid messages once it's reached. */
+function Budget({ spent }: { spent: number }) {
+  const budget = useStore((s) => s.budget);
+  const state = budgetState(spent, budget?.monthly);
+  const set = (patch: Partial<NonNullable<typeof budget>>) => update((s) => ({ ...s, budget: { ...s.budget, ...patch } }));
+  return (
+    <section aria-labelledby="budget-h" className="grid gap-3 rounded-xl border p-4">
+      <div>
+        <h3 id="budget-h" className="font-medium">
+          Monthly budget
+        </h3>
+        <p className="text-sm text-muted-foreground">Spending counts paid models whose price the company lists. When you stop at the budget, every paid model waits; Free and local models keep working.</p>
+      </div>
+      <div className="flex flex-wrap items-center gap-3">
+        <label className="flex items-center gap-2 text-sm">
+          <span>$</span>
+          <Input
+            type="number"
+            min={0}
+            step={1}
+            inputMode="decimal"
+            aria-label="Monthly budget in dollars"
+            placeholder="No budget"
+            value={budget?.monthly ?? ""}
+            onChange={(e) => set({ monthly: e.target.value === "" ? undefined : Math.max(0, Number(e.target.value)) })}
+            className="w-28"
+          />
+          <span className="text-muted-foreground">a month</span>
+        </label>
+        <label className="flex items-center gap-2 text-sm">
+          <Switch checked={!!budget?.stop} onCheckedChange={(on) => set({ stop: on })} disabled={!budget?.monthly} />
+          Stop paid messages when I reach it
+        </label>
+      </div>
+      {state && (
+        <div className="grid gap-1.5">
+          <div className="h-2 overflow-hidden rounded-full bg-muted" role="progressbar" aria-label="Budget used" aria-valuenow={Math.round(Math.min(1, state.pct) * 100)} aria-valuemin={0} aria-valuemax={100}>
+            <div className={`h-full rounded-full ${state.over ? "bg-destructive" : state.near ? "bg-amber-500" : "bg-primary"}`} style={{ width: `${Math.min(100, state.pct * 100)}%` }} />
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {money(spent)} of {money(budget!.monthly!)} used this month{state.over ? ": budget reached." : "."}
+          </p>
+        </div>
+      )}
     </section>
   );
 }

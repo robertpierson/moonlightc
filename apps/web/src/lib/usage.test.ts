@@ -1,6 +1,6 @@
 import type { UIMessage } from "ai";
 import { describe, expect, it } from "vitest";
-import { bigNumber, isAiPlan, monthValue, money, summarizeUsage } from "./usage";
+import { bigNumber, budgetState, contextUse, isAiPlan, monthValue, money, summarizeUsage } from "./usage";
 
 const now = Date.UTC(2026, 9, 13, 12);
 const reply = (modelId: string, input: number, output: number, at: number): UIMessage => ({ id: String(Math.random()), role: "assistant", parts: [], metadata: { usage: { inputTokens: input, outputTokens: output }, modelId, createdAt: at } });
@@ -41,5 +41,22 @@ describe("plans and list-price value", () => {
     expect(isAiPlan({ service: "Netflix" })).toBe(false);
     expect(bigNumber(10_000_000_000)).toBe("10 billion");
     expect(bigNumber(3_400_000)).toBe("3.4 million");
+  });
+});
+
+describe("context and budget", () => {
+  const msg = (role: "user" | "assistant", text: string, usage?: { inputTokens: number; outputTokens: number }) =>
+    ({ id: Math.random().toString(), role, parts: [{ type: "text", text }], metadata: usage ? { usage } : undefined }) as UIMessage;
+  it("uses the last reply's token count when there is one", () => {
+    expect(contextUse([msg("user", "hi"), msg("assistant", "hello", { inputTokens: 700, outputTokens: 100 })], 1000)).toEqual({ used: 800, pct: 0.8 });
+  });
+  it("estimates from the text otherwise, and says nothing without a known size", () => {
+    expect(contextUse([msg("user", "x".repeat(400))], 1000)).toEqual({ used: 100, pct: 0.1 });
+    expect(contextUse([msg("user", "hi")], undefined)).toBeUndefined();
+  });
+  it("flags a budget near its end and over it", () => {
+    expect(budgetState(8, 10)).toEqual({ pct: 0.8, over: false, near: true });
+    expect(budgetState(12, 10)?.over).toBe(true);
+    expect(budgetState(5, undefined)).toBeUndefined();
   });
 });

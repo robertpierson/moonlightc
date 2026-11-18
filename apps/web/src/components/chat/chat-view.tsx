@@ -18,6 +18,7 @@ import { coolDown, FREE, freeId, freePool, isFree } from "@/lib/free-models";
 import { BUILT_IN, fill, find, matchModel, mine, parse, suggest, type ChatCommand } from "@/lib/commands";
 import { useTheme } from "next-themes";
 import { estimateCost } from "@moonc/core";
+import { budgetState, contextUse, money, monthValue } from "@/lib/usage";
 import {
   DefaultChatTransport,
   type ChatTransport,
@@ -200,6 +201,8 @@ export function ChatView({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- projectTools reads the project by id
     [myCommands, mods, plugins, projectId],
   );
+  // One budget reminder per chat screen is enough.
+  const budgetWarned = useRef(false);
   const [menuAt, setMenuAt] = useState(0);
   const [menuShut, setMenuShut] = useState(false);
   const menu = menuShut ? [] : suggest(input, commands);
@@ -614,6 +617,21 @@ export function ChatView({
     if (cmd?.kind === "action") return runAction(cmd.name, typed!.input);
     if ((!text && attachments.length === 0) || streaming || !canSend) return;
     if (cmd && (cmd.from === "Built in" || cmd.from === "Yours")) text = fill(cmd, typed!.input);
+    // Monthly budget (Settings > Usage): stop paid messages once it's reached, if you asked for that.
+    const b = getState().budget;
+    const paid = !!model && !isFree(model) && !getProvider(findModel(isAuto(model) ? getState().autoPicks?.everyday : model)?.conn.providerId ?? "").local;
+    if (b?.monthly && paid) {
+      const spent = monthValue(getState().chats, getState().connections.flatMap((c) => c.models)).spent;
+      const st = budgetState(spent, b.monthly);
+      if (st?.over && b.stop) {
+        toast.error(`You've reached your monthly budget of ${money(b.monthly)}. Use a free or local model, or raise it in Settings > Usage.`);
+        return;
+      }
+      if (st?.near && !budgetWarned.current) {
+        budgetWarned.current = true;
+        toast(`You've used ${money(spent)} of your ${money(b.monthly)} monthly budget.`);
+      }
+    }
     googleTokenRef.current = await googleToken();
     accountsRef.current = {
       spotify: await oauthToken("spotify"),
@@ -1064,6 +1082,7 @@ export function ChatView({
               </Button>
             )}
             {modeSlot(messages.length > 0)}
+            <ContextMeter messages={messages} model={model} chatId={chat.id} />
           </div>
         </div>
       </form>
@@ -1099,4 +1118,34 @@ function friendly(msg: string) {
   } catch {
     return msg;
   }
+}
+
+/** How full the model's memory is for this chat. Near the limit it offers to carry a summary into a new chat. */
+function ContextMeter({ messages, model, chatId }: { messages: UIMessage[]; model?: ModelRef; chatId: string }) {
+  const size = model && !isFree(model) && !isAuto(model) ? findModel(model)?.model.contextLength : undefined;
+  const use = contextUse(messages, size);
+  if (!use || use.pct < 0.05) return null;
+  const pct = Math.round(use.pct * 100);
+  const high = use.pct >= 0.7;
+  const r = 6;
+  const c = 2 * Math.PI * r;
+  return (
+    <div className="ml-auto flex items-center gap-2">
+      <span
+        className={`flex items-center gap-1.5 text-xs ${use.pct >= 0.9 ? "text-destructive" : high ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground"}`}
+        title={`This chat uses about ${use.used.toLocaleString()} of the model's ${size!.toLocaleString()} tokens of memory.`}
+      >
+        <svg aria-hidden viewBox="0 0 16 16" className="size-4 -rotate-90">
+          <circle cx="8" cy="8" r={r} fill="none" stroke="currentColor" strokeOpacity="0.2" strokeWidth="2" />
+          <circle cx="8" cy="8" r={r} fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray={c} strokeDashoffset={c * (1 - use.pct)} strokeLinecap="round" />
+        </svg>
+        <span>{pct}% of memory used</span>
+      </span>
+      {high && (
+        <Button type="button" variant="outline" size="sm" onClick={() => dispatchEvent(new CustomEvent("moonc:continue", { detail: chatId }))}>
+          Continue in a new chat
+        </Button>
+      )}
+    </div>
+  );
 }
