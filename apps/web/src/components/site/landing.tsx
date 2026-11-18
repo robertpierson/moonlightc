@@ -26,6 +26,13 @@ const EVERYTHING = [
   { shot: "theme", title: "Make it yours", body: "Themes, layouts and which sections you see." },
 ];
 
+/** Newest real features, newest first (keep in step with lib/whats-new.ts). */
+const LATEST = [
+  { date: "November 18, 2026", title: "Commands", body: "Type / and a plain word: /translate spanish good morning, /summarize, /model claude. Make your own in one line.", href: "/course/commands", action: "How commands work" },
+  { date: "November 18, 2026", title: "The free course", body: "Everything in the app in short lessons, from your first chat to putting your own website online with Vercel and Supabase.", href: "/course", action: "Start the course" },
+  { date: "November 12, 2026", title: "Free AI, built in", body: "Free goes through every free model at eleven companies. When one is busy, the next one answers.", href: "/course/free", action: "Use AI for free" },
+];
+
 export function Landing() {
   return (
     <div className="site relative min-h-dvh overflow-x-clip">
@@ -174,6 +181,29 @@ export function Landing() {
         <section className="mx-auto max-w-6xl px-4 pt-32 sm:px-6">
           <SectionTitle title="Wherever you are." body="On your computer, in any browser, and inside Chrome. Free on every one." />
           <Places />
+        </section>
+
+        <section aria-labelledby="new" className="mx-auto max-w-6xl px-4 pt-32 sm:px-6">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <h2 id="new" className="text-[clamp(2.2rem,5.5vw,3.75rem)] leading-[1.05]">
+              What&apos;s new
+            </h2>
+            <a href="https://github.com/robertpierson/moonlightc/releases" className="text-sm font-medium text-[var(--tide)] underline-offset-4 hover:underline">
+              Every release on GitHub
+            </a>
+          </div>
+          <ul className="mt-10 grid gap-8 md:grid-cols-3 md:gap-6">
+            {LATEST.map((n) => (
+              <li key={n.title} className="border-t border-[var(--line)] pt-5">
+                <p className="text-sm text-[var(--faint)]">{n.date}</p>
+                <h3 className="mt-2 text-xl">{n.title}</h3>
+                <p className="mt-2 text-[var(--mist)]">{n.body}</p>
+                <Link href={n.href} className="mt-3 inline-block text-sm font-medium text-[var(--tide)] underline-offset-4 hover:underline">
+                  {n.action}
+                </Link>
+              </li>
+            ))}
+          </ul>
         </section>
 
         <LearnTeaser />

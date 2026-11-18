@@ -735,7 +735,7 @@ export function ChatView({
         </div>
       )}
       <div className="min-h-0 flex-1 overflow-y-auto" aria-live="polite">
-        <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6">
+        <div className="mx-auto flex w-full max-w-[var(--chat-width,48rem)] flex-col gap-6 px-4 py-6">
           {messages.length === 0 && (
             <div className="flex flex-col items-center gap-3 pt-[18vh] text-center">
               <h2 className="text-2xl font-semibold tracking-tight">
@@ -873,7 +873,7 @@ export function ChatView({
         </div>
       </div>
 
-      <form onSubmit={submit} className="mx-auto w-full max-w-3xl px-4 pb-4">
+      <form onSubmit={submit} className="mx-auto w-full max-w-[var(--chat-width,48rem)] px-4 pb-4">
         {ask && (
           <div role="alertdialog" aria-label="Allow on your home PC?" className="mb-2 flex flex-wrap items-center gap-2 rounded-xl border bg-card p-3 text-sm">
             <span className="flex-1">

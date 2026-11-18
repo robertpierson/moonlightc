@@ -91,7 +91,7 @@ function Shell() {
         <div className="flex flex-1 flex-col items-center pt-[18vh]">
           <h2 className="text-2xl font-semibold tracking-tight">What can I help with?</h2>
         </div>
-        <div className="mx-auto w-full max-w-3xl px-4 pb-4">
+        <div className="mx-auto w-full max-w-[var(--chat-width,48rem)] px-4 pb-4">
           <div className="h-[6.25rem] rounded-2xl border bg-card" />
         </div>
       </main>

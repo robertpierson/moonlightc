@@ -30,3 +30,21 @@ test.describe("every page fits every screen", () => {
     });
   }
 });
+
+test.describe("the app fits every screen too", () => {
+  test.skip(({ isMobile }) => isMobile, "sizes are set by hand here");
+  for (const [w, h, name] of SIZES) {
+    test(`app ${name} ${w}x${h}`, async ({ page }) => {
+      await page.setViewportSize({ width: w, height: h });
+      await page.goto("/app");
+      const box = page.getByLabel("Message", { exact: true });
+      await expect(box).toBeVisible();
+      const over = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+      expect(over, `the app scrolls sideways by ${over}px`).toBeLessThanOrEqual(0);
+      const b = (await box.boundingBox())!;
+      expect(b.x).toBeGreaterThanOrEqual(0);
+      expect(b.x + b.width).toBeLessThanOrEqual(w + 1);
+      expect(b.y + b.height, "the message box is below the screen").toBeLessThanOrEqual(h + 1);
+    });
+  }
+});

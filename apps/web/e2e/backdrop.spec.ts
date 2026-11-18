@@ -7,6 +7,7 @@ const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
 test("background: your own picture, an effect and colour sliders, kept after reload", async ({ page }) => {
   await page.goto("/app");
   await nav(page, "Customize");
+  await page.getByRole("radio", { name: /^More/ }).click();
   await page.getByText("Choose picture, GIF or video").locator("input[type=file]").setInputFiles({ name: "bg.png", mimeType: "image/png", buffer: PNG });
   await expect(page.locator("html")).toHaveAttribute("data-backdrop", "");
   const pic = page.locator("div[aria-hidden] > img");

@@ -246,7 +246,7 @@ export function Customize({ availableViews }: { availableViews: ViewId[] }) {
               })}
             </div>
           )}
-          {more && modThemes.length > 0 && (
+          {modThemes.length > 0 && (
             <div className="flex flex-wrap gap-2">
               <span className="self-center text-sm text-muted-foreground">From mods:</span>
               {modThemes.map((t) => (
@@ -360,6 +360,22 @@ export function Customize({ availableViews }: { availableViews: ViewId[] }) {
                   <span className="block text-xs text-muted-foreground">{f.note}</span>
                 </button>
               ))}
+            </div>
+            <div className="grid gap-2 text-sm">
+              <span className="font-medium">Chat width</span>
+              <div role="radiogroup" aria-label="Chat width" className="flex flex-wrap gap-2">
+                {(
+                  [
+                    ["normal", "Normal"],
+                    ["wide", "Wide"],
+                    ["full", "Full width"],
+                  ] as const
+                ).map(([id, name]) => (
+                  <Button key={id} role="radio" aria-checked={(look.chatWidth ?? "normal") === id} variant={(look.chatWidth ?? "normal") === id ? "secondary" : "outline"} size="sm" onClick={() => setLook({ chatWidth: id })}>
+                    {name}
+                  </Button>
+                ))}
+              </div>
             </div>
             <div className="grid gap-3 rounded-xl border p-4 text-sm">
               <label className="flex items-center justify-between gap-3">

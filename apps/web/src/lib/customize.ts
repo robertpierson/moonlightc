@@ -52,6 +52,7 @@ export const LookSchema = z.object({
   textScale: z.number().min(0.85).max(1.3).default(1),
   messages: z.enum(["bubbles", "plain"]).default("bubbles"),
   motion: z.enum(["full", "calm"]).default("full"),
+  chatWidth: z.enum(["normal", "wide", "full"]).default("normal"),
 });
 
 export const FONTS = [

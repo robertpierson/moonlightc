@@ -29,6 +29,7 @@ export function LookApplier() {
     root.dataset.font = look.font ?? "default";
     root.dataset.messages = look.messages ?? "bubbles";
     root.dataset.motion = look.motion ?? "full";
+    root.style.setProperty("--chat-width", { normal: "48rem", wide: "64rem", full: "100%" }[look.chatWidth ?? "normal"]);
     // Text size scales everything sized in rem, so the whole app grows or shrinks together.
     if (look.textScale && look.textScale !== 1) root.style.fontSize = `${Math.round(16 * look.textScale * 10) / 10}px`;
     else root.style.removeProperty("font-size");

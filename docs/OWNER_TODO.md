@@ -2,6 +2,14 @@
 
 Do them in order. When done, tell Claude "done, continue".
 
+## Try this: the investor round (Nov 18, 2026, 6 minutes)
+1. Open https://moonlightc.vercel.app : cooler steel-silver look with a fine texture. Scroll to the two tabbed sections and click the tabs.
+2. Click **Course** in the top menu. Open a lesson, answer its question, and go back: your progress is saved.
+3. In the web app, type **/** in the message box and try **/translate spanish good morning**. Make your own in **Settings > Commands**.
+4. **Settings > Appearance**: pick **Full control**, click themes and fonts and watch the preview; click **Reset** in the bar to undo.
+5. **Studio** (needs a fal or OpenAI key): type a rough idea, click **Improve prompt**, then switch on **Compare models**.
+6. **Code**: build something; if the preview shows an error, click **Fix it**.
+
 ## Try this: the new website (0.6.64, 3 minutes)
 1. Open https://moonlightc.vercel.app . A huge silver moon fills the bottom half; the headline appears word by word.
 2. Scroll slowly. The app window grows to fill the screen and plays a real demo. Click the buttons under it to jump to a part.

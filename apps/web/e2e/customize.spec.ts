@@ -142,6 +142,8 @@ test("appearance levels: Simple shows a few choices, Full control shows fonts, t
   await expect(page.locator("html")).toHaveAttribute("data-font", "serif");
   await page.getByRole("switch", { name: /plain text/ }).click();
   await expect(page.locator("html")).toHaveAttribute("data-messages", "plain");
+  await page.getByRole("radiogroup", { name: "Chat width" }).getByRole("radio", { name: "Wide" }).click();
+  await expect.poll(() => page.evaluate(() => document.documentElement.style.getPropertyValue("--chat-width"))).toBe("64rem");
 
   // Nothing sticks until Save: Reset in the bar puts the old look back.
   await page.getByRole("region", { name: "Unsaved changes" }).getByRole("button", { name: "Reset" }).click();

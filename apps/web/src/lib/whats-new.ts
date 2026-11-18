@@ -1,6 +1,26 @@
 // "What's new" in Settings: recent changes in plain English, newest first. Only things that really shipped.
 export const WHATS_NEW: { version: string; date: string; items: string[] }[] = [
   {
+    version: "Web update",
+    date: "November 18, 2026",
+    items: [
+      "Commands: type / in a message for plain-word shortcuts like /translate spanish good morning, /summarize or /model claude. Make your own in Settings > Commands.",
+      "Appearance has three levels: Simple, More and Full control. Every theme and setup shows a live preview, and Full control adds fonts, text size, plain messages and calm motion.",
+      "A memory meter shows how full a long chat is, with Continue in a new chat near the limit. Set a monthly budget in Settings > Usage.",
+      "Studio: Improve prompt rewrites your idea into a detailed prompt, and Compare models runs one prompt on up to 3 image models side by side.",
+      "Code: when your app hits an error, Fix it hands the error to the assistant to explain and fix.",
+      "A free course on the website teaches everything, from your first chat to putting your own site online.",
+    ],
+  },
+  {
+    version: "0.6.67",
+    date: "November 12, 2026",
+    items: [
+      "Free uses every free model at every free company by default, or only the ones you pick.",
+      "Five more companies with free plans, and models at their limit rest for a while so the next message skips them.",
+    ],
+  },
+  {
     version: "0.6.64",
     date: "November 8, 2026",
     items: [
