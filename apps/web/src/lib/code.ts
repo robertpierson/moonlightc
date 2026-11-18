@@ -1,3 +1,4 @@
+import { deployFiles } from "./preview";
 import { strToU8, zipSync } from "fflate";
 
 export type Template = "react" | "static";
@@ -147,7 +148,7 @@ export async function pushToGitHub(project: CodeProject, token: string, fetchFn:
     if (!created) throw new Error("Couldn't create the repository.");
     repo = created.full_name;
   }
-  for (const [path, content] of Object.entries(project.files)) {
+  for (const [path, content] of Object.entries({ ...project.files, ...deployFiles(project) })) {
     const rel = path.replace(/^\//, "");
     const existing = await gh<{ sha: string } | null>(`/repos/${repo}/contents/${encodeURI(rel)}`);
     await gh(`/repos/${repo}/contents/${encodeURI(rel)}`, {

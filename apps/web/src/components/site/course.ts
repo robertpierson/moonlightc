@@ -475,7 +475,7 @@ export const COURSE: Module[] = [
         minutes: 2,
         goal: "Know where things are kept and how to take them with you.",
         steps: [
-          { title: "Keys stay on your device", body: "Keys are kept on this device, and only their last 4 characters are ever shown. Exports leave keys out." },
+          { title: "Keys stay on your device", body: "Keys are kept on this device. If you sign in, they sync to your other devices, stored encrypted. Only their last 4 characters are ever shown, and exports leave keys out." },
           { title: "Export and import", body: "Settings, then Privacy & data: export everything, or bring in chats from ChatGPT or Claude export files." },
           { title: "Open source", body: "Every line is on GitHub under the MIT license. Read it, change it, or run your own copy." },
         ],

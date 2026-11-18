@@ -33,3 +33,18 @@ function buildDocument(project: CodeProject, origin: string): string {
     .replace(/<link\b[^>]*href=["']([^"']+\.css)["'][^>]*>/gi, (tag, href) => (rel(href) in files ? `<style>${files[rel(href)]}</style>` : tag))
     .replace(/<script\b([^>]*)\bsrc=["']([^"']+\.js)["']([^>]*)><\/script>/gi, (tag, a, src, b) => (rel(src) in files ? `<script${a}${b}>${safe(files[rel(src)])}</script>` : tag));
 }
+
+/** Where a published app loads its runtime from (the live site, which serves it with CORS). */
+const SITE = "https://moonlightc.vercel.app";
+
+/**
+ * Extra files that let a React project from Code run on Vercel (or any static host) with no build step: a root page
+ * that runs the app the same way the preview does, and a vercel.json that serves the project root.
+ */
+export function deployFiles(project: CodeProject): Record<string, string> {
+  if (project.template !== "react") return {};
+  const extra: Record<string, string> = {};
+  if (!("/index.html" in project.files)) extra["/index.html"] = buildDocument(project, SITE);
+  if (!("/vercel.json" in project.files)) extra["/vercel.json"] = JSON.stringify({ $schema: "https://openapi.vercel.sh/vercel.json", framework: null, outputDirectory: "." }, null, 2) + "\n";
+  return extra;
+}

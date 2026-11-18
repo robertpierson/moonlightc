@@ -41,7 +41,13 @@ describe("code projects", () => {
     }) as unknown as typeof fetch;
     expect(await pushToGitHub(proj(), "t", f)).toBe("me/my-app");
     expect(JSON.parse(calls[0].body!)).toMatchObject({ name: "my-app", private: true });
-    expect(calls.filter((c) => c.method === "PUT")).toHaveLength(Object.keys(TEMPLATES.react.files).length);
+    // A React project also gets a root page and vercel.json so it runs on Vercel with no build step.
+    const puts = calls.filter((c) => c.method === "PUT");
+    expect(puts).toHaveLength(Object.keys(TEMPLATES.react.files).length + 2);
+    expect(puts.map((c) => c.url.split("/contents/")[1])).toEqual(expect.arrayContaining(["index.html", "vercel.json"]));
+    const page = Buffer.from(JSON.parse(puts.find((c) => c.url.endsWith("/contents/index.html"))!.body!).content, "base64").toString();
+    expect(page).toContain("https://moonlightc.vercel.app/preview-runtime.js");
+    expect(page).not.toContain("mooncPreviewError");
   });
 });
 
