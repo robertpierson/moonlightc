@@ -195,7 +195,6 @@ Current version everywhere: 0.6.34 (desktop installed, web live, extension zip).
 7. Self-test harness exists (`MoonlightC.exe --selftest` -> selftest-result.json) for screen-capture problems.
 
 ## Known issues
-- Desktop 0.6.68 draft is missing Linux x64 files: ubuntu-latest's newer GCC rejects robotjs (implicit strdup). Workflow now pins x64 to ubuntu-24.04; the next tag builds it.
 - Claude Code CLI default model (Fable) needs usage credits on the owner's plan; the panel defaults to Sonnet.
 - Screenshot/Lighthouse servers: use PORT=3100 so Playwright's reuseExistingServer never picks up a stale build on 3000.
 - Vercel previews are SSO-protected; tests send x-vercel-protection-bypass (secret in .env.local and GitHub secret VERCEL_AUTOMATION_BYPASS_SECRET).
@@ -205,6 +204,7 @@ Current version everywhere: 0.6.34 (desktop installed, web live, extension zip).
 - Owner asked (2026-10-13): never move the mouse/keyboard or show windows on their PC. Locally run desktop e2e with `--grep-invert "computer use|remote control"`; those run in CI. Update desktop: `MoonlightC.exe --quit`, then installer `/S`, then `MoonlightC.exe --hidden`.
 
 ## Notes (last 10)
+2026-11-18: owner said publish; desktop v0.6.69 published as latest (all 4 CI builds green after pinning Linux x64 to ubuntu-24.04; extension zip attached; latest/download links 200). Draft v0.6.68 left unpublished.
 2026-11-18: round-2 research (docs/RESEARCH-2.md); added Auto label (task + model), Ask about this (quote selected answer text), connector Check button, 12 ready-made modes, React projects deploy on Vercel (root page + vercel.json), What's new on home + Settings, chat width, first-run free hint; new settings sync. Full e2e 197 pass + fixes; production checks (screens/course/home) pass.
 2026-11-18: course live at /course (7 parts, 23 lessons); Appearance levels Simple/More/Full control with live previews, fonts, text size, plain messages, calm motion; memory meter + monthly budget; Studio Improve prompt + Compare models; Code Fix it (preview errors via CORS runtime). All pushed; e2e for each.
 2026-11-18: investor round: cool tungsten/cobalt site palette + grain/brushed panels + tabbed home sections (live); every-screen-size e2e (8 sizes x 8 pages); /commands with a / menu and Settings > Commands (e2e); Next.js 16.4.2 -> 16.4.6 (build refused the vulnerable version); research of AI-app gaps in docs/RESEARCH.md.
