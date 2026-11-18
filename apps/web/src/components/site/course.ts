@@ -185,6 +185,23 @@ export const COURSE: Module[] = [
         },
       },
       {
+        slug: "limits",
+        title: "Long chats and spending",
+        minutes: 3,
+        goal: "Know when a chat is getting too long, and cap what you spend.",
+        steps: [
+          { title: "Watch the memory meter", body: "Next to the message box, a small ring shows how much of the model's memory this chat uses. Models forget the start of very long chats." },
+          { title: "Continue in a new chat", body: "Past 70%, a Continue in a new chat button appears. The AI writes a summary of this chat and puts it in a new one, so you keep going without losing the thread." },
+          { title: "Set a monthly budget", body: "Settings, then Usage, then Monthly budget. You get a reminder at 80%. Switch on Stop paid messages when I reach it, and paid models wait until next month (Free and local models keep working)." },
+        ],
+        check: {
+          q: "What does Continue in a new chat carry over?",
+          options: ["Nothing", "A summary of the chat, ready in the new chat's message box", "Your API keys"],
+          answer: 1,
+          why: "A short summary keeps the important parts while giving the model a fresh, roomy memory.",
+        },
+      },
+      {
         slug: "files-voice-tools",
         title: "Files, voice and web tools",
         minutes: 3,
@@ -234,13 +251,15 @@ export const COURSE: Module[] = [
           { title: "Open Studio", body: "In the left bar, click Studio." },
           { title: "Add a media key", body: "Images work with a fal, OpenAI, Google, xAI or Replicate key. Video works with fal, xAI or Replicate. Voices with fal, OpenAI or ElevenLabs." },
           { title: "Describe it", body: "Say what you want to see: subject, style, light and framing. Everything you make is kept in your gallery." },
+          { title: "Let it write the prompt", body: "Type a rough idea and click Improve prompt. Your chat model rewrites it with the detail image models need. Don't like it? Click Undo." },
+          { title: "Compare models", body: "Switch on Compare models, pick 2 or 3, and click Compare. The same prompt runs on each, side by side, with how long each took." },
         ],
         tip: "Be specific: \"a brass lantern on a rainy window sill, soft morning light, close-up\" beats \"a nice lantern\".",
         check: {
           q: "Which key works for images, video and voices all at once?",
           options: ["fal", "A search key", "GitHub"],
           answer: 0,
-          why: "fal offers many image, video and voice models with one key.",
+          why: "fal offers many image, video and voice models with one key, which also makes Compare models easy.",
         },
       },
       {
@@ -253,6 +272,7 @@ export const COURSE: Module[] = [
           { title: "Start a code project", body: "Click Code at the top, then New code project, and name it." },
           { title: "Describe it", body: "The AI writes the files. Open Preview to use the app right there." },
           { title: "Choose how much it does alone", body: "Pick Ask before changes, Auto-accept edits or Plan only. Changes it makes can be undone." },
+          { title: "When something breaks", body: "If the app hits an error, a bar above the preview says what went wrong. Click Fix it: the assistant explains it in plain words and fixes it." },
           { title: "Keep it", body: "Download it as a .zip, or connect GitHub and click Put on GitHub." },
         ],
         check: {
