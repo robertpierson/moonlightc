@@ -83,9 +83,9 @@ STATUS: BUILDING
 - [x] R64 Allowed places for remote control (PC setting, off by default): IPs (with * wildcard) and countries; signed location notes from /api/attest (ATTEST_SECRET in Vercel), verified by the PC; blocked attempts listed with one-click Allow
 
 ## Investor round (2026-11-18, see docs/PLAN.md)
-- [~] I1 Cool tungsten/cobalt palette, visible texture, every screen size
-- [ ] I2 Research loop: what AI apps lack -> docs/RESEARCH.md
-- [ ] I3 Simple chat commands
+- [x] I1 Cool tungsten/cobalt palette, visible texture, every screen size
+- [x] I2 Research loop: what AI apps lack -> docs/RESEARCH.md
+- [x] I3 Simple chat commands
 - [ ] I4 Free course on the site (/course)
 - [ ] I5 Customization modes with live preview
 - [ ] I6 Build the top research items
@@ -204,6 +204,7 @@ Current version everywhere: 0.6.34 (desktop installed, web live, extension zip).
 - Owner asked (2026-10-13): never move the mouse/keyboard or show windows on their PC. Locally run desktop e2e with `--grep-invert "computer use|remote control"`; those run in CI. Update desktop: `MoonlightC.exe --quit`, then installer `/S`, then `MoonlightC.exe --hidden`.
 
 ## Notes (last 10)
+2026-11-18: investor round: cool tungsten/cobalt site palette + grain/brushed panels + tabbed home sections (live); every-screen-size e2e (8 sizes x 8 pages); /commands with a / menu and Settings > Commands (e2e); Next.js 16.4.2 -> 16.4.6 (build refused the vulnerable version); research of AI-app gaps in docs/RESEARCH.md.
 2026-11-12: published desktop v0.6.67 as latest (4 CI builds green, extension zip reattached, latest/download links 200). Drafts v0.6.66, v0.6.63, v0.1.0 left unpublished (delete only with owner OK).
 2026-11-12: Free has two modes in Models and keys: Every free model (default) or Only the ones I pick (checklist per key). Unit 116 + e2e 35 pass; screenshot checked. Desktop 0.6.67 (0.6.66 left as an unpublished draft, superseded).
 2026-11-12: Free now works like FreeLLMAPI inside the app: every chat model per free company (up to 12 each), new companies NVIDIA, Z.ai (flash), Ollama Cloud, SEA-LION, LongCat, and models at their limit rest (Retry-After / 10 min / 1 day) so the next message skips them. Unit 151 pass, e2e free+chat+a11y 34 pass. Desktop 0.6.66.
