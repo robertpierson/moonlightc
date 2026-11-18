@@ -1,5 +1,7 @@
 "use client";
 
+import { TASKS } from "@/lib/auto-model";
+import { getState } from "@/lib/store";
 import type { UIMessage } from "ai";
 import { AppWindow, Brain, Check, MousePointerClick, Copy, FileText, GitBranch, Link2, Loader2, Globe, Plug, Puzzle, Search, Terminal, Pencil, RotateCcw, Volume2, VolumeX } from "lucide-react";
 import { useImperativeHandle, useRef, useState } from "react";
@@ -392,6 +394,9 @@ export function Message({
             </Action>
           )}
           {costLabel && <span className="px-1 text-xs text-muted-foreground">{costLabel}</span>}
+          {!isUser && typeof (message.metadata as { autoTask?: unknown } | undefined)?.autoTask === "string" && (
+            <span className="px-1 text-xs text-muted-foreground">{autoLabel(message.metadata as { autoTask: string; modelId?: string })}</span>
+          )}
           {!isUser && typeof (message.metadata as { answeredBy?: unknown } | undefined)?.answeredBy === "string" && (
             <span className="px-1 text-xs text-muted-foreground">Free: {(message.metadata as { answeredBy: string }).answeredBy}</span>
           )}
@@ -399,4 +404,11 @@ export function Message({
       )}
     </div>
   );
+}
+
+/** "Auto: Coding, Claude Sonnet 4.5": which kind of task Auto saw and the model it chose for it. */
+function autoLabel(m: { autoTask: string; modelId?: string }) {
+  const task = TASKS.find((t) => t.id === m.autoTask)?.name ?? m.autoTask;
+  const name = getState().connections.flatMap((c) => c.models).find((x) => x.id === m.modelId)?.name ?? m.modelId;
+  return `Auto: ${task}${name ? `, ${name}` : ""}`;
 }

@@ -33,6 +33,7 @@ import {
   MousePointerClick,
   Wrench,
   KeyRound,
+  MessageSquareQuote,
   Paperclip,
   Square,
   X,
@@ -290,6 +291,8 @@ export function ChatView({
         connection: { apiKey, providerId, baseURL },
         modelId: found.model.id,
         ...(pool ? { pool } : {}),
+        // Auto says which kind of task it saw, so the reply can show why this model answered.
+        ...(!pool && isAuto(model) ? { autoTask: classifyTask(lastUserText(), lastUserHasImage()) } : {}),
         thinking: getState().thinking,
         instructions: [
           buildInstructions({
@@ -735,6 +738,7 @@ export function ChatView({
         </div>
       )}
       <div className="min-h-0 flex-1 overflow-y-auto" aria-live="polite">
+        <QuoteSelection onQuote={(t) => setInput((v) => `${t.split("\n").map((l) => `> ${l}`).join("\n")}\n\n${v}`)} />
         <div className="mx-auto flex w-full max-w-[var(--chat-width,48rem)] flex-col gap-6 px-4 py-6">
           {messages.length === 0 && (
             <div className="flex flex-col items-center gap-3 pt-[18vh] text-center">
@@ -1152,5 +1156,41 @@ function ContextMeter({ messages, model, chatId }: { messages: UIMessage[]; mode
         </Button>
       )}
     </div>
+  );
+}
+
+/** Select text in an answer and an "Ask about this" button appears; it quotes the text into the message box. */
+function QuoteSelection({ onQuote }: { onQuote: (text: string) => void }) {
+  const [sel, setSel] = useState<{ text: string; x: number; y: number }>();
+  useEffect(() => {
+    const check = () => {
+      const s = getSelection();
+      const text = s?.toString().trim() ?? "";
+      const node = s && s.rangeCount ? s.getRangeAt(0).commonAncestorContainer : null;
+      const el = node && (node.nodeType === 1 ? (node as Element) : node.parentElement);
+      if (!text || text.length > 4000 || !el?.closest('[data-role="assistant"]')) return setSel(undefined);
+      const r = s!.getRangeAt(0).getBoundingClientRect();
+      setSel({ text, x: Math.min(Math.max(r.left + r.width / 2, 70), innerWidth - 70), y: Math.max(r.top - 8, 8) });
+    };
+    document.addEventListener("selectionchange", check);
+    return () => document.removeEventListener("selectionchange", check);
+  }, []);
+  if (!sel) return null;
+  return (
+    <Button
+      type="button"
+      size="sm"
+      className="fixed z-40 -translate-x-1/2 -translate-y-full shadow-lg"
+      style={{ left: sel.x, top: sel.y }}
+      onMouseDown={(e) => e.preventDefault()}
+      onClick={() => {
+        onQuote(sel.text);
+        getSelection()?.removeAllRanges();
+        setSel(undefined);
+        document.querySelector<HTMLTextAreaElement>('textarea[aria-label="Message"]')?.focus();
+      }}
+    >
+      <MessageSquareQuote /> Ask about this
+    </Button>
   );
 }

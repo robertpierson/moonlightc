@@ -183,8 +183,10 @@ test("auto model sends each message to the model set for that kind of task", asy
   await expect(page.getByRole("combobox", { name: "Choose model" })).toHaveText(/Auto/);
   await send(page, "why does my python script crash");
   await expect(page.getByText("Echo from mock-other: why does my python script crash")).toBeVisible();
+  await expect(page.getByText("Auto: Coding, mock-other")).toBeVisible();
   await send(page, "write a short poem about the sea and the moon for my grandmother please");
   await expect(page.getByText("Echo from mock-fast: write a short poem")).toBeVisible();
+  await expect(page.getByText("Auto: Everyday, mock-fast")).toBeVisible();
 });
 
 test("command palette switches model and opens dialogs", async ({ page, isMobile }) => {
@@ -282,4 +284,19 @@ test("sign in with OpenRouter instead of pasting a key", async ({ page }) => {
   await expect(page.getByText("Signed in to OpenRouter: 2 models unlocked.")).toBeVisible();
   await expect(page).toHaveURL(/\/app$/);
   await expect(page.getByRole("combobox", { name: "Choose model" })).toHaveText(/mock-fast/);
+});
+
+test("select text in an answer to quote it into the message box", async ({ page }) => {
+  await connectMock(page);
+  await send(page, "hello there friend");
+  const answer = page.getByText("Echo from mock-fast: hello there friend");
+  await expect(answer).toBeVisible();
+  await answer.evaluate((el) => {
+    const r = document.createRange();
+    r.selectNodeContents(el);
+    getSelection()!.removeAllRanges();
+    getSelection()!.addRange(r);
+  });
+  await page.getByRole("button", { name: "Ask about this" }).click();
+  await expect(page.getByLabel("Message", { exact: true })).toHaveValue(/^> Echo from mock-fast: hello there friend\n\n$/);
 });

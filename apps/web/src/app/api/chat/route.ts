@@ -15,6 +15,8 @@ interface Body {
   modelId: string;
   /** "Free": models to try in turn (each from a company with a free plan); the first that answers is used. */
   pool?: { connection: unknown; modelId: string; id?: string }[];
+  /** Auto's kind of task for this message, echoed back so the reply can say why its model answered. */
+  autoTask?: unknown;
   instructions?: string;
   temperature?: number;
   /** How hard the model thinks (low…max), when the model has that setting. */
@@ -201,6 +203,7 @@ export async function POST(req: Request) {
                 modelId: answeredBy ? answeredBy.modelId : body.modelId,
                 ...(skipped.length ? { skipped } : {}),
                 ...(answeredBy ? { answeredBy: `${getProvider(answeredBy.connection.providerId).name}, ${answeredBy.modelId}` } : {}),
+                ...(typeof body.autoTask === "string" && /^[a-z]{3,12}$/.test(body.autoTask) ? { autoTask: body.autoTask } : {}),
                 createdAt: Date.now(),
               }
             : part.type === "start" && mcp?.errors.length
