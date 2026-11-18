@@ -44,3 +44,12 @@ describe("code projects", () => {
     expect(calls.filter((c) => c.method === "PUT")).toHaveLength(Object.keys(TEMPLATES.react.files).length);
   });
 });
+
+describe("preview error reporter", () => {
+  it("adds a script that reports the app's errors to MoonlightC, first in the page", async () => {
+    const { previewDocument } = await import("./preview");
+    const doc = previewDocument({ id: "p", name: "P", template: "web", files: { "/index.html": "<html><head><title>x</title></head><body></body></html>" }, history: [] } as never, "http://x");
+    expect(doc.indexOf("mooncPreviewError")).toBeGreaterThan(0);
+    expect(doc.indexOf("mooncPreviewError")).toBeLessThan(doc.indexOf("<title>"));
+  });
+});

@@ -6,7 +6,7 @@ import { DefaultChatTransport, lastAssistantMessageIsCompleteWithApprovalRespons
 import { findSkill, skillsInstructions } from "@/lib/claude-plugins";
 import { activePlugins, activeServers, mcpPayload } from "@/lib/project-tools";
 import { PermissionMode } from "./permission-mode";
-import { ArrowUp, Download, ExternalLink, FileCode2, FolderDown, Loader2, MoreHorizontal, PanelRightClose, PanelRightOpen, Plug, Plus, RotateCw, Square, Trash2, Undo2, Upload } from "lucide-react";
+import { ArrowUp, Download, ExternalLink, FileCode2, FolderDown, Loader2, MoreHorizontal, PanelRightClose, PanelRightOpen, Plug, Plus, RotateCw, Square, Trash2, Undo2, Upload, Wrench } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -122,6 +122,24 @@ function AiPanel({ project, chatId, onChange, onChat }: { project: CodeProject; 
   useEffect(() => {
     bottom.current?.scrollIntoView({ block: "end" });
   }, [messages]);
+  // "Fix it" on the preview: the error goes to the assistant, which explains it plainly and fixes it.
+  const busyRef = useRef(busy);
+  useEffect(() => {
+    busyRef.current = busy;
+  }, [busy]);
+  useEffect(() => {
+    const on = (e: Event) => {
+      if (busyRef.current) return void toast("The assistant is still working. Try Fix it again when it's done.");
+      if (!findModel(modelRef.current)) return void toast.error("Pick a model first (add a key in Models and keys).");
+      sendMessage({ text: `The preview shows this error:
+
+${(e as CustomEvent<string>).detail}
+
+Find the cause, explain it in one plain sentence, then fix it.` });
+    };
+    addEventListener("moonc:code-fix", on);
+    return () => removeEventListener("moonc:code-fix", on);
+  }, [sendMessage]);
 
   return (
     <section aria-label="Code assistant" className="flex min-h-0 flex-1 flex-col">
@@ -217,22 +235,55 @@ function AiPanel({ project, chatId, onChange, onChat }: { project: CodeProject; 
   );
 }
 
-function Preview({ project }: { project: CodeProject }) {
+function Preview({ project, onFix }: { project: CodeProject; onFix: (error: string) => void }) {
   // Rebuilt shortly after the files change; runs in a sandbox with no access to MoonlightC.
   const [doc, setDoc] = useState("");
   const [reload, setReload] = useState(0);
+  const [failed, setFailed] = useState<string>();
+  const frame = useRef<HTMLIFrameElement>(null);
   useEffect(() => {
-    const t = setTimeout(() => setDoc(previewDocument(project, location.origin)), 400);
+    const t = setTimeout(() => {
+      setFailed(undefined);
+      setDoc(previewDocument(project, location.origin));
+    }, 400);
     return () => clearTimeout(t);
   }, [project]);
+  // The app's errors arrive as messages from its frame; anything else is ignored.
+  useEffect(() => {
+    const on = (e: MessageEvent) => {
+      if (e.source !== frame.current?.contentWindow) return;
+      const m = (e.data as { mooncPreviewError?: unknown } | null)?.mooncPreviewError;
+      if (typeof m === "string" && m.trim()) setFailed(m.trim().slice(0, 600));
+    };
+    addEventListener("message", on);
+    return () => removeEventListener("message", on);
+  }, []);
   return (
     <div className="flex h-full flex-col">
       <div className="flex shrink-0 justify-end border-b p-1">
-        <Button size="xs" variant="ghost" onClick={() => setReload((n) => n + 1)}>
+        <Button
+          size="xs"
+          variant="ghost"
+          onClick={() => {
+            setFailed(undefined);
+            setReload((n) => n + 1);
+          }}
+        >
           <RotateCw /> Reload
         </Button>
       </div>
-      <iframe key={reload} title="Preview" sandbox="allow-scripts allow-forms allow-modals allow-popups" srcDoc={doc} className="min-h-0 w-full flex-1 bg-white" />
+      {failed && (
+        <div role="alert" className="flex shrink-0 items-start gap-3 border-b bg-destructive/10 px-3 py-2 text-sm">
+          <p className="min-w-0 flex-1">
+            <span className="font-medium">The app hit an error: </span>
+            <span className="break-words text-muted-foreground">{failed.split("\n")[0]}</span>
+          </p>
+          <Button size="xs" onClick={() => onFix(failed)}>
+            <Wrench /> Fix it
+          </Button>
+        </div>
+      )}
+      <iframe ref={frame} key={reload} title="Preview" sandbox="allow-scripts allow-forms allow-modals allow-popups" srcDoc={doc} className="min-h-0 w-full flex-1 bg-white" />
     </div>
   );
 }
@@ -393,7 +444,14 @@ export function CodeWorkspace({
         <div className={`${tab === "assistant" ? "hidden" : "flex"} min-h-0 flex-col ${side ? "md:flex" : "md:hidden"}`}>
           {view === "preview" && (
             <div className="min-h-0 flex-1" data-testid="code-preview">
-              <Preview key={`${project.id}:${project.history.length}`} project={project} />
+              <Preview
+                key={`${project.id}:${project.history.length}`}
+                project={project}
+                onFix={(err) => {
+                  setTab("assistant");
+                  dispatchEvent(new CustomEvent("moonc:code-fix", { detail: err }));
+                }}
+              />
             </div>
           )}
           {view !== "preview" && (

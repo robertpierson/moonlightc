@@ -65,9 +65,11 @@ createServer(async (req, res) => {
       res.setHeader("content-type", "application/json");
       return res.end(JSON.stringify({ id: "x", object: "chat.completion", created: 0, model: body.model, choices: [{ index: 0, message: { role: "assistant", content: JSON.stringify({ elements }) }, finish_reason: "stop" }], usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 } }));
     }
-    if (prompt.startsWith("build:") && body.tools?.some((t) => t.function.name === "write_files") && !toolMsg) {
+    if (/^(build|break):/.test(prompt) && body.tools?.some((t) => t.function.name === "write_files") && !toolMsg) {
       res.writeHead(200, { "content-type": "text/event-stream" });
-      const app = ["export default function App() {", "  return <h1>Tip calculator</h1>;", "}", ""].join("\n");
+      const app = prompt.startsWith("break:")
+        ? ["export default function App() {", '  throw new Error("tipTotal is not defined");', "}", ""].join("\n")
+        : ["export default function App() {", "  return <h1>Tip calculator</h1>;", "}", ""].join("\n");
       const args = { summary: "Made a tip calculator", files: [{ path: "/App.js", content: app }] };
       const call = { index: 0, id: "call_code", type: "function", function: { name: "write_files", arguments: JSON.stringify(args) } };
       res.write(`data: ${JSON.stringify({ id: "x", object: "chat.completion.chunk", created: 0, model: body.model, choices: [{ index: 0, delta: { role: "assistant", tool_calls: [call] }, finish_reason: null }] })}

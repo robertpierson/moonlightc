@@ -40,3 +40,30 @@ test("describe an app: the AI writes files, it runs live, changes can be seen an
   await page.getByRole("menuitem", { name: "Download .zip" }).click();
   expect((await download).suggestedFilename()).toBe("Tips.zip");
 });
+
+test("the preview's errors show a Fix it button that hands the error to the assistant", async ({ page }) => {
+  test.setTimeout(90_000);
+  await page.goto("/app");
+  await page.getByRole("button", { name: "Connect a model" }).click();
+  await page.getByLabel("Provider", { exact: true }).click();
+  await page.getByRole("option", { name: /Custom/ }).click();
+  await page.getByLabel("Base URL").fill("http://127.0.0.1:4010/v1");
+  await page.getByRole("button", { name: "Check key and connect" }).click();
+  await expect(page.getByText("2 models unlocked")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+
+  await nav(page, "Code");
+  await page.getByRole("button", { name: "New code project" }).click();
+  await page.getByLabel("Name").fill("Broken");
+  await page.getByRole("button", { name: "Create project" }).click();
+  await page.getByLabel("Describe a change").fill("break: a tip calculator");
+  await page.getByRole("button", { name: "Send to code assistant" }).click();
+  await expect(page.getByText("Made a tip calculator")).toBeVisible({ timeout: 20000 });
+
+  await page.getByRole("tab", { name: "Preview" }).click();
+  const alert = page.getByRole("alert").filter({ hasText: "The app hit an error" });
+  await expect(alert).toContainText("tipTotal is not defined", { timeout: 45000 });
+  await alert.getByRole("button", { name: "Fix it" }).click();
+  await expect(page.getByText(/Echo from mock-fast: The preview shows this error:/).first()).toBeVisible({ timeout: 20000 });
+});

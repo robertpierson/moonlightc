@@ -6,8 +6,16 @@ import type { CodeProject } from "./code";
 const safe = (s: string) => s.replace(/<\/script/gi, "<\/script");
 const rel = (p: string) => "/" + p.replace(/^\.?\//, "");
 
+/** Reports the app's errors to MoonlightC (the page can only send a message; it can't reach anything else). */
+const ERROR_REPORTER = `<script>(function(){var last="";function send(m){m=String(m||"").slice(0,600);if(!m||m===last)return;last=m;try{parent.postMessage({mooncPreviewError:m},"*")}catch(e){}}addEventListener("error",function(e){send((e.message||"Error")+(e.lineno?" (line "+e.lineno+")":""))});addEventListener("unhandledrejection",function(e){var r=e.reason;send(r&&r.message?r.message:r)});new MutationObserver(function(){var b=document.getElementById("__moonc_error");if(b)send(b.textContent)}).observe(document.documentElement,{childList:true,subtree:true,characterData:true})})()</script>`;
+const withReporter = (html: string) => (/<head[^>]*>/i.test(html) ? html.replace(/<head[^>]*>/i, (m) => m + ERROR_REPORTER) : ERROR_REPORTER + html);
+
 /** A complete HTML document that shows the project. */
 export function previewDocument(project: CodeProject, origin: string): string {
+  return withReporter(buildDocument(project, origin));
+}
+
+function buildDocument(project: CodeProject, origin: string): string {
   const files = project.files;
   if (project.template === "react") {
     let main = "/index.js";
@@ -16,7 +24,7 @@ export function previewDocument(project: CodeProject, origin: string): string {
     } catch {}
     const entry = [main, "/index.js", "/src/index.js", "/index.jsx", "/src/index.jsx", "/index.tsx", "/src/index.tsx"].find((p) => p in files) ?? main;
     const html = files["/public/index.html"] ?? files["/index.html"] ?? '<!doctype html><html><head><meta charset="utf-8" /></head><body><div id="root"></div></body></html>';
-    const run = `<script src="${origin}/preview-runtime.js"></script><script>__mooncRun(${safe(JSON.stringify(files))}, ${JSON.stringify(entry)})</script>`;
+    const run = `<script crossorigin="anonymous" src="${origin}/preview-runtime.js"></script><script>__mooncRun(${safe(JSON.stringify(files))}, ${JSON.stringify(entry)})</script>`;
     return html.includes("</body>") ? html.replace("</body>", `${run}</body>`) : html + run;
   }
   // Plain web page: put its own CSS and JS files inline.
