@@ -283,7 +283,7 @@ export function Message({
 
   return (
     <div className={`group flex flex-col gap-1 ${isUser ? "items-end" : "items-start"}`} data-role={message.role}>
-      <div className={isUser ? "max-w-[85%] rounded-2xl bg-secondary px-4 py-2.5 whitespace-pre-wrap" : "w-full min-w-0"}>
+      <div className={isUser ? "msg-user max-w-[85%] rounded-2xl bg-secondary px-4 py-2.5 whitespace-pre-wrap" : "w-full min-w-0"}>
         {isUser ? (
           <>
             {(fileParts.length > 0 || names.length > 0) && (

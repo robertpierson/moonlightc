@@ -47,7 +47,30 @@ export const LookSchema = z.object({
   hidden: z.array(z.enum(VIEWS)).default([]),
   sidebarSide: z.enum(["left", "right"]).default("left"),
   shortcuts: z.object({ palette: shortcut, newChat: shortcut }).default({ palette: "mod+k", newChat: "mod+shift+o" }),
+  // Full control: type, size, how messages look, and how much moves.
+  font: z.enum(["default", "rounded", "serif", "mono"]).default("default"),
+  textScale: z.number().min(0.85).max(1.3).default(1),
+  messages: z.enum(["bubbles", "plain"]).default("bubbles"),
+  motion: z.enum(["full", "calm"]).default("full"),
 });
+
+export const FONTS = [
+  { id: "default", name: "Clean", note: "Geist, the default" },
+  { id: "rounded", name: "Rounded", note: "Soft and friendly" },
+  { id: "serif", name: "Serif", note: "Like a book" },
+  { id: "mono", name: "Mono", note: "Like code" },
+] as const;
+
+/** Accent colors for one-click picking (the primary token). */
+export const ACCENTS = ["#3d4a63", "#2f5fb3", "#1f7a6d", "#7a4fb3", "#b34f6a", "#b3742f", "#4b5563"] as const;
+
+/** How much of Appearance to show: a few big choices, more, or every setting. */
+export const LEVELS = [
+  { id: "simple", name: "Simple", note: "Pick a ready-made look" },
+  { id: "more", name: "More", note: "Colors, background and layout" },
+  { id: "full", name: "Full control", note: "Every color, font, size and shortcut" },
+] as const;
+export type Level = (typeof LEVELS)[number]["id"];
 export type Look = z.infer<typeof LookSchema>;
 
 export const DistroSchema = z.object({

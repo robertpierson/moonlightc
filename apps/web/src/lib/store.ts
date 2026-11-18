@@ -168,6 +168,8 @@ export interface State {
   mcpServers?: McpServer[];
   webTools?: boolean;
   look?: Look;
+  /** How much of Appearance is shown (Simple, More, Full control). A view preference, saved straight away. */
+  customizeLevel?: "simple" | "more" | "full";
   distroId?: string;
   customDistros?: Distro[];
   mods?: InstalledMod[];

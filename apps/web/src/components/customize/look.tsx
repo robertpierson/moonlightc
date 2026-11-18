@@ -26,6 +26,12 @@ export function LookApplier() {
     for (const [k, v] of Object.entries(look.overrides)) root.style.setProperty(`--${k}`, v);
     if (look.radius !== undefined) root.style.setProperty("--radius", `${look.radius}rem`);
     else root.style.removeProperty("--radius");
+    root.dataset.font = look.font ?? "default";
+    root.dataset.messages = look.messages ?? "bubbles";
+    root.dataset.motion = look.motion ?? "full";
+    // Text size scales everything sized in rem, so the whole app grows or shrinks together.
+    if (look.textScale && look.textScale !== 1) root.style.fontSize = `${Math.round(16 * look.textScale * 10) / 10}px`;
+    else root.style.removeProperty("font-size");
   }, [look, setTheme]);
   return <Backdrop />;
 }

@@ -3,6 +3,7 @@
 import { Check, Download, Link2, Save, Trash2, Upload } from "lucide-react";
 import { useEffect, useState } from "react";
 import { applyDistro, BACKDROP_EVENT, setLook, useLook } from "./look";
+import { AppPreview } from "./preview";
 import { EFFECTS } from "./effects";
 import { clearBackdrop, loadBackdrop, MAX_BACKDROP, saveBackdrop } from "@/lib/backdrop-file";
 import { desktop } from "@/lib/desktop";
@@ -13,8 +14,11 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  ACCENTS,
   DEFAULT_LOOK,
   DistroSchema,
+  FONTS,
+  LEVELS,
   DISTROS,
   EDITABLE,
   encodeDistro,
@@ -22,6 +26,7 @@ import {
   shortcutFromEvent,
   THEMES,
   type Distro,
+  type Level,
   type Look,
   type ViewId,
 } from "@/lib/customize";
@@ -73,6 +78,9 @@ export function Customize({ availableViews }: { availableViews: ViewId[] }) {
   const look = useLook();
   const distroId = useStore((s) => s.distroId);
   const custom = useStore((s) => s.customDistros) ?? [];
+  const level: Level = useStore((s) => s.customizeLevel) ?? "simple";
+  const more = level !== "simple";
+  const full = level === "full";
   const [saveName, setSaveName] = useState("");
   const [importText, setImportText] = useState("");
   const modThemes = (useStore((s) => s.mods) ?? []).filter((m) => m.enabled).flatMap((m) => m.manifest.themes);
@@ -93,94 +101,135 @@ export function Customize({ availableViews }: { availableViews: ViewId[] }) {
   return (
     <div className="min-h-0 flex-1 overflow-y-auto">
       <div className="mx-auto grid max-w-4xl gap-8 px-4 py-6">
+        <section aria-labelledby="level-h" className="grid gap-4 md:grid-cols-[1fr_minmax(0,22rem)] md:items-start">
+          <div className="grid gap-3">
+            <div>
+              <h2 id="level-h" className="text-lg font-semibold">
+                Appearance
+              </h2>
+              <p className="text-sm text-muted-foreground">Everything changes as you try it. Save changes keeps it; Reset puts it back.</p>
+            </div>
+            <div role="radiogroup" aria-label="How much to change" className="grid gap-2 sm:grid-cols-3 md:grid-cols-1 lg:grid-cols-3">
+              {LEVELS.map((l) => (
+                <button
+                  key={l.id}
+                  role="radio"
+                  aria-checked={level === l.id}
+                  onClick={() => update((s) => ({ ...s, customizeLevel: l.id }))}
+                  className="rounded-xl border p-3 text-left hover:border-primary aria-checked:border-primary aria-checked:ring-2 aria-checked:ring-ring/40"
+                >
+                  <span className="block font-medium">{l.name}</span>
+                  <span className="block text-xs text-muted-foreground">{l.note}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+          <figure className="grid gap-1.5">
+            <AppPreview look={look} inherit />
+            <figcaption className="text-center text-xs text-muted-foreground">Your chat screen, as it looks now</figcaption>
+          </figure>
+        </section>
+
         <section aria-labelledby="distros-h" className="grid gap-3">
           <div>
-            <h2 id="distros-h" className="text-lg font-semibold">Distros</h2>
+            <h2 id="distros-h" className="text-lg font-semibold">
+              Ready-made setups
+            </h2>
             <p className="text-sm text-muted-foreground">One click sets the theme, layout and which sections you see. Change anything afterwards.</p>
           </div>
-          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="grid grid-cols-2 gap-3 lg:grid-cols-3">
             {[...DISTROS, ...custom].map((d) => (
               <li key={d.id}>
                 <button
                   onClick={() => applyDistro(d)}
                   aria-pressed={distroId === d.id}
-                  className="flex h-full w-full flex-col gap-1 rounded-xl border p-4 text-left hover:border-primary aria-pressed:border-primary aria-pressed:ring-2 aria-pressed:ring-ring/40"
+                  className="flex h-full w-full flex-col gap-2 rounded-xl border p-2.5 text-left hover:border-primary aria-pressed:border-primary aria-pressed:ring-2 aria-pressed:ring-ring/40"
                 >
-                  <span className="flex items-center gap-2 font-medium">
+                  <AppPreview look={d.look} />
+                  <span className="flex items-center gap-2 px-1 font-medium">
                     {d.name} {distroId === d.id && <Check className="size-4 text-link" />}
                   </span>
-                  <span className="text-sm text-muted-foreground">{d.description || "Your saved setup."}</span>
+                  <span className="px-1 text-sm text-muted-foreground">{d.description || "Your saved setup."}</span>
                 </button>
               </li>
             ))}
           </ul>
-          <div className="flex flex-wrap items-end gap-2">
-            <div className="grid gap-1.5">
-              <Label htmlFor="distro-name">Save your current setup</Label>
-              <Input id="distro-name" value={saveName} onChange={(e) => setSaveName(e.target.value)} placeholder="Name it" className="w-48" maxLength={40} />
-            </div>
-            <Button
-              variant="outline"
-              onClick={() => {
-                const d = current();
-                update((s) => ({ ...s, customDistros: [...(s.customDistros ?? []), d], distroId: d.id }));
-                toast.success(`Saved "${d.name}".`);
-                setSaveName("");
-              }}
-            >
-              Save as distro
-            </Button>
-            <Button variant="outline" onClick={() => download("moonlightc-distro.json", JSON.stringify(current(), null, 2))}>
-              <Download /> Export file
-            </Button>
-            <Button
-              variant="outline"
-              onClick={async () => {
-                const link = `${location.origin}/app?distro=${encodeDistro(current())}`;
-                if (link.length > 8000) return toast.error("This setup has a big wallpaper, so it's too large for a link. Export a file instead.");
-                await navigator.clipboard.writeText(link);
-                toast.success("Link copied. Anyone who opens it can choose to apply this setup.");
-              }}
-            >
-              <Link2 /> Copy share link
-            </Button>
-          </div>
-          <details>
-            <summary className="cursor-pointer text-sm text-muted-foreground">Import a distro</summary>
-            <div className="mt-2 grid gap-2">
-              <Textarea aria-label="Distro JSON" value={importText} onChange={(e) => setImportText(e.target.value)} placeholder="Paste a distro file's contents" className="min-h-24 font-mono text-xs" />
-              <div className="flex gap-2">
-                <Button size="sm" disabled={!importText.trim()} onClick={() => importDistro(importText)}>
-                  Import
+          {full && (
+            <>
+              <div className="flex flex-wrap items-end gap-2">
+                <div className="grid gap-1.5">
+                  <Label htmlFor="distro-name">Save your current setup</Label>
+                  <Input id="distro-name" value={saveName} onChange={(e) => setSaveName(e.target.value)} placeholder="Name it" className="w-48" maxLength={40} />
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const d = current();
+                    update((s) => ({ ...s, customDistros: [...(s.customDistros ?? []), d], distroId: d.id }));
+                    toast.success(`Saved "${d.name}".`);
+                    setSaveName("");
+                  }}
+                >
+                  Save as distro
                 </Button>
-                <Button size="sm" variant="outline" asChild>
-                  <label>
-                    <Upload /> Choose file
-                    <input type="file" accept="application/json,.json" hidden onChange={async (e) => e.target.files?.[0] && importDistro(await e.target.files[0].text())} />
-                  </label>
+                <Button variant="outline" onClick={() => download("moonlightc-distro.json", JSON.stringify(current(), null, 2))}>
+                  <Download /> Export file
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={async () => {
+                    const link = `${location.origin}/app?distro=${encodeDistro(current())}`;
+                    if (link.length > 8000) return toast.error("This setup has a big wallpaper, so it's too large for a link. Export a file instead.");
+                    await navigator.clipboard.writeText(link);
+                    toast.success("Link copied. Anyone who opens it can choose to apply this setup.");
+                  }}
+                >
+                  <Link2 /> Copy share link
                 </Button>
               </div>
-            </div>
-          </details>
+              <details>
+                <summary className="cursor-pointer text-sm text-muted-foreground">Import a distro</summary>
+                <div className="mt-2 grid gap-2">
+                  <Textarea aria-label="Distro JSON" value={importText} onChange={(e) => setImportText(e.target.value)} placeholder="Paste a distro file's contents" className="min-h-24 font-mono text-xs" />
+                  <div className="flex gap-2">
+                    <Button size="sm" disabled={!importText.trim()} onClick={() => importDistro(importText)}>
+                      Import
+                    </Button>
+                    <Button size="sm" variant="outline" asChild>
+                      <label>
+                        <Upload /> Choose file
+                        <input type="file" accept="application/json,.json" hidden onChange={async (e) => e.target.files?.[0] && importDistro(await e.target.files[0].text())} />
+                      </label>
+                    </Button>
+                  </div>
+                </div>
+              </details>
+            </>
+          )}
         </section>
 
         <section aria-labelledby="themes-h" className="grid gap-3">
-          <h2 id="themes-h" className="text-lg font-semibold">Theme</h2>
-          <div role="radiogroup" aria-label="Theme" className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          <h2 id="themes-h" className="text-lg font-semibold">
+            Theme
+          </h2>
+          <div role="radiogroup" aria-label="Theme" className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {THEMES.map((t) => (
               <button
                 key={t.id}
                 role="radio"
                 aria-checked={look.theme === t.id}
                 onClick={() => setLook({ theme: t.id, overrides: {} })}
-                className="rounded-xl border p-3 text-left aria-checked:border-primary aria-checked:ring-2 aria-checked:ring-ring/40"
+                className="grid gap-2 rounded-xl border p-2.5 text-left hover:border-primary aria-checked:border-primary aria-checked:ring-2 aria-checked:ring-ring/40"
               >
-                <div className="font-medium">{t.name}</div>
-                <div className="text-xs text-muted-foreground">{t.note}</div>
+                <AppPreview look={{ ...look, theme: t.id, overrides: {} }} inherit={t.id === "moonlight" && look.theme === "moonlight"} />
+                <span className="px-1">
+                  <span className="block font-medium">{t.name}</span>
+                  <span className="block text-xs text-muted-foreground">{t.note}</span>
+                </span>
               </button>
             ))}
           </div>
-          {myThemes.length > 0 && (
+          {more && myThemes.length > 0 && (
             <div role="radiogroup" aria-label="My themes" className="grid grid-cols-2 gap-2 sm:grid-cols-3">
               {myThemes.map((t) => {
                 const on = look.theme === t.look.theme && JSON.stringify(look.overrides) === JSON.stringify(t.look.overrides) && look.radius === t.look.radius;
@@ -197,7 +246,7 @@ export function Customize({ availableViews }: { availableViews: ViewId[] }) {
               })}
             </div>
           )}
-          {modThemes.length > 0 && (
+          {more && modThemes.length > 0 && (
             <div className="flex flex-wrap gap-2">
               <span className="self-center text-sm text-muted-foreground">From mods:</span>
               {modThemes.map((t) => (
@@ -207,9 +256,52 @@ export function Customize({ availableViews }: { availableViews: ViewId[] }) {
               ))}
             </div>
           )}
-          <details>
-            <summary className="cursor-pointer text-sm text-muted-foreground">Theme editor</summary>
-            <div className="mt-3 grid gap-4">
+          {more && (
+            <div className="grid gap-4 rounded-xl border p-4 text-sm">
+              <div className="grid gap-2">
+                <span className="font-medium">Accent color</span>
+                <div role="radiogroup" aria-label="Accent color" className="flex flex-wrap items-center gap-2">
+                  {ACCENTS.map((c) => (
+                    <button
+                      key={c}
+                      role="radio"
+                      aria-checked={look.overrides.primary === c}
+                      aria-label={`Accent ${c}`}
+                      onClick={() => setLook({ overrides: { ...look.overrides, primary: c, "primary-foreground": "#ffffff" } })}
+                      className="size-8 rounded-full ring-offset-2 ring-offset-background aria-checked:ring-2 aria-checked:ring-ring"
+                      style={{ background: c }}
+                    />
+                  ))}
+                  <button
+                    role="radio"
+                    aria-checked={!look.overrides.primary}
+                    onClick={() => {
+                      const rest = { ...look.overrides };
+                      delete rest.primary;
+                      delete rest["primary-foreground"];
+                      setLook({ overrides: rest });
+                    }}
+                    className="h-8 rounded-full border px-3 text-xs aria-checked:ring-2 aria-checked:ring-ring"
+                  >
+                    Theme&apos;s own
+                  </button>
+                </div>
+              </div>
+              <label className="grid gap-1">
+                Corner roundness
+                <input type="range" min={0} max={1.5} step={0.05} value={look.radius ?? 0.625} onChange={(e) => setLook({ radius: Number(e.target.value) })} className="accent-primary" />
+              </label>
+              <label className="grid gap-1">
+                <span>
+                  Text size <span className="text-muted-foreground">({Math.round((look.textScale ?? 1) * 100)}%)</span>
+                </span>
+                <input type="range" min={0.85} max={1.3} step={0.05} value={look.textScale ?? 1} onChange={(e) => setLook({ textScale: Number(e.target.value) })} className="accent-primary" />
+              </label>
+            </div>
+          )}
+          {full && (
+            <div className="grid gap-4 rounded-xl border p-4">
+              <span className="text-sm font-medium">Every color</span>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {EDITABLE.map((k) => (
                   <label key={k} className="flex items-center gap-2 text-sm">
@@ -224,10 +316,6 @@ export function Customize({ availableViews }: { availableViews: ViewId[] }) {
                   </label>
                 ))}
               </div>
-              <label className="grid gap-1 text-sm">
-                Corner roundness
-                <input type="range" min={0} max={1.5} step={0.05} value={look.radius ?? 0.625} onChange={(e) => setLook({ radius: Number(e.target.value) })} className="accent-primary" />
-              </label>
               <form
                 className="flex flex-wrap gap-2"
                 onSubmit={(e) => {
@@ -248,59 +336,117 @@ export function Customize({ availableViews }: { availableViews: ViewId[] }) {
                 Reset theme edits
               </Button>
             </div>
-          </details>
+          )}
         </section>
 
-        <section aria-labelledby="bg-h" className="grid gap-3">
-          <h2 id="bg-h" className="text-lg font-semibold">
-            Background
-          </h2>
-          <div className="rounded-xl border p-4">
-            <BackgroundControls look={look} />
-          </div>
-        </section>
-
-        <section aria-labelledby="layout-h" className="grid gap-3">
-          <h2 id="layout-h" className="text-lg font-semibold">Layout</h2>
-          <div className="grid gap-2 rounded-xl border p-4">
-            <span className="text-sm font-medium">Sections in the sidebar</span>
-            {availableViews
-              .filter((v) => v !== "chat" && v !== "customize")
-              .map((v) => (
-                <label key={v} className="flex items-center justify-between text-sm">
-                  {SECTION_LABEL[v]}
-                  <Switch checked={!look.hidden.includes(v)} onCheckedChange={(on) => setLook({ hidden: on ? look.hidden.filter((h) => h !== v) : [...look.hidden, v] })} aria-label={`Show ${SECTION_LABEL[v]}`} />
-                </label>
+        {full && (
+          <section aria-labelledby="type-h" className="grid gap-3">
+            <h2 id="type-h" className="text-lg font-semibold">
+              Type and messages
+            </h2>
+            <div role="radiogroup" aria-label="Font" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {FONTS.map((f) => (
+                <button
+                  key={f.id}
+                  role="radio"
+                  aria-checked={(look.font ?? "default") === f.id}
+                  onClick={() => setLook({ font: f.id })}
+                  className="rounded-xl border p-3 text-left hover:border-primary aria-checked:border-primary aria-checked:ring-2 aria-checked:ring-ring/40"
+                >
+                  <span aria-hidden className="block text-2xl" style={{ fontFamily: FONT_FAMILY[f.id] }}>
+                    Aa
+                  </span>
+                  <span className="block font-medium">{f.name}</span>
+                  <span className="block text-xs text-muted-foreground">{f.note}</span>
+                </button>
               ))}
-          </div>
-          <div className="grid gap-3 rounded-xl border p-4 text-sm">
-            <label className="flex items-center justify-between">
-              Sidebar on the right
-              <Switch checked={look.sidebarSide === "right"} onCheckedChange={(on) => setLook({ sidebarSide: on ? "right" : "left" })} />
-            </label>
-            <label className="flex items-center justify-between">
-              Compact (fits more on screen)
-              <Switch checked={look.density === "compact"} onCheckedChange={(on) => setLook({ density: on ? "compact" : "comfortable" })} />
-            </label>
-            <label className="flex items-center justify-between">
-              Big message box
-              <Switch checked={look.bigInput} onCheckedChange={(on) => setLook({ bigInput: on })} />
-            </label>
-          </div>
-          <div className="grid gap-3 rounded-xl border p-4">
-            <span className="text-sm font-medium">Keyboard shortcuts</span>
-            <ShortcutInput label="Command palette" value={look.shortcuts.palette} onChange={(v) => setLook({ shortcuts: { ...look.shortcuts, palette: v } })} />
-            <ShortcutInput label="New chat" value={look.shortcuts.newChat} onChange={(v) => setLook({ shortcuts: { ...look.shortcuts, newChat: v } })} />
-          </div>
+            </div>
+            <div className="grid gap-3 rounded-xl border p-4 text-sm">
+              <label className="flex items-center justify-between gap-3">
+                Your messages as plain text (no bubbles)
+                <Switch checked={look.messages === "plain"} onCheckedChange={(on) => setLook({ messages: on ? "plain" : "bubbles" })} />
+              </label>
+              <label className="flex items-center justify-between gap-3">
+                Calm motion (no animations)
+                <Switch checked={look.motion === "calm"} onCheckedChange={(on) => setLook({ motion: on ? "calm" : "full" })} />
+              </label>
+            </div>
+          </section>
+        )}
+
+        {more && (
+          <section aria-labelledby="bg-h" className="grid gap-3">
+            <h2 id="bg-h" className="text-lg font-semibold">
+              Background
+            </h2>
+            <div className="rounded-xl border p-4">
+              <BackgroundControls look={look} />
+            </div>
+          </section>
+        )}
+
+        <section aria-labelledby={more ? "layout-h" : undefined} aria-label={more ? undefined : "Reset"} className="grid gap-3">
+          {more && (
+            <>
+              <h2 id="layout-h" className="text-lg font-semibold">
+                Layout
+              </h2>
+              <div className="grid gap-2 rounded-xl border p-4">
+                <span className="text-sm font-medium">Sections in the sidebar</span>
+                {availableViews
+                  .filter((v) => v !== "chat" && v !== "customize")
+                  .map((v) => (
+                    <label key={v} className="flex items-center justify-between text-sm">
+                      {SECTION_LABEL[v]}
+                      <Switch checked={!look.hidden.includes(v)} onCheckedChange={(on) => setLook({ hidden: on ? look.hidden.filter((h) => h !== v) : [...look.hidden, v] })} aria-label={`Show ${SECTION_LABEL[v]}`} />
+                    </label>
+                  ))}
+              </div>
+              <div className="grid gap-3 rounded-xl border p-4 text-sm">
+                <label className="flex items-center justify-between">
+                  Sidebar on the right
+                  <Switch checked={look.sidebarSide === "right"} onCheckedChange={(on) => setLook({ sidebarSide: on ? "right" : "left" })} />
+                </label>
+                <label className="flex items-center justify-between">
+                  Compact (fits more on screen)
+                  <Switch checked={look.density === "compact"} onCheckedChange={(on) => setLook({ density: on ? "compact" : "comfortable" })} />
+                </label>
+                <label className="flex items-center justify-between">
+                  Big message box
+                  <Switch checked={look.bigInput} onCheckedChange={(on) => setLook({ bigInput: on })} />
+                </label>
+              </div>
+            </>
+          )}
+          {full && (
+            <div className="grid gap-3 rounded-xl border p-4">
+              <span className="text-sm font-medium">Keyboard shortcuts</span>
+              <ShortcutInput label="Command palette" value={look.shortcuts.palette} onChange={(v) => setLook({ shortcuts: { ...look.shortcuts, palette: v } })} />
+              <ShortcutInput label="New chat" value={look.shortcuts.newChat} onChange={(v) => setLook({ shortcuts: { ...look.shortcuts, newChat: v } })} />
+            </div>
+          )}
           <Button variant="ghost" className="justify-self-start" onClick={() => update((s) => ({ ...s, look: DEFAULT_LOOK, distroId: undefined }))}>
             Reset everything to default
           </Button>
+          {!full && (
+            <p className="text-sm text-muted-foreground">
+              {level === "simple"
+                ? "Want more? Pick More for colors, background and layout, or Full control for every color, fonts and shortcuts."
+                : "Want everything? Pick Full control for every color, fonts, message style, motion and shortcuts."}
+            </p>
+          )}
         </section>
       </div>
     </div>
   );
 }
 
+const FONT_FAMILY: Record<string, string | undefined> = {
+  default: undefined,
+  rounded: 'ui-rounded, "SF Pro Rounded", "Nunito", system-ui, sans-serif',
+  serif: 'ui-serif, "Iowan Old Style", Georgia, serif',
+  mono: "var(--font-geist-mono), ui-monospace, monospace",
+};
 
 /** Background: your own picture, GIF or video (kept on this device), how much shows through, colour and an effect. */
 function BackgroundControls({ look }: { look: Look }) {

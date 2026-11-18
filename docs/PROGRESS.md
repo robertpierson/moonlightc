@@ -86,8 +86,8 @@ STATUS: BUILDING
 - [x] I1 Cool tungsten/cobalt palette, visible texture, every screen size
 - [x] I2 Research loop: what AI apps lack -> docs/RESEARCH.md
 - [x] I3 Simple chat commands
-- [ ] I4 Free course on the site (/course)
-- [ ] I5 Customization modes with live preview
+- [x] I4 Free course on the site (/course)
+- [x] I5 Customization modes with live preview
 - [ ] I6 Build the top research items
 - [ ] I7 Bug sweep, investor polish, live
 

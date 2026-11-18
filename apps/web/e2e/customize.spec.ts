@@ -24,7 +24,7 @@ test("theme picker, editor and reset", async ({ page }) => {
   await go(page, "Customize");
   await page.getByRole("radio", { name: /Paper/ }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "paper");
-  await page.getByText("Theme editor").click();
+  await page.getByRole("radio", { name: /^Full control/ }).click();
   await page.getByLabel("primary color", { exact: true }).fill("#ff0000");
   await expect.poll(() => page.evaluate(() => document.documentElement.style.getPropertyValue("--primary"))).toBe("#ff0000");
   await saveSettings(page);
@@ -40,6 +40,7 @@ test("a shared distro link asks before applying", async ({ page, context, browse
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.goto("/app");
   await go(page, "Customize");
+  await page.getByRole("radio", { name: /^Full control/ }).click();
   await page.getByRole("radio", { name: /Midnight/ }).click();
   await page.getByLabel("Save your current setup").fill("Night Owl");
   await page.getByRole("button", { name: "Copy share link" }).click();
@@ -58,6 +59,7 @@ test("shortcuts can be rebound", async ({ page, isMobile }) => {
   test.skip(isMobile, "keyboard");
   await page.goto("/app");
   await go(page, "Customize");
+  await page.getByRole("radio", { name: /^Full control/ }).click();
   await page.getByRole("button", { name: "Change shortcut for Command palette" }).click();
   await page.keyboard.press("Control+Shift+L");
   await expect(page.getByRole("button", { name: "Change shortcut for Command palette" })).toHaveText(/Ctrl\+Shift\+L/);
@@ -82,7 +84,7 @@ test("profile name and picture, and saving your own theme", async ({ page }) => 
 
   await go(page, "Customize");
   await page.getByRole("radio", { name: /Paper/ }).click();
-  await page.getByText("Theme editor").click();
+  await page.getByRole("radio", { name: /^Full control/ }).click();
   await page.getByLabel("primary color", { exact: true }).fill("#123456");
   await page.getByLabel("Theme name").fill("Night ink");
   await page.getByRole("button", { name: "Save as my theme" }).click();
@@ -115,4 +117,36 @@ test("Settings changes wait for Save; Reset puts them back; leaving with unsaved
   await expect(bar).toHaveCount(0);
   await page.reload();
   await expect(page.getByRole("heading", { name: "What can I help with, Saved?" })).toBeVisible();
+});
+
+test("appearance levels: Simple shows a few choices, Full control shows fonts, text size and message style, all previewed live", async ({ page }) => {
+  await page.goto("/app");
+  await go(page, "Customize");
+  await expect(page.getByRole("radio", { name: /^Simple/ })).toHaveAttribute("aria-checked", "true");
+  await expect(page.getByRole("heading", { name: "Background" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Type and messages" })).toHaveCount(0);
+
+  await page.getByRole("radio", { name: /^More/ }).click();
+  await expect(page.getByRole("heading", { name: "Background" })).toBeVisible();
+  await page.getByRole("radiogroup", { name: "Accent color" }).getByRole("radio").first().click();
+  await expect.poll(() => page.evaluate(() => document.documentElement.style.getPropertyValue("--primary"))).toBe("#3d4a63");
+  // Range inputs can't be typed into; set the value the way a drag would.
+  await page.getByLabel(/Text size/).evaluate((el: HTMLInputElement) => {
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(el, "1.2");
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  await expect.poll(() => page.evaluate(() => document.documentElement.style.fontSize)).toBe("19.2px");
+
+  await page.getByRole("radio", { name: /^Full control/ }).click();
+  await page.getByRole("radiogroup", { name: "Font" }).getByRole("radio", { name: /Serif/ }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-font", "serif");
+  await page.getByRole("switch", { name: /plain text/ }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-messages", "plain");
+
+  // Nothing sticks until Save: Reset in the bar puts the old look back.
+  await page.getByRole("region", { name: "Unsaved changes" }).getByRole("button", { name: "Reset" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-font", "default");
+  await expect.poll(() => page.evaluate(() => document.documentElement.style.fontSize)).toBe("");
+  // The level you picked is a view preference, so it stays.
+  await expect(page.getByRole("radio", { name: /^Full control/ })).toHaveAttribute("aria-checked", "true");
 });
