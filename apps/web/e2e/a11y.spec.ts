@@ -32,6 +32,15 @@ for (const scheme of ["light", "dark"] as const) {
         await nav(page, s);
         expect(await audit(page), s).toEqual([]);
       }
+      // Every Appearance option (Full control), Commands, and the / menu open in the message box.
+      await nav(page, "Customize");
+      await page.getByRole("radio", { name: /^Full control/ }).click();
+      expect(await audit(page), "Appearance, Full control").toEqual([]);
+      await nav(page, "Commands");
+      expect(await audit(page), "Commands").toEqual([]);
+      await nav(page, "Chat");
+      await page.getByLabel("Message", { exact: true }).fill("/");
+      expect(await audit(page), "command menu").toEqual([]);
     });
   });
 }

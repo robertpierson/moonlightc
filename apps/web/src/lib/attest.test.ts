@@ -18,6 +18,7 @@ describe("signed location notes", () => {
     expect(verify({ ...w, aal: "aal2" })).toBe(false);
     expect(verify({ ...w, mfaAt: Date.now() })).toBe(false);
     expect(verify({ ...w, uid: "u2" })).toBe(false);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- dropping these fields is the point
     const { uid: _u, aal: _a, mfaAt: _m, ...plain } = w;
     expect(verify(plain)).toBe(false);
   });

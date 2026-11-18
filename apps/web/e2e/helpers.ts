@@ -11,7 +11,7 @@ export async function openMenu(page: Page) {
 }
 
 // These live inside Settings now.
-const SETTINGS: Record<string, string> = { Connections: "Connectors", Customize: "Appearance", Mods: "Plugins & mods", "Local models": "Local models", Memory: "Memory", Usage: "Usage" };
+const SETTINGS: Record<string, string> = { Connections: "Connectors", Customize: "Appearance", Mods: "Plugins & mods", "Local models": "Local models", Memory: "Memory", Usage: "Usage", Commands: "Commands" };
 
 /** Keep whatever was changed in Settings (the Save / Reset bar blocks leaving otherwise). */
 export async function saveSettings(page: Page) {

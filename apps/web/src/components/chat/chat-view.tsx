@@ -755,11 +755,16 @@ export function ChatView({
                 </p>
               )}
               {!usable ? (
-                <div className="flex flex-wrap justify-center gap-2">
-                  <Button onClick={onOpenKeys}>
-                    <KeyRound /> Connect a model
-                  </Button>
-                  <OpenRouterSignIn compact />
+                <div className="grid justify-items-center gap-3">
+                  <div className="flex flex-wrap justify-center gap-2">
+                    <Button onClick={onOpenKeys}>
+                      <KeyRound /> Connect a model
+                    </Button>
+                    <OpenRouterSignIn compact />
+                  </div>
+                  <p className="max-w-sm text-center text-sm text-muted-foreground">
+                    No key yet? Google, Groq and others have free plans with no card. Connect a model shows them under Start free.
+                  </p>
                 </div>
               ) : needsSearch ? (
                 <Button onClick={onOpenKeys}>
