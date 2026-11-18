@@ -49,7 +49,7 @@ export function AskBox() {
         // A full page load, so the app reads the question from the address as it starts.
         location.assign(text ? `/app?q=${encodeURIComponent(text)}` : "/app");
       }}
-      className="ask-box mx-auto flex w-full max-w-2xl items-center gap-2 rounded-full bg-white p-2 pl-6 shadow-[0_24px_60px_-28px_rgb(14_22_40/0.45),0_0_0_1px_var(--line)]"
+      className="ask-box mx-auto flex w-full max-w-2xl items-center gap-2 metal rounded-full p-2 pl-6 shadow-[0_24px_60px_-28px_rgb(14_22_40/0.45),0_0_0_1px_var(--line)]"
     >
       <label htmlFor="ask" className="sr-only">
         Ask MoonlightC anything

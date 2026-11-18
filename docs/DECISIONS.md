@@ -206,3 +206,8 @@ Alternatives: bundle the FreeLLMAPI server in the desktop app (desktop-only, a s
 - Why: each model has its own free daily limit, so the total free allowance is the sum over all models and companies (how FreeLLMAPI gets ~7B tokens a month). Owner wanted that inside MoonlightC, not a second app.
 - Not copied: gateways that log prompts for training or need ID/Telegram checks, keyless shared-IP services, multiple accounts per company (against their terms).
 - Alternatives: run FreeLLMAPI and connect it as Custom (still works).
+
+## Site: silver surfaces, fine grain, tabbed sections (2026-11-18)
+- What: the marketing site's page color is a silver-white (#eceef2) with a fine SVG grain; cards and buttons are light brushed metal. Home has two tabbed sections ("One app. Four superpowers." and "Wherever you are.") with a pill tab bar over one panel.
+- Why: the owner asked for a cleaner, grey-silver look with an iPhone-like texture, and liked the in-page tabs on claude.com's Claude Code page, but did not want a copy of it.
+- Alternatives: a side list next to the panel (too close to Claude's page); a texture image file (the inline SVG noise needs no download).

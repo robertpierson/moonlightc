@@ -3,7 +3,6 @@ import Link from "next/link";
 import { Arrival } from "./arrival";
 import { AskBox } from "./ask-box";
 import { Cta, SectionTitle, SiteFooter, SiteHeader, Statement, Words } from "./chrome";
-import { BrowserTab, CodeTerminal, ModelMenu, RemoteScreen } from "./demos";
 import { Moon } from "./moon";
 import { CountUp } from "./motion";
 import { DemoVideo } from "./scenes";
@@ -12,6 +11,7 @@ import { SHOTS } from "./media";
 import { COMPANIES } from "./pages";
 import { QUESTIONS, QuestionList } from "./questions";
 import { LearnTeaser } from "./more-sections";
+import { Places, Superpowers } from "./showcase";
 
 
 const EVERYTHING = [
@@ -24,33 +24,6 @@ const EVERYTHING = [
   { shot: "connections", title: "Connections", body: "GitHub, Google, Notion, Slack and any MCP server, with your OK before it acts." },
   { shot: "plugins", title: "Claude plugins", body: "Install skills, slash commands and connectors made for Claude." },
   { shot: "theme", title: "Make it yours", body: "Themes, layouts and which sections you see." },
-];
-
-const EXPLORE = [
-  {
-    href: "/models",
-    title: "Every model, your keys",
-    body: "Claude, GPT, Gemini and more, switched in the middle of a conversation.",
-    demo: <ModelMenu key="m" />,
-  },
-  {
-    href: "/remote",
-    title: "Your PC, from anywhere",
-    body: "See your home PC's screen, click and type, from your phone or Chromebook.",
-    demo: <RemoteScreen key="r" />,
-  },
-  {
-    href: "/code",
-    title: "Build with AI",
-    body: "Describe an app and watch it run. Or run Claude Code in your own projects.",
-    demo: <CodeTerminal key="c" />,
-  },
-  {
-    href: "/extension",
-    title: "AI in your browser",
-    body: "Share a tab and the AI reads, clicks and types there. Risky steps wait for you.",
-    demo: <BrowserTab key="b" />,
-  },
 ];
 
 export function Landing() {
@@ -177,28 +150,17 @@ export function Landing() {
 
         <section className="mx-auto max-w-6xl px-4 pt-28 sm:px-6">
           <SectionTitle title="One app. Four superpowers." />
-          <div className="mt-14 grid gap-5 md:grid-cols-2">
-            {EXPLORE.map((e) => (
-              <Link key={e.href} href={e.href} className="card card-link spot flex flex-col overflow-hidden rounded-3xl p-7 sm:p-9">
-                <h3 className="text-2xl">{e.title}</h3>
-                <p className="mt-2 max-w-[40ch] text-[var(--mist)]">{e.body}</p>
-                <span className="mt-4 text-sm font-medium text-[var(--tide)]">
-                  Learn more <span className="arrow inline-block">›</span>
-                </span>
-                <div className="mt-8 flex h-64 flex-1 items-center justify-center">{e.demo}</div>
-              </Link>
-            ))}
-          </div>
+          <Superpowers />
         </section>
 
         <section className="mx-auto max-w-6xl px-4 pt-32 sm:px-6">
-          <div className="grid divide-y divide-[var(--line)] overflow-hidden rounded-3xl bg-white ring-1 ring-[var(--line)] md:grid-cols-3 md:divide-x md:divide-y-0">
+          <div className="grid divide-y divide-[var(--line)] metal overflow-hidden rounded-3xl ring-1 ring-[var(--line)] md:grid-cols-3 md:divide-x md:divide-y-0">
             {[
               [String(COMPANIES.length), "AI companies", "Add a key from any of them. Models are listed live, so new ones appear on their own."],
               ["0%", "Markup", "You pay the AI company directly, at their prices. We don't resell AI."],
               ["MIT", "Open source", "Read every line on GitHub, change it, or run your own copy."],
             ].map(([big, title, body]) => (
-              <div key={title} className="bg-white p-8 sm:p-10">
+              <div key={title} className="p-8 sm:p-10">
                 <p className="text-[clamp(3rem,6vw,4.5rem)] leading-none font-medium tracking-[-0.04em]">
                   <CountUp value={big} />
                 </p>
@@ -207,6 +169,11 @@ export function Landing() {
               </div>
             ))}
           </div>
+        </section>
+
+        <section className="mx-auto max-w-6xl px-4 pt-32 sm:px-6">
+          <SectionTitle title="Wherever you are." body="On your computer, in any browser, and inside Chrome. Free on every one." />
+          <Places />
         </section>
 
         <LearnTeaser />

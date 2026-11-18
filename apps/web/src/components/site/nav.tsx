@@ -60,7 +60,7 @@ export function NavLinks() {
             <path d="M3 4.5 6 7.5l3-3" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </summary>
-        <div className="menu-panel absolute top-9 left-1/2 grid w-52 -translate-x-1/2 gap-0.5 rounded-2xl bg-white p-2 text-[15px] shadow-xl ring-1 ring-[var(--line)]">
+        <div className="menu-panel absolute top-9 left-1/2 grid w-52 -translate-x-1/2 gap-0.5 metal rounded-2xl p-2 text-[15px] shadow-xl ring-1 ring-[var(--line)]">
           {MORE.map(([href, label]) => (
             <MoreLink key={href} href={href} label={label} className={ITEM} />
           ))}
@@ -82,7 +82,7 @@ export function MenuButton() {
           <path d="M3 7h14M3 13h14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
         </svg>
       </summary>
-      <nav aria-label="Pages" className="menu-panel absolute top-12 right-0 grid max-h-[80svh] w-60 gap-1 overflow-y-auto rounded-2xl bg-white p-2 shadow-xl ring-1 ring-[var(--line)]">
+      <nav aria-label="Pages" className="menu-panel absolute top-12 right-0 grid max-h-[80svh] w-60 gap-1 overflow-y-auto metal rounded-2xl p-2 shadow-xl ring-1 ring-[var(--line)]">
         {PAGES.map(([href, label]) => (
           <Link key={href} href={href} aria-current={path === href ? "page" : undefined} className={ITEM}>
             {label}

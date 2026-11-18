@@ -110,7 +110,24 @@ test("the header gets its frosted backdrop once you scroll, and goes dark over n
   await page.goto("/remote");
   const bg = () => page.locator(".site-header").evaluate((h) => getComputedStyle(h).backgroundColor);
   await page.evaluate(() => scrollTo(0, 400));
-  await expect.poll(bg).toMatch(/rgba\(255, 255, 255, 0\.8\)/);
+  await expect.poll(bg).toMatch(/rgba\(236, 238, 242, 0\.82\)/);
   await page.evaluate(() => scrollTo(0, document.querySelector(".night")!.getBoundingClientRect().top + scrollY + innerHeight));
   await expect.poll(bg).toMatch(/rgba\(10, 15, 28/);
+});
+
+test("home page tabs switch what the panel shows, by click and by arrow key", async ({ page }) => {
+  await page.goto("/");
+  const powers = page.getByRole("tablist", { name: "Parts of the app" });
+  await expect(powers.getByRole("tab", { name: "Chat" })).toHaveAttribute("aria-selected", "true");
+  await powers.getByRole("tab", { name: "Your PC" }).click();
+  const panel = page.getByRole("tabpanel", { name: "Your PC" });
+  await expect(panel.getByRole("heading", { name: "Your PC, from anywhere" })).toBeVisible();
+  await expect(panel.getByRole("link", { name: "Learn more" })).toHaveAttribute("href", "/remote");
+  await page.keyboard.press("ArrowRight");
+  await expect(powers.getByRole("tab", { name: "Browser" })).toBeFocused();
+  await expect(page.getByRole("heading", { name: "AI in your browser" })).toBeVisible();
+
+  const places = page.getByRole("tablist", { name: "Ways to use MoonlightC" });
+  await places.getByRole("tab", { name: "Chrome" }).click();
+  await expect(page.getByRole("tabpanel", { name: "Chrome" }).getByRole("link", { name: "Get the extension" })).toHaveAttribute("href", "/extension");
 });

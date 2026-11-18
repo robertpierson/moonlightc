@@ -1,8 +1,12 @@
-/* Marketing site: white and brushed silver, deep navy ink. Always light, whatever the device's color mode
+/* Marketing site: soft silver with a fine grain (like a matte phone back), brushed-metal panels, deep navy ink. Always light, whatever the device's color mode
    (the web app has its own themes; this site doesn't follow them). */
 .site {
   color-scheme: light;
-  --paper: #ffffff;
+  --paper: #eceef2; /* page: silver-white, never pure white */
+  --silver-0: #f5f6f8; /* raised surfaces: cards, buttons, fields, menus */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.06 0 0 0 0 0.09 0 0 0 0 0.16 0 0 0 0.11 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --brush: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='120'%3E%3Cfilter id='b'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.002 0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.55 -0.12'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23b)'/%3E%3C/svg%3E");
+  --brush-night: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='120'%3E%3Cfilter id='b'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.002 0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.09 -0.015'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23b)'/%3E%3C/svg%3E"); /* fainter streaks for dark panels */
   --silver-1: #f5f6f9; /* panels */
   --silver-2: #e6e9ef;
   --silver-3: #c9cfd9;
@@ -17,7 +21,7 @@
   --g-brand: #1b2744;
   --g-night: linear-gradient(165deg, #1e2a46 0%, #141d33 55%, #0e1527 100%);
   --ease: cubic-bezier(0.22, 0.8, 0.2, 1);
-  background: var(--paper);
+  background: var(--grain), var(--paper);
   color: var(--ink);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
 }
@@ -51,7 +55,7 @@
 }
 @keyframes head {
   to {
-    background: rgb(255 255 255 / 0.8);
+    background: rgb(236 238 242 / 0.82);
     border-bottom-color: var(--line);
     backdrop-filter: blur(16px) saturate(1.5);
   }
@@ -109,12 +113,18 @@ html[data-night] .site-header {
   background: #24365f;
 }
 .btn-silver {
-  background: #fff;
+  background: var(--brush), var(--silver-0);
   color: var(--ink);
-  box-shadow: 0 0 0 1px rgb(14 22 40 / 0.14);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.9),
+    0 1px 2px rgb(14 22 40 / 0.08),
+    0 0 0 1px rgb(14 22 40 / 0.14);
 }
 .btn-silver:hover {
-  box-shadow: 0 0 0 1px rgb(14 22 40 / 0.3);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.9),
+    0 2px 6px rgb(14 22 40 / 0.1),
+    0 0 0 1px rgb(14 22 40 / 0.28);
 }
 .btn-primary:hover,
 .btn-silver:hover {
@@ -127,7 +137,7 @@ html[data-night] .site-header {
 
 /* Hero: a pale silver sky, and a moon wider than the screen rising over its bottom half. */
 .sky {
-  background: linear-gradient(180deg, #d5dbe5 0%, #e7eaf0 38%, #f4f5f8 70%, #ffffff 100%);
+  background: var(--grain), linear-gradient(180deg, #d3d9e3 0%, #e2e6ec 45%, #eceef2 100%);
 }
 .hero {
   height: 100svh;
@@ -481,12 +491,19 @@ html[data-night] .scroll-bar {
 }
 
 /* Cards. Silver for most; one deep night card per page at most. */
+/* Brushed metal: fine horizontal streaks over light silver, a lit top edge and a hairline rim. */
+.card,
+.metal {
+  background: var(--brush), var(--silver-0);
+}
 .card {
-  background: #f4f5f8;
-  box-shadow: 0 0 0 1px var(--line);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.85),
+    0 1px 2px rgb(14 22 40 / 0.05),
+    0 0 0 1px var(--line);
 }
 .card-night {
-  background: #141d33;
+  background: var(--brush-night), #141d33;
   color: #eef1f6;
 }
 .card-link {
@@ -512,7 +529,7 @@ html[data-night] .scroll-bar {
 /* Night: the page darkens around the film of the app (which is dark), then brightens again after it. The words
    change color in step, so they're readable at every moment. Browsers without scroll animations just get the night. */
 .night {
-  background: #0a0f1c;
+  background: var(--grain), #0a0f1c;
   view-timeline-name: --scene, --night;
   view-timeline-axis: block, block;
 }
@@ -540,14 +557,14 @@ html[data-night] .scroll-bar {
 }
 @keyframes night {
   0% {
-    background-color: #ffffff;
+    background-color: #eceef2;
   }
   22%,
   80% {
     background-color: #0a0f1c;
   }
   100% {
-    background-color: #ffffff;
+    background-color: #eceef2;
   }
 }
 @keyframes on-night {
@@ -723,5 +740,15 @@ html[data-night] .scroll-bar {
   }
   .gallery-track {
     overflow-x: auto;
+  }
+}
+
+/* Tab panel content settles in when a tab is picked. */
+.tab-in {
+  animation: fade-up 0.35s var(--ease) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tab-in {
+    animation: none;
   }
 }
