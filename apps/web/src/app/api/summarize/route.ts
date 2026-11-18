@@ -15,7 +15,9 @@ export async function POST(req: Request) {
       ...(think.providerOptions ? { providerOptions: think.providerOptions as never } : {}),
       instructions: title
         ? "Write a short title (2 to 6 words) that says what this conversation is about. Reply with the title only: no quotes, no ending punctuation."
-        : "Summarize this conversation so it can be continued in a new chat: the goal, key facts and decisions, what's done, and what's still open. Short bullet points, under 250 words.",
+        : b.kind === "image-prompt" || b.kind === "video-prompt"
+          ? `Rewrite the person's idea as one vivid, specific prompt for an ${b.kind === "video-prompt" ? "AI video model: the subject, what moves and how, the camera move, setting, style and light" : "AI image model: the subject, setting, style or medium, lighting, colors, composition and camera"}. Keep everything they asked for and add nothing that changes their idea. Put any words that must appear in the picture in double quotes. Under 90 words. Reply with the prompt only.`
+          : "Summarize this conversation so it can be continued in a new chat: the goal, key facts and decisions, what's done, and what's still open. Short bullet points, under 250 words.",
       prompt: b.text.slice(-60_000),
       maxOutputTokens: 4000,
     });

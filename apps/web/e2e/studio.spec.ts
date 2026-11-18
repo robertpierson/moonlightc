@@ -70,3 +70,49 @@ test("video: start, poll until done, download into the gallery", async ({ page }
   await expect(page.getByText("Saved to your gallery.")).toBeVisible({ timeout: 30000 });
   expect(polls).toBe(2);
 });
+
+test("improve a prompt, then compare it on three image models side by side", async ({ page }) => {
+  await page.addInitScript(() => {
+    if (localStorage.getItem("moonc:v1")) return;
+    localStorage.setItem(
+      "moonc:v1",
+      JSON.stringify({
+        connections: [
+          { id: "f1", providerId: "fal", apiKey: "fal-test", label: "fal", models: [], addedAt: 0 },
+          { id: "o1", providerId: "openai", apiKey: "sk-test", label: "OpenAI", models: [{ id: "gpt-x", name: "GPT X" }], addedAt: 0 },
+        ],
+        lastModel: { connectionId: "o1", modelId: "gpt-x" },
+        chats: [],
+        favorites: [],
+        modes: [],
+      }),
+    );
+  });
+  await page.route("**/api/studio/models", (r) => r.fulfill({ json: { models: ["A", "B", "C", "D"].map((x) => ({ id: `fal-ai/m-${x}`, name: `Model ${x}` })) } }));
+  await page.route("**/api/summarize", (r) => r.fulfill({ json: { text: "A silver moon over a calm sea at night, oil painting, soft blue light" } }));
+  const asked: string[] = [];
+  await page.route("**/api/studio/generate", async (r) => {
+    const b = r.request().postDataJSON();
+    asked.push(b.modelId);
+    if (b.modelId === "fal-ai/m-C") return r.fulfill({ status: 400, json: { error: "Model C is busy." } });
+    await r.fulfill({ json: { mediaType: "image/png", base64: PNG } });
+  });
+  await page.goto("/app");
+  await openMenu(page);
+  await page.getByRole("button", { name: "Studio" }).click();
+
+  await page.getByLabel("Describe what you want").fill("moon sea");
+  await page.getByRole("button", { name: "Improve prompt" }).click();
+  await expect(page.getByLabel("Describe what you want")).toHaveValue(/^A silver moon over a calm sea/);
+
+  await page.getByRole("switch").first().click();
+  const group = page.getByRole("group", { name: "Models to compare" });
+  for (const x of ["A", "B", "C"]) await group.getByRole("button", { name: `Model ${x}` }).click();
+  await expect(group.getByRole("button", { name: "Model D" })).toBeDisabled();
+  await page.getByRole("button", { name: "Compare 3" }).click();
+  const results = page.getByRole("list", { name: "Compared pictures" });
+  await expect(results.getByRole("listitem")).toHaveCount(3);
+  await expect(results.getByText(/Model A in [\d.]+s/)).toBeVisible();
+  await expect(results.getByText("Model C is busy.")).toBeVisible();
+  expect(asked.sort()).toEqual(["fal-ai/m-A", "fal-ai/m-B", "fal-ai/m-C"]);
+});

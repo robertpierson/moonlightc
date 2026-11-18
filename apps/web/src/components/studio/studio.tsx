@@ -1,7 +1,7 @@
 "use client";
 
 import { STUDIO_PROVIDERS, type MediaKind, type MediaModel } from "@moonc/core";
-import { ChevronsUpDown, Download, ImagePlus, KeyRound, Loader2, MessageSquare, Shuffle, Sparkles, Trash2, X } from "lucide-react";
+import { ChevronsUpDown, Columns3, Download, ImagePlus, KeyRound, Loader2, MessageSquare, Shuffle, Sparkles, Trash2, Wand2, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { addItem, removeItem, useGallery, type GalleryItem } from "@/lib/gallery";
 import { useStore, type SavedConnection } from "@/lib/store";
+import { improvePrompt } from "@/lib/summarize";
+import { Switch } from "@/components/ui/switch";
 
 const KINDS: { id: MediaKind; label: string }[] = [
   { id: "image", label: "Image" },
@@ -105,6 +107,11 @@ export function Studio({ onOpenKeys, onSendToChat }: { onOpenKeys: () => void; o
   const [startImage, setStartImage] = useState<string>();
   const [busy, setBusy] = useState<string>();
   const [result, setResult] = useState<GalleryItem>();
+  // Compare: the same prompt on up to 3 image models at once, side by side with how long each took.
+  const [comparing, setComparing] = useState(false);
+  const [picks, setPicks] = useState<string[]>([]);
+  const [compared, setCompared] = useState<{ modelId: string; item?: GalleryItem; seconds?: number; error?: string }[]>([]);
+  const [improving, setImproving] = useState(false);
   const [filter, setFilter] = useState<MediaKind | "all">("all");
   const [limit, setLimit] = useState(24);
   const cancelled = useRef(false);
@@ -128,9 +135,49 @@ export function Studio({ onOpenKeys, onSendToChat }: { onOpenKeys: () => void; o
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentKey]);
 
+  async function improve() {
+    const before = prompt;
+    setImproving(true);
+    try {
+      const better = await improvePrompt(prompt, kind === "video" ? "video" : "image");
+      setPrompt(better);
+      toast.success("Prompt improved.", { action: { label: "Undo", onClick: () => setPrompt(before) } });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error(msg === "Pick a model first." ? "Improve prompt uses a chat model. Connect one in Models and keys (Free works too)." : msg);
+    } finally {
+      setImproving(false);
+    }
+  }
+
+  async function compare() {
+    if (!current) return;
+    const chosen = picks.filter((id) => models.some((m) => m.id === id));
+    setResult(undefined);
+    setCompared(chosen.map((id) => ({ modelId: id })));
+    setBusy(`Painting on ${chosen.length} models…`);
+    await Promise.all(
+      chosen.map(async (id) => {
+        const started = Date.now();
+        try {
+          const d = await post<{ base64: string; mediaType: string }>("/api/studio/generate", { connection: conn(current), kind: "image", modelId: id, prompt, aspectRatio: ratio });
+          const item: GalleryItem = { id: crypto.randomUUID(), kind: "image", prompt, providerId: current.providerId, modelId: id, mediaType: d.mediaType, blob: b64ToBlob(d.base64, d.mediaType), createdAt: Date.now() };
+          await addItem(item);
+          setCompared((rows) => rows.map((r) => (r.modelId === id ? { ...r, item, seconds: Math.round((Date.now() - started) / 100) / 10 } : r)));
+        } catch (err) {
+          setCompared((rows) => rows.map((r) => (r.modelId === id ? { ...r, error: err instanceof Error ? err.message : String(err) } : r)));
+        }
+      }),
+    );
+    setBusy(undefined);
+    toast.success("Every picture is saved to your gallery.");
+  }
+
   async function generate(e: React.FormEvent) {
     e.preventDefault();
+    if (comparing && kind === "image") return void (picks.length >= 2 && prompt.trim() && compare());
     if (!current || !modelId || !prompt.trim()) return;
+    setCompared([]);
     cancelled.current = false;
     setResult(undefined);
     const base = { connection: conn(current), kind, modelId, prompt, aspectRatio: kind === "speech" ? undefined : ratio };
@@ -232,13 +279,51 @@ export function Studio({ onOpenKeys, onSendToChat }: { onOpenKeys: () => void; o
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="grid gap-1.5">
-                  <Label>Model</Label>
-                  <ModelSelect models={models} value={modelId} onChange={setModelId} loading={loadingModels} />
-                </div>
+                {!(comparing && kind === "image") && (
+                  <div className="grid gap-1.5">
+                    <Label>Model</Label>
+                    <ModelSelect models={models} value={modelId} onChange={setModelId} loading={loadingModels} />
+                  </div>
+                )}
               </div>
+              {kind === "image" && models.length > 1 && (
+                <div className="grid gap-2">
+                  <label className="flex items-center gap-2 text-sm">
+                    <Switch checked={comparing} onCheckedChange={setComparing} />
+                    Compare models: same prompt, up to 3 at once
+                  </label>
+                  {comparing && (
+                    <div role="group" aria-label="Models to compare" className="flex max-h-40 flex-wrap gap-1.5 overflow-y-auto">
+                      {models.map((m) => {
+                        const on = picks.includes(m.id);
+                        return (
+                          <Button
+                            key={m.id}
+                            type="button"
+                            size="sm"
+                            variant={on ? "secondary" : "outline"}
+                            aria-pressed={on}
+                            disabled={!on && picks.length >= 3}
+                            onClick={() => setPicks((p) => (on ? p.filter((x) => x !== m.id) : [...p, m.id]))}
+                          >
+                            {m.name}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {comparing && picks.length < 2 && <p className="text-xs text-muted-foreground">Pick 2 or 3 models.</p>}
+                </div>
+              )}
               <div className="grid gap-1.5">
-                <Label htmlFor="studio-prompt">{kind === "speech" ? "Text to speak" : "Describe what you want"}</Label>
+                <div className="flex items-center justify-between gap-2">
+                  <Label htmlFor="studio-prompt">{kind === "speech" ? "Text to speak" : "Describe what you want"}</Label>
+                  {kind !== "speech" && (
+                    <Button type="button" size="xs" variant="ghost" disabled={!prompt.trim() || improving || !!busy} onClick={improve} title="Rewrite your idea as a detailed prompt (uses your chat model)">
+                      {improving ? <Loader2 className="animate-spin" /> : <Wand2 />} Improve prompt
+                    </Button>
+                  )}
+                </div>
                 <Textarea id="studio-prompt" className="min-h-24" value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder={kind === "speech" ? "Hello! This is my new voice." : "A lighthouse on a cliff under a full moon, oil painting"} />
               </div>
               <div className="flex flex-wrap items-end gap-3">
@@ -291,8 +376,8 @@ export function Studio({ onOpenKeys, onSendToChat }: { onOpenKeys: () => void; o
                       Stop waiting
                     </Button>
                   )}
-                  <Button type="submit" disabled={!!busy || !modelId || !prompt.trim()}>
-                    {busy ? <Loader2 className="animate-spin" /> : <Sparkles />} Generate
+                  <Button type="submit" disabled={!!busy || !prompt.trim() || (comparing && kind === "image" ? picks.length < 2 : !modelId)}>
+                    {busy ? <Loader2 className="animate-spin" /> : comparing && kind === "image" ? <Columns3 /> : <Sparkles />} {comparing && kind === "image" ? `Compare ${picks.length || ""}`.trim() : "Generate"}
                   </Button>
                 </div>
               </div>
@@ -304,6 +389,25 @@ export function Studio({ onOpenKeys, onSendToChat }: { onOpenKeys: () => void; o
             </form>
           )}
           {result && <Preview item={result} className="max-h-[60dvh] w-full rounded-lg object-contain" />}
+          {compared.length > 0 && (
+            <ul aria-label="Compared pictures" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {compared.map((r) => (
+                <li key={r.modelId} className="grid gap-1.5">
+                  {r.item ? (
+                    <Preview item={r.item} className="aspect-square w-full rounded-lg bg-muted object-cover" />
+                  ) : (
+                    <div className="grid aspect-square w-full place-items-center rounded-lg bg-muted p-4 text-center text-sm text-muted-foreground">
+                      {r.error ?? <Loader2 className="animate-spin" aria-label="Painting" />}
+                    </div>
+                  )}
+                  <p className="text-sm">
+                    <span className="font-medium">{models.find((m) => m.id === r.modelId)?.name ?? r.modelId}</span>
+                    {r.seconds !== undefined && <span className="text-muted-foreground"> in {r.seconds}s</span>}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
 
         <section aria-labelledby="gallery-h">

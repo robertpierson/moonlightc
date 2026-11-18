@@ -11,7 +11,7 @@ export const chatText = (c: Chat) =>
     .join("\n\n");
 
 /** A title or a summary of a chat, written by the chat's own model (or your default one). */
-export async function summarize(chat: Chat, kind: "title" | "summary"): Promise<string> {
+export async function summarize(chat: Chat, kind: "title" | "summary" | "image-prompt" | "video-prompt"): Promise<string> {
   const ref = isFree(chat.model)
     ? freePool(getState().connections, getState().freePicks)[0]
     : chat.model && !isAuto(chat.model) ? chat.model : isAuto(chat.model) ? resolveAuto("everyday", getState().autoPicks) : getState().lastModel;
@@ -21,9 +21,16 @@ export async function summarize(chat: Chat, kind: "title" | "summary"): Promise<
   const res = await fetch("/api/summarize", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ connection: { apiKey, providerId, baseURL }, modelId: found.model.id, kind, text: kind === "title" ? chatText(chat).slice(0, 4000) : chatText(chat) }),
+    body: JSON.stringify({ connection: { apiKey, providerId, baseURL }, modelId: found.model.id, kind, text: kind === "title" ? chatText(chat).slice(0, 4000) : kind.endsWith("-prompt") ? textOf(chat.messages[0]) : chatText(chat) }),
   });
   const d = (await res.json().catch(() => ({}))) as { text?: string; error?: string };
   if (!res.ok || !d.text) throw new Error(d.error ?? "Couldn't summarize this chat.");
   return kind === "title" ? d.text.replace(/^["'#\s]+|["'.\s]+$/g, "").slice(0, 60) : d.text;
 }
+
+/** Studio's "Improve prompt": your idea rewritten as a detailed image or video prompt by your default chat model. */
+export const improvePrompt = (idea: string, kind: "image" | "video") =>
+  summarize(
+    { id: "prompt", title: "", updatedAt: 0, model: getState().lastModel, messages: [{ id: "p", role: "user", parts: [{ type: "text", text: idea }] }] } as Chat,
+    kind === "video" ? "video-prompt" : "image-prompt",
+  );
