@@ -110,7 +110,7 @@ test("the header gets its frosted backdrop once you scroll, and goes dark over n
   await page.goto("/remote");
   const bg = () => page.locator(".site-header").evaluate((h) => getComputedStyle(h).backgroundColor);
   await page.evaluate(() => scrollTo(0, 400));
-  await expect.poll(bg).toMatch(/rgba\(236, 238, 242, 0\.82\)/);
+  await expect.poll(bg).toMatch(/rgba\(226, 231, 238, 0\.82\)/);
   await page.evaluate(() => scrollTo(0, document.querySelector(".night")!.getBoundingClientRect().top + scrollY + innerHeight));
   await expect.poll(bg).toMatch(/rgba\(10, 15, 28/);
 });

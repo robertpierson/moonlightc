@@ -82,6 +82,15 @@ STATUS: BUILDING
 - [x] R63 Adaptive theme (Settings > General > Follow the sun; lib/sun.ts): from the person's location, gets darker with the sun/moon cycle
 - [x] R64 Allowed places for remote control (PC setting, off by default): IPs (with * wildcard) and countries; signed location notes from /api/attest (ATTEST_SECRET in Vercel), verified by the PC; blocked attempts listed with one-click Allow
 
+## Investor round (2026-11-18, see docs/PLAN.md)
+- [~] I1 Cool tungsten/cobalt palette, visible texture, every screen size
+- [ ] I2 Research loop: what AI apps lack -> docs/RESEARCH.md
+- [ ] I3 Simple chat commands
+- [ ] I4 Free course on the site (/course)
+- [ ] I5 Customization modes with live preview
+- [ ] I6 Build the top research items
+- [ ] I7 Bug sweep, investor polish, live
+
 ## Phase 0 tasks
 - [x] Check prerequisites (node 22, pnpm 11, git, gh logged in as robertpierson; Vercel + Supabase via MCP)
 - [x] Monorepo scaffold (pnpm + turbo, apps/web Next.js 16.4)

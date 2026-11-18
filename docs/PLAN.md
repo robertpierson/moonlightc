@@ -1,21 +1,21 @@
-# Plan: website round "extensive, teach people, real pictures" (Nov 9, 2026)
+# Plan: investor round (Nov 18, 2026)
 
-Owner asked (Nov 9, 2026):
-- Tiles should look like the Chrome extension page's screenshots: a real picture with the text under it.
-- The site is too short. Make it extensive.
-- Add a place to learn how to use the app, with interactive videos. It shouldn't be a main tab; put it in a "More" menu with other pages.
+Owner asked (Nov 18, 2026, then went to sleep; "keep working, put it live after"):
+- Site: cooler, metallic greys (watered-down tungsten/cobalt, never warm), a texture you can actually see, sharp on
+  every screen (phone, Chromebook, laptop, desktop, ultrawide, short landscape). Investor-ready.
+- Research, again and again, what today's AI apps lack (e.g. browser remote control, good images), then fix those in MoonlightC.
+- Commands like Claude's slash commands, but Python-simple.
+- A free built-in course on the site (like Anthropic's courses) teaching everything: the app, themes, connectors,
+  Vercel, Supabase, and connecting Claude Code.
+- More customizing: a few modes up to "full creative control", previewed live before saving (like Discord).
+- Fix all bugs. Not hundreds of random tabs.
 
-Steps:
-1. "More" menu in the header (and in the phone menu), holding:
-   - Learn
-   - Questions (FAQ)
-   - What's new (real GitHub releases)
-   - Privacy
-   - Terms
-   - Source code
-2. /learn: short lessons. Each has a real filmed clip of the app (filmed headlessly with the sample-answers server, as with the demo). The steps beside the clip jump the video when clicked and light up as it plays. Each lesson ends with a "Try it" button.
-3. Real screenshots of the app's screens (scripts/demo/shots.mjs) for the tiles:
-   - The tiles become figures: a picture card with a caption underneath.
-   - No more text-in-a-box tiles.
-4. Longer pages: more sections per page (how it works, details, questions), built from real features only.
-5. Before going live, check every step with build, tests, the accessibility checks and screenshots. Then send the owner pictures and wait for their yes.
+Steps (each: build, typecheck, lint, unit, Playwright, screenshots; then push):
+1. Palette + texture: cool tungsten/cobalt silver tokens, visible grain/brush, contrast checked; viewport matrix
+   screenshots (375x812, 412x915, 768x1024, 1366x768 Chromebook, 1440x900, 1920x1080, 2560x1080, 900x500 landscape).
+2. Research loop (subagent): gaps in current AI apps, with sources -> docs/RESEARCH.md, ranked by value and feasibility.
+3. Simple commands in chat: "/" menu, plain-word commands, /help, your own commands with {input}.
+4. Course at /course: modules and lessons, progress kept in the browser, accurate to the real app.
+5. Customization modes (Simple, Standard, Full control) with live preview and Save / Reset.
+6. Features from the research, highest value first.
+7. Bug sweep (full suites, site audit), investor polish, push live, OWNER_TODO "try this" list.

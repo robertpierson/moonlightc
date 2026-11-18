@@ -20,7 +20,7 @@ export default function Questions() {
         </p>
         <nav aria-label="Topics" className="mt-8 flex flex-wrap gap-2">
           {QUESTIONS.map((g, i) => (
-            <a key={g.topic} href={`#topic-${i}`} className="rounded-full px-4 py-2 text-sm ring-1 ring-[var(--line)] hover:bg-[#f4f5f8]">
+            <a key={g.topic} href={`#topic-${i}`} className="rounded-full px-4 py-2 text-sm ring-1 ring-[var(--line)] hover:bg-[#eef2f7]">
               {g.topic}
             </a>
           ))}

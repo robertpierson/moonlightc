@@ -81,7 +81,7 @@ function Tabbed({ tabs, label, demo }: { tabs: Tab[]; label: string; demo?: bool
   const Visual = t.visual;
   return (
     <div className="mt-12">
-      <div role="tablist" aria-label={label} className="mx-auto grid w-full auto-cols-fr grid-flow-col gap-1 rounded-full sm:flex sm:w-fit bg-[#dfe2e8] p-1.5 shadow-[inset_0_1px_2px_rgb(14_22_40/0.08)]">
+      <div role="tablist" aria-label={label} className="mx-auto grid w-full auto-cols-fr grid-flow-col gap-1 rounded-full sm:flex sm:w-fit bg-[#d4dbe5] p-1.5 shadow-[inset_0_1px_2px_rgb(14_22_40/0.08)]">
         {tabs.map((tab, i) => (
           <button
             key={tab.label}

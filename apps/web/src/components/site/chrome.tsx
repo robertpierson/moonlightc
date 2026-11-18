@@ -19,7 +19,7 @@ export function MoonMark({ className = "size-6" }: { className?: string }) {
           <stop offset="1" stopColor="#0f1626" />
         </linearGradient>
         <radialGradient id="mm-g" cx="0.42" cy="0.4" r="0.7">
-          <stop offset="0" stopColor="#f4f5f8" />
+          <stop offset="0" stopColor="#eef2f7" />
           <stop offset="1" stopColor="#b9c0cf" />
         </radialGradient>
         <mask id="mm-m">

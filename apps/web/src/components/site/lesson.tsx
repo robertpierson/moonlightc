@@ -53,7 +53,7 @@ export function LessonPlayer({ src, poster, steps, label }: { src: string; poste
                 type="button"
                 onClick={() => go(s.t)}
                 aria-current={i === active ? "step" : undefined}
-                className={`group relative w-full overflow-hidden rounded-2xl px-5 py-4 text-left transition-colors ${i === active ? "bg-[#f4f5f8] ring-1 ring-[var(--line)]" : "hover:bg-[#f7f8fa]"}`}
+                className={`group relative w-full overflow-hidden rounded-2xl px-5 py-4 text-left transition-colors ${i === active ? "bg-[#eef2f7] ring-1 ring-[var(--line)]" : "hover:bg-[#eef2f7]"}`}
               >
                 <span className="flex items-baseline gap-3">
                   <span className={`text-sm tabular-nums ${i === active ? "text-[var(--tide)]" : "text-[var(--faint)]"}`}>{i + 1}</span>
