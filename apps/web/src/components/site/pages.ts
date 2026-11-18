@@ -5,6 +5,7 @@ export const PAGES = [
   ["/remote", "Remote control"],
   ["/code", "Code"],
   ["/extension", "Chrome extension"],
+  ["/course", "Course"],
   ["/download", "Download"],
 ] as const;
 

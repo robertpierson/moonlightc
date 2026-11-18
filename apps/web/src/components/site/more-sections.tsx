@@ -47,7 +47,7 @@ export function TopicQuestions({ topic }: { topic: string }) {
 export function LearnTeaser() {
   return (
     <section id="learn" aria-label="Learn" className="pt-32">
-      <SectionTitle title="Learn it in minutes." body="Short lessons filmed in the real app. Click any step to jump to it." />
+      <SectionTitle title="Learn it in minutes." body="Short films of the real app, and a free course that goes from your first chat to putting your own website online." />
       <ol className="mx-auto mt-14 grid max-w-6xl gap-x-5 gap-y-8 px-4 sm:grid-cols-2 sm:px-6 lg:grid-cols-4">
         {LESSONS.slice(0, 4).map((l, i) => (
           <li key={l.id}>
@@ -61,9 +61,12 @@ export function LearnTeaser() {
           </li>
         ))}
       </ol>
-      <p className="mt-10 text-center">
+      <p className="mt-10 flex flex-wrap justify-center gap-3">
+        <Link href="/course" className="btn-primary px-6 py-2.5 text-sm">
+          Take the free course
+        </Link>
         <Link href="/learn" className="btn-silver px-6 py-2.5 text-sm">
-          All lessons
+          All films
         </Link>
       </p>
     </section>

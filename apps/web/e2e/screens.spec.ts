@@ -11,7 +11,7 @@ const SIZES = [
   [2560, 1080, "ultrawide"],
   [900, 420, "phone sideways"],
 ] as const;
-const PAGES = ["/", "/download", "/models", "/remote", "/code", "/extension", "/learn", "/questions"];
+const PAGES = ["/", "/download", "/models", "/remote", "/code", "/extension", "/learn", "/course", "/course/ship", "/questions"];
 
 test.describe("every page fits every screen", () => {
   test.skip(({ isMobile }) => isMobile, "sizes are set by hand here");
