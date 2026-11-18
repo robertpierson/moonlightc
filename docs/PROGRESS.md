@@ -195,6 +195,7 @@ Current version everywhere: 0.6.34 (desktop installed, web live, extension zip).
 7. Self-test harness exists (`MoonlightC.exe --selftest` -> selftest-result.json) for screen-capture problems.
 
 ## Known issues
+- Desktop 0.6.68 draft is missing Linux x64 files: ubuntu-latest's newer GCC rejects robotjs (implicit strdup). Workflow now pins x64 to ubuntu-24.04; the next tag builds it.
 - Claude Code CLI default model (Fable) needs usage credits on the owner's plan; the panel defaults to Sonnet.
 - Screenshot/Lighthouse servers: use PORT=3100 so Playwright's reuseExistingServer never picks up a stale build on 3000.
 - Vercel previews are SSO-protected; tests send x-vercel-protection-bypass (secret in .env.local and GitHub secret VERCEL_AUTOMATION_BYPASS_SECRET).
