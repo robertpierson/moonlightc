@@ -139,6 +139,7 @@ export const COURSE: Module[] = [
         steps: [
           { title: "Open the mode menu", body: "Click the mode button under the message box (it says General)." },
           { title: "Pick one", body: "Each mode sets the AI's instructions and creativity. More options shows every mode." },
+          { title: "Add a ready-made one", body: "Settings, then Modes, then Ready-made modes: an interview coach, a language partner, a trip planner and more. Click Add, then edit it however you like." },
           { title: "Make your own", body: "Settings, then Modes. Write instructions once (\"answer like a patient teacher\") and pin the mode to the top." },
         ],
         check: {

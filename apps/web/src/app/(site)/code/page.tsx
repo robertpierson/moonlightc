@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ArrowCounterClockwise, Browser, DownloadSimple, Files, GithubLogo, HandPalm } from "@phosphor-icons/react/ssr";
+import { ArrowCounterClockwise, Globe, Wrench, Browser, DownloadSimple, Files, GithubLogo, HandPalm } from "@phosphor-icons/react/ssr";
 import { FeatureList, WatchLesson } from "@/components/site/more-sections";
 import Link from "next/link";
 import { Cta, PageHero, SITE_VIEWPORT, SitePage } from "@/components/site/chrome";
@@ -75,6 +75,8 @@ export default function Code() {
           { icon: HandPalm, title: "How much it does alone", body: "Ask before every change, let edits through, plan only, or let it run." },
           { icon: DownloadSimple, title: "Download it", body: "Take the whole project as a .zip and open it anywhere." },
           { icon: GithubLogo, title: "Put it on GitHub", body: "Connect GitHub and publish the project to your own account." },
+          { icon: Wrench, title: "Fix it", body: "When the app hits an error, one click hands it to the AI, which explains it in plain words and fixes it." },
+          { icon: Globe, title: "Put it online", body: "From GitHub, Deploy on Vercel gives your app a web address. The free course shows every step." },
         ]}
       />
 
