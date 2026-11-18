@@ -1,7 +1,7 @@
 // "What's new" in Settings: recent changes in plain English, newest first. Only things that really shipped.
 export const WHATS_NEW: { version: string; date: string; items: string[] }[] = [
   {
-    version: "0.6.68",
+    version: "0.6.69",
     date: "November 18, 2026",
     items: [
       "Commands: type / in a message for plain-word shortcuts like /translate spanish good morning, /summarize or /model claude. Make your own in Settings > Commands.",
