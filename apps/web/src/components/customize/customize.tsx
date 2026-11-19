@@ -3,7 +3,7 @@
 import { Check, Download, Link2, Save, Trash2, Upload } from "lucide-react";
 import { useEffect, useState } from "react";
 import { applyDistro, BACKDROP_EVENT, setLook, useLook } from "./look";
-import { AppPreview } from "./preview";
+import { AppPreview, ThemeShowcase } from "./preview";
 import { EFFECTS } from "./effects";
 import { clearBackdrop, loadBackdrop, MAX_BACKDROP, saveBackdrop } from "@/lib/backdrop-file";
 import { desktop } from "@/lib/desktop";
@@ -25,6 +25,8 @@ import {
   prettyShortcut,
   shortcutFromEvent,
   THEMES,
+  isDarkTheme,
+  type ThemeId,
   type Distro,
   type Level,
   type Look,
@@ -83,6 +85,9 @@ export function Customize({ availableViews }: { availableViews: ViewId[] }) {
   const full = level === "full";
   const [saveName, setSaveName] = useState("");
   const [importText, setImportText] = useState("");
+  const [peek, setPeek] = useState<ThemeId>();
+  const [themeFilter, setThemeFilter] = useState<"all" | "light" | "dark">("all");
+  const shown = peek ?? look.theme;
   const modThemes = (useStore((s) => s.mods) ?? []).filter((m) => m.enabled).flatMap((m) => m.manifest.themes);
 
   const current = (): Distro => ({ id: `my-${Date.now().toString(36)}`, name: saveName.trim() || "My distro", description: "", look, onlyLocal: false });
@@ -209,16 +214,50 @@ export function Customize({ availableViews }: { availableViews: ViewId[] }) {
         </section>
 
         <section aria-labelledby="themes-h" className="grid gap-3">
-          <h2 id="themes-h" className="text-lg font-semibold">
-            Theme
-          </h2>
-          <div role="radiogroup" aria-label="Theme" className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {THEMES.map((t) => (
+          <div className="flex flex-wrap items-end justify-between gap-2">
+            <div>
+              <h2 id="themes-h" className="text-lg font-semibold">
+                Theme
+              </h2>
+              <p className="text-sm text-muted-foreground">Point at a theme to see it here first. Click to try it on the whole app.</p>
+            </div>
+            <div role="radiogroup" aria-label="Show themes" className="flex gap-1 rounded-lg border p-1">
+              {(["all", "light", "dark"] as const).map((f) => (
+                <button
+                  key={f}
+                  role="radio"
+                  aria-checked={themeFilter === f}
+                  onClick={() => setThemeFilter(f)}
+                  className="rounded-md px-2.5 py-1 text-sm capitalize aria-checked:bg-selected aria-checked:text-selected-foreground"
+                >
+                  {f}
+                </button>
+              ))}
+            </div>
+          </div>
+          <figure className="z-10 grid gap-1.5 bg-background pb-1 sm:sticky sm:top-0">
+            <ThemeShowcase
+              look={shown === look.theme ? look : { ...look, theme: shown, overrides: {}, radius: undefined }}
+              inherit={shown === "moonlight" && look.theme === "moonlight"}
+            />
+            <figcaption className="text-center text-xs text-muted-foreground" aria-live="polite">
+              {THEMES.find((t) => t.id === shown)?.name}
+              {shown === look.theme ? ", your theme now" : ", preview only"}
+            </figcaption>
+          </figure>
+          <div role="radiogroup" aria-label="Theme" className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4" onMouseLeave={() => setPeek(undefined)}>
+            {THEMES.filter((t) => themeFilter === "all" || t.id === "moonlight" || isDarkTheme(t.id) === (themeFilter === "dark")).map((t) => (
               <button
                 key={t.id}
                 role="radio"
                 aria-checked={look.theme === t.id}
-                onClick={() => setLook({ theme: t.id, overrides: {} })}
+                onClick={() => {
+                  setLook({ theme: t.id, overrides: {} });
+                  setPeek(undefined);
+                }}
+                onMouseEnter={() => setPeek(t.id)}
+                onFocus={() => setPeek(t.id)}
+                onBlur={() => setPeek(undefined)}
                 className="grid gap-2 rounded-xl border p-2.5 text-left hover:border-primary aria-checked:border-primary aria-checked:ring-2 aria-checked:ring-ring/40"
               >
                 <AppPreview look={{ ...look, theme: t.id, overrides: {} }} inherit={t.id === "moonlight" && look.theme === "moonlight"} />

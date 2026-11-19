@@ -59,3 +59,63 @@ export function AppPreview({ look, theme, className = "", inherit }: { look: Par
     </div>
   );
 }
+
+/**
+ * A big, readable chat screen drawn in a theme, so you can see exactly how it looks before you pick it.
+ * Decoration only: screen readers skip it (the caption names the theme).
+ */
+export function ThemeShowcase({ look, inherit }: { look: Partial<Look>; inherit?: boolean }) {
+  const vars: Record<string, string> = {};
+  for (const [k, v] of Object.entries(look.overrides ?? {})) vars[`--${k}`] = v;
+  if (look.radius !== undefined) vars["--radius"] = `${look.radius}rem`;
+  const r = (n: number) => `calc(var(--radius) * ${n})`;
+  const chats = ["Weekend in Lisbon", "Fix my resume", "Pasta for four", "Study plan"];
+  return (
+    <div
+      aria-hidden
+      data-preview-theme={inherit ? undefined : (look.theme ?? "moonlight")}
+      style={{ ...vars, fontFamily: FONT[look.font ?? "default"], borderRadius: r(1.4) } as React.CSSProperties}
+      className="pointer-events-none flex h-72 w-full overflow-hidden border bg-background text-[11px] leading-snug text-foreground shadow-sm transition-colors duration-300 select-none sm:h-80 sm:text-xs"
+    >
+      <div className="hidden w-[30%] max-w-48 shrink-0 flex-col gap-1 border-r bg-sidebar p-3 sm:flex">
+        <p className="mb-1 px-1 font-semibold">MoonlightC</p>
+        <p className="mb-2 bg-primary px-2.5 py-1.5 text-primary-foreground" style={{ borderRadius: r(0.8) }}>
+          + New chat
+        </p>
+        {chats.map((c, i) => (
+          <p key={c} className={`truncate px-2 py-1 ${i === 0 ? "bg-accent font-medium" : "text-muted-foreground"}`} style={{ borderRadius: r(0.6) }}>
+            {c}
+          </p>
+        ))}
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex items-center justify-between border-b px-4 py-2">
+          <span className="font-medium">Weekend in Lisbon</span>
+          <span className="text-muted-foreground">Auto: Planning</span>
+        </div>
+        <div className="flex flex-1 flex-col gap-3 overflow-hidden px-4 py-3">
+          <p className="max-w-[75%] self-end bg-secondary px-3 py-2" style={{ borderRadius: r(1.2) }}>
+            Plan two days in Lisbon on a small budget.
+          </p>
+          <div className="grid max-w-[90%] gap-1.5">
+            <p>Here&apos;s a relaxed plan that keeps costs low:</p>
+            <div className="grid gap-1 border bg-card p-2.5" style={{ borderRadius: r(0.9) }}>
+              <p>
+                <span className="font-semibold">Day 1.</span> Alfama, the castle at sunset, dinner in Mouraria.
+              </p>
+              <p>
+                <span className="font-semibold">Day 2.</span> Tram 28 to Belém, then the riverside walk.
+              </p>
+            </div>
+            <p className="text-muted-foreground">About €60 a day, not counting where you stay.</p>
+            <p className="text-link underline underline-offset-2">Open the route in Maps</p>
+          </div>
+        </div>
+        <div className="m-3 mt-0 flex items-center gap-2 border bg-card py-1.5 pr-1.5 pl-3" style={{ borderRadius: r(1.2) }}>
+          <span className="flex-1 truncate text-muted-foreground">Message MoonlightC</span>
+          <span className="grid size-6 place-items-center rounded-full bg-primary text-primary-foreground">↑</span>
+        </div>
+      </div>
+    </div>
+  );
+}

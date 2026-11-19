@@ -204,6 +204,7 @@ Current version everywhere: 0.6.34 (desktop installed, web live, extension zip).
 - Owner asked (2026-10-13): never move the mouse/keyboard or show windows on their PC. Locally run desktop e2e with `--grep-invert "computer use|remote control"`; those run in CI. Update desktop: `MoonlightC.exe --quit`, then installer `/S`, then `MoonlightC.exe --hidden`.
 
 ## Notes (last 10)
+2026-11-18: owner asked for more themes + a Discord-style showcase. Added 12 themes (18 total; all AA-checked), a big sticky showcase in Appearance > Theme that shows a pointed/focused theme before you pick it, and an All/Light/Dark filter. e2e customize + a11y green.
 2026-11-18: owner said publish; desktop v0.6.69 published as latest (all 4 CI builds green after pinning Linux x64 to ubuntu-24.04; extension zip attached; latest/download links 200). Draft v0.6.68 left unpublished.
 2026-11-18: round-2 research (docs/RESEARCH-2.md); added Auto label (task + model), Ask about this (quote selected answer text), connector Check button, 12 ready-made modes, React projects deploy on Vercel (root page + vercel.json), What's new on home + Settings, chat width, first-run free hint; new settings sync. Full e2e 197 pass + fixes; production checks (screens/course/home) pass.
 2026-11-18: course live at /course (7 parts, 23 lessons); Appearance levels Simple/More/Full control with live previews, fonts, text size, plain messages, calm motion; memory meter + monthly budget; Studio Improve prompt + Compare models; Code Fix it (preview errors via CORS runtime). All pushed; e2e for each.

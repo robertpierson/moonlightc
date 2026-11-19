@@ -10,9 +10,22 @@ export const THEMES = [
   { id: "midnight", name: "Midnight", note: "Deep blue dark" },
   { id: "paper", name: "Paper", note: "Warm light" },
   { id: "contrast", name: "High contrast", note: "Maximum legibility" },
+  { id: "tungsten", name: "Tungsten", note: "Cool metal dark" },
+  { id: "cobalt", name: "Cobalt", note: "Deep blue, bright accent" },
+  { id: "forest", name: "Forest", note: "Dark green, calm" },
+  { id: "ember", name: "Ember", note: "Warm dark, orange glow" },
+  { id: "plum", name: "Plum", note: "Dark violet" },
+  { id: "terminal", name: "Terminal", note: "Green on black" },
+  { id: "oled", name: "True black", note: "Pure black, saves battery" },
+  { id: "frost", name: "Frost", note: "Icy light blue" },
+  { id: "blossom", name: "Blossom", note: "Soft pink light" },
+  { id: "sage", name: "Sage", note: "Quiet green light" },
+  { id: "dune", name: "Dune", note: "Sand and sun" },
+  { id: "lilac", name: "Lilac", note: "Gentle violet light" },
 ] as const;
 export type ThemeId = (typeof THEMES)[number]["id"];
-const DARK_THEMES: ThemeId[] = ["graphite", "midnight", "contrast"];
+const DARK_THEMES: ThemeId[] = ["graphite", "midnight", "contrast", "tungsten", "cobalt", "forest", "ember", "plum", "terminal", "oled"];
+export const isDarkTheme = (t: ThemeId) => DARK_THEMES.includes(t);
 export const themeMode = (t: ThemeId): "dark" | "light" | undefined => (t === "moonlight" ? undefined : DARK_THEMES.includes(t) ? "dark" : "light");
 
 /** Tokens the theme editor can change. */

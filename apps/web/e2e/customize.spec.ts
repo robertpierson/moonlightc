@@ -19,6 +19,22 @@ test("distros restyle the app and change which sections show", async ({ page }) 
   await expect(page.getByRole("button", { name: "Settings", exact: true }).locator("visible=true")).toHaveCount(1);
 });
 
+test("themes show in the big preview before you pick one", async ({ page }) => {
+  await page.goto("/app");
+  await go(page, "Customize");
+  await page.getByRole("radio", { name: /^Ember/ }).focus();
+  await expect(page.getByText("Ember, preview only")).toBeVisible();
+  await expect(page.locator("figure [data-preview-theme=ember]")).toBeVisible();
+  await expect(page.locator("html")).not.toHaveAttribute("data-theme", /.+/);
+
+  await page.getByRole("radio", { name: "dark", exact: true }).click();
+  await expect(page.getByRole("radio", { name: /^Frost/ })).toHaveCount(0);
+  await page.getByRole("radio", { name: /^Ember/ }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "ember");
+  await expect(page.locator("html")).toHaveClass(/dark/);
+  await expect(page.getByText("Ember, your theme now")).toBeVisible();
+});
+
 test("theme picker, editor and reset", async ({ page }) => {
   await page.goto("/app");
   await go(page, "Customize");
