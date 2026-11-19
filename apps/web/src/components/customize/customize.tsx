@@ -34,7 +34,7 @@ import {
 } from "@/lib/customize";
 import { update, useStore } from "@/lib/store";
 
-const SECTION_LABEL: Record<ViewId, string> = { chat: "Chat", code: "Code", subscriptions: "Subscriptions", library: "Projects", studio: "Studio", connections: "Connections", models: "Local models", terminal: "Terminal", projects: "Local projects", automations: "Automations", mods: "Mods", customize: "Customize" };
+const SECTION_LABEL: Record<ViewId, string> = { chat: "Chat", code: "Code", subscriptions: "Subscriptions", library: "Projects", studio: "Studio", connections: "Connections", models: "Local models", terminal: "Terminal", projects: "Local projects", automations: "Automations", community: "Community", friends: "Friends", mods: "Mods", customize: "Customize" };
 
 function download(name: string, text: string) {
   const a = document.createElement("a");

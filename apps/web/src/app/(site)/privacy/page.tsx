@@ -39,6 +39,9 @@ export default function Privacy() {
           <p>
             If you share a chat, a copy of its text is stored and anyone with the link can read it, until you stop sharing it (Settings &gt; Privacy &amp; data). If you use remote control, we store your computers&apos; names, app versions and when they were last online; the screen, files and commands go straight between your devices, or through a relay (Cloudflare) on networks that block direct connections, which doesn&apos;t keep them. If you add your own relay key, it&apos;s stored encrypted.
           </p>
+          <p>
+            Friends: people find you only by your exact username. Messages with a friend are stored in our database so they reach both of you, and only the two of you can read them; unsending deletes one. Ask AI in a friend chat sends the last few messages to your own AI provider. In Community, what you share is public, with the name you choose. PC storage files go straight between your own devices and are never stored by us.
+          </p>
           <p>In Settings &gt; Account you can download all your account data or delete your account, which removes everything tied to it.</p>
         </>
       ) : (

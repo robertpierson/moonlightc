@@ -19,6 +19,8 @@ const Automations = dynamic(() => import("@/components/desktop/automations").the
 const CodeWorkspace = dynamic(() => import("@/components/code/code-workspace").then((m) => m.CodeWorkspace), { ssr: false, loading: () => <div className="flex-1" /> });
 const Subscriptions = dynamic(() => import("@/components/subscriptions/subscriptions").then((m) => m.Subscriptions), { loading: () => <div className="flex-1" /> });
 const Library = dynamic(() => import("@/components/library/library").then((m) => m.Library), { loading: () => <div className="flex-1" /> });
+const Community = dynamic(() => import("@/components/community/community").then((m) => m.Community), { loading: () => <div className="flex-1" /> });
+const Friends = dynamic(() => import("@/components/friends/friends").then((m) => m.Friends), { loading: () => <div className="flex-1" /> });
 const Studio = dynamic(() => import("@/components/studio/studio").then((m) => m.Studio), { loading: () => <div className="flex-1" /> });
 const Projects = dynamic(() => import("@/components/desktop/projects").then((m) => m.Projects), { loading: () => <div className="flex-1" /> });
 const Terminals = dynamic(() => import("@/components/desktop/terminals").then((m) => m.Terminals), { ssr: false, loading: () => <div className="flex-1" /> });
@@ -65,7 +67,7 @@ import { ModeSelect, ModesDialog, useModes } from "./modes";
 import { CommandPalette } from "./command-palette";
 import { AllChats, Sidebar } from "./sidebar";
 
-const VIEW_TITLES: Record<View, string> = { chat: "Chat", remote: "Your computer", chats: "All chats", cowork: "Cowork", code: "Code", subscriptions: "Subscriptions", library: "Projects", studio: "Studio", terminal: "Terminal", projects: "Local projects", models: "Model library", automations: "Automations", settings: "Settings" };
+const VIEW_TITLES: Record<View, string> = { chat: "Chat", remote: "Your computer", chats: "All chats", cowork: "Cowork", code: "Code", subscriptions: "Subscriptions", library: "Projects", studio: "Studio", terminal: "Terminal", projects: "Local projects", models: "Model library", automations: "Automations", community: "Community", friends: "Friends", settings: "Settings" };
 
 function distroDefaultMode() {
   const s = getState();
@@ -612,6 +614,8 @@ ${summary}
               onOpenConnectors={() => openSettings("connectors")}
             />
           )}
+          {view === "community" && <Community onSignIn={() => openSettings("account")} />}
+          {view === "friends" && <Friends onSignIn={() => openSettings("account")} />}
           {view === "studio" && (
             <Studio
               onOpenKeys={() => setKeysOpen(true)}

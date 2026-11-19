@@ -1,21 +1,18 @@
-# Plan: investor round (Nov 18, 2026)
+# Plan: community round (2026-11-19)
 
-Owner asked (Nov 18, 2026, then went to sleep; "keep working, put it live after"):
-- Site: cooler, metallic greys (watered-down tungsten/cobalt, never warm), a texture you can actually see, sharp on
-  every screen (phone, Chromebook, laptop, desktop, ultrawide, short landscape). Investor-ready.
-- Research, again and again, what today's AI apps lack (e.g. browser remote control, good images), then fix those in MoonlightC.
-- Commands like Claude's slash commands, but Python-simple.
-- A free built-in course on the site (like Anthropic's courses) teaching everything: the app, themes, connectors,
-  Vercel, Supabase, and connecting Claude Code.
-- More customizing: a few modes up to "full creative control", previewed live before saving (like Discord).
-- Fix all bugs. Not hundreds of random tabs.
+Owner asked: publish everything; a library where people make their own themes, modes, commands, setups and mods
+(not just pick from random ones online), user friendly; and a chat to connect with friends.
 
-Steps (each: build, typecheck, lint, unit, Playwright, screenshots; then push):
-1. Palette + texture: cool tungsten/cobalt silver tokens, visible grain/brush, contrast checked; viewport matrix
-   screenshots (375x812, 412x915, 768x1024, 1366x768 Chromebook, 1440x900, 1920x1080, 2560x1080, 900x500 landscape).
-2. Research loop (subagent): gaps in current AI apps, with sources -> docs/RESEARCH.md, ranked by value and feasibility.
-3. Simple commands in chat: "/" menu, plain-word commands, /help, your own commands with {input}.
-4. Course at /course: modules and lessons, progress kept in the browser, accurate to the real app.
-5. Customization modes (Simple, Standard, Full control) with live preview and Save / Reset.
-6. Features from the research, highest value first.
-7. Bug sweep (full suites, site audit), investor polish, push live, OWNER_TODO "try this" list.
+1. Publish desktop 0.6.70 (PC storage, themes). Verify every download link.
+2. Community library (one new view, "Community"):
+   - DB `creations` (kind theme/mode/command/setup/mod, payload JSON validated on install, size cap), installs and
+     reports tables, RPCs. Anyone can browse; signed-in people publish. 3 reports hide an item until staff review.
+   - Make: a guided maker per kind with a live preview (themes/setups use AppPreview). Share from what you already
+     made (My themes, your modes, your commands, saved setups). Mods: bundle your own pieces, optional sandboxed code.
+   - Browse: filter by kind, search, Popular/New, preview, Add (goes into your own lists), Report. "Yours": unshare.
+3. Friends (one new view, "Friends"):
+   - Find people by exact username only (no people directory). Requests, accept, remove, block.
+   - DB `friendships` (writes only through RPCs), `direct_messages` (RLS: only the two people; only friends can
+     send; 30/minute limit; realtime).
+   - Chat UI like the AI chat; "Ask AI" in a friend chat answers with your own model and posts it labeled as AI.
+4. Tests: SQL RLS checks, unit, e2e with mocked Supabase where needed, a11y. Docs + course lesson.

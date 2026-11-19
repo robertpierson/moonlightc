@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock, Code2, Cpu, Files, FolderGit2, FolderOpen, MessageSquare, Palette, Receipt, Settings as SettingsIcon, SquareTerminal } from "lucide-react";
+import { Blocks, Clock, Code2, Users, Cpu, Files, FolderGit2, FolderOpen, MessageSquare, Palette, Receipt, Settings as SettingsIcon, SquareTerminal } from "lucide-react";
 import type { ViewId } from "@/lib/customize";
 import { desktop } from "@/lib/desktop";
 import Link from "next/link";
@@ -8,7 +8,7 @@ import { useStore } from "@/lib/store";
 import { accountsEnabled, useUser } from "@/lib/supabase/client";
 import { Avatar } from "@/components/settings/avatar";
 
-export type View = "chat" | "remote" | "chats" | "library" | "studio" | "subscriptions" | "automations" | "cowork" | "code" | "terminal" | "projects" | "models" | "settings";
+export type View = "chat" | "remote" | "community" | "friends" | "chats" | "library" | "studio" | "subscriptions" | "automations" | "cowork" | "code" | "terminal" | "projects" | "models" | "settings";
 export type Workspace = "chat" | "cowork" | "code";
 
 /** Which of the three modes a screen belongs to (Settings keeps whichever mode you came from). */
@@ -19,13 +19,15 @@ export function workspaceOf(v: View, previous: Workspace): Workspace {
   return "chat";
 }
 
-type Item = { id: View; label: string; icon: React.ReactNode; desktopOnly?: boolean };
+type Item = { id: View; label: string; icon: React.ReactNode; desktopOnly?: boolean; needsAccounts?: boolean };
 const CHAT_ITEMS: Item[] = [
   { id: "library", label: "Projects", icon: <FolderOpen /> },
   { id: "models", label: "Model library", icon: <Cpu />, desktopOnly: true },
   { id: "studio", label: "Studio", icon: <Palette /> },
   { id: "subscriptions", label: "Subscriptions", icon: <Receipt /> },
   { id: "automations", label: "Automations", icon: <Clock />, desktopOnly: true },
+  { id: "community", label: "Community", icon: <Blocks />, needsAccounts: true },
+  { id: "friends", label: "Friends", icon: <Users />, needsAccounts: true },
 ];
 const CODE_ITEMS: Item[] = [
   { id: "terminal", label: "Terminal", icon: <SquareTerminal />, desktopOnly: true },
@@ -33,7 +35,7 @@ const CODE_ITEMS: Item[] = [
 ];
 
 /** Sections this device can show (desktop-only ones need the desktop app), for Settings > Appearance. */
-export const availableViews = (): ViewId[] => ["chat", "code", ...[...CHAT_ITEMS, ...CODE_ITEMS].filter((i) => !!desktop() || !i.desktopOnly).map((i) => i.id as ViewId)];
+export const availableViews = (): ViewId[] => ["chat", "code", ...[...CHAT_ITEMS, ...CODE_ITEMS].filter((i) => (!!desktop() || !i.desktopOnly) && (accountsEnabled || !i.needsAccounts)).map((i) => i.id as ViewId)];
 
 /** Chat / Cowork / Code, like Claude. */
 export function WorkspaceSwitch({ workspace, onChange, hidden = [] }: { workspace: Workspace; onChange: (w: Workspace) => void; hidden?: string[] }) {
@@ -61,7 +63,7 @@ export function WorkspaceSwitch({ workspace, onChange, hidden = [] }: { workspac
 /** The extra sections for the current mode (chat things in Chat, code things in Code). */
 export function SectionNav({ workspace, view, onChange, hidden = [] }: { workspace: Workspace; view: View; onChange: (v: View) => void; hidden?: string[] }) {
   const isDesktop = !!desktop();
-  const items = (workspace === "code" ? CODE_ITEMS : workspace === "chat" ? CHAT_ITEMS : []).filter((i) => (isDesktop || !i.desktopOnly) && !hidden.includes(i.id));
+  const items = (workspace === "code" ? CODE_ITEMS : workspace === "chat" ? CHAT_ITEMS : []).filter((i) => (isDesktop || !i.desktopOnly) && (accountsEnabled || !i.needsAccounts) && !hidden.includes(i.id));
   if (!items.length) return null;
   return (
     <nav aria-label="Sections" className="grid gap-0.5">
