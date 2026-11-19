@@ -87,15 +87,18 @@ test("Community: browse, add a command, try a theme, and make and share one with
   const dialog = page.getByRole("dialog", { name: "Make something" });
   await dialog.getByRole("radio", { name: "Command" }).click();
   await dialog.getByLabel("Name").fill("Haiku");
-  await dialog.getByLabel("What you type").fill("haiku");
+  await dialog.getByLabel("What you type", { exact: true }).fill("haiku");
   await dialog.getByLabel(/The prompt it fills in/).fill("Write a haiku about {input}.");
   await expect(dialog.getByText("Write a haiku about Lisbon.")).toBeVisible();
   await dialog.getByRole("button", { name: "Share with everyone" }).click();
   await expect(page.getByText(/Haiku is shared/)).toBeVisible();
+  await page.screenshot({ path: test.info().outputPath("community.png") });
   expect(db.published[0]).toMatchObject({ kind: "command", name: "Haiku", payload: { kind: "command", command: { name: "haiku" } } });
 });
 
 test("Friends: add by username, read and send messages", async ({ page }) => {
+  const crashes: string[] = [];
+  page.on("pageerror", (e) => crashes.push(e.message));
   const db = await fakeSupabase(page);
   await signIn(page);
   await page.goto("/app");
@@ -112,4 +115,6 @@ test("Friends: add by username, read and send messages", async ({ page }) => {
   await page.keyboard.press("Enter");
   await expect(page.getByText("yes! Lisbon?")).toBeVisible();
   expect(db.dms.at(-1)).toMatchObject({ recipient: MAYA, body: "yes! Lisbon?" });
+  expect(crashes).toEqual([]);
+  await page.screenshot({ path: test.info().outputPath("friends.png") });
 });

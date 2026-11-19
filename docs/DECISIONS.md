@@ -217,3 +217,8 @@ Alternatives: bundle the FreeLLMAPI server in the desktop app (desktop-only, a s
 - Transfer: requests over the PC's private channel; file bytes over a WebRTC data channel (STUN only, never the metered relay; ~24 MB/s locally). Without a direct route, files up to 25 MB go over the channel.
 - Why: the owner wants a Chromebook to use the PC's disk "like a cloud" without anything being able to run on the PC.
 - Alternatives: reusing the home-folder "files" permission (too broad, 25 MB cap); Supabase Storage (costs money, not the PC's disk); the TURN relay for big files (metered).
+
+## Community library and Friends (2026-11-19)
+- What: one "Community" view (browse, Try it, Add, Report; a guided maker per kind with live preview) and one "Friends" view (add by exact username, live 1:1 chat, Ask AI). Supabase tables creations/friendships/direct_messages with RLS; friendship writes only via RPCs; only friends can message; 30 messages/minute; 3 reports hide an item.
+- Why: the owner wants people to make and share their own themes, modes, commands, setups and mods, and to chat with friends.
+- Alternatives: a GitHub-hosted mod registry only (needs coding, not user friendly); a people directory (privacy risk, so exact username only); group chats (later, if wanted).

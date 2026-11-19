@@ -124,7 +124,7 @@ export function Friends({ onSignIn }: { onSignIn: () => void }) {
                 <span className="grid size-7 shrink-0 place-items-center rounded-full bg-muted text-xs font-medium">{nameOf(f).replace("@", "").slice(0, 1).toUpperCase()}</span>
                 <span className="min-w-0 flex-1 truncate">{nameOf(f)}</span>
                 {unread[f.id] ? (
-                  <span className="rounded-full bg-primary px-1.5 text-xs text-primary-foreground" aria-label={`${unread[f.id]} unread`}>
+                  <span className="rounded-full bg-selected px-1.5 text-xs text-selected-foreground" aria-label={`${unread[f.id]} unread`}>
                     {unread[f.id]}
                   </span>
                 ) : null}
@@ -179,7 +179,9 @@ function Conversation({ friend, onBack, onGone }: { friend: Friend; onBack: () =
   const [text, setText] = useState("");
   const [thinking, setThinking] = useState(false);
   const end = useRef<HTMLDivElement>(null);
-  useEffect(() => end.current?.scrollIntoView({ block: "end" }), [messages.length]);
+  useEffect(() => {
+    end.current?.scrollIntoView({ block: "end" });
+  }, [messages.length]);
 
   const submit = async () => {
     const t = text;
@@ -238,7 +240,7 @@ function Conversation({ friend, onBack, onGone }: { friend: Friend; onBack: () =
             const mineMsg = m.sender === me;
             return (
               <div key={m.id} className={`group flex items-end gap-1 ${mineMsg ? "flex-row-reverse" : ""}`}>
-                <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap ${m.kind === "ai" ? "border bg-card" : mineMsg ? "bg-primary text-primary-foreground" : "bg-secondary"}`}>
+                <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap ${m.kind === "ai" ? "border bg-card" : mineMsg ? "bg-selected text-selected-foreground" : "border bg-secondary"}`}>
                   {m.kind === "ai" && (
                     <span className="mb-1 flex items-center gap-1 text-xs text-muted-foreground">
                       <Sparkles className="size-3" /> AI, asked by {mineMsg ? "you" : nameOf(friend)}

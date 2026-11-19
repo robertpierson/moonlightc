@@ -2,12 +2,14 @@
 
 Do them in order. When done, tell Claude "done, continue".
 
-## Waiting on your OK: desktop 0.6.70 with PC storage
-PC storage needs a new desktop app on your PC. Reply "publish 0.6.70" and Claude builds and publishes it. Then:
-1. On your PC, install it from https://moonlightc.vercel.app/download.
-2. In MoonlightC on the PC: Settings > PC storage > switch on "Let my other devices store files on this PC".
-3. On your Chromebook, open https://moonlightc.vercel.app/app, sign in, open Cowork, click your PC under "Your computers".
-4. Click "Open storage", then Upload. Your files land in "MoonlightC Storage" on the PC, in a folder for your Chromebook.
+## Try this: Community, Friends and PC storage (Nov 19, 2026, 6 minutes)
+Desktop 0.6.70 is published. Install it on your PC from https://moonlightc.vercel.app/download.
+1. PC storage: on the PC, Settings > PC storage > switch it on. On your Chromebook, open Cowork, click your PC under
+   "Your computers", then "Open storage" and upload a file.
+2. Community: in the sidebar click Community. Press "Try it" on a theme, then "Make something" > Theme, pick colors and
+   watch the preview, then "Share with everyone".
+3. Friends: click Friends. Your username shows at the top. Give it to a friend; type theirs and press Add.
+4. In a friend chat, type a question and press "Ask AI": your AI answers in the chat for both of you.
 
 ## Done (Nov 18, 2026): desktop 0.6.69 published
 Install it from https://moonlightc.vercel.app/download (or run the new installer over the old one). It has this
