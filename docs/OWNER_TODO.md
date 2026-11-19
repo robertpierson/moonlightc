@@ -2,6 +2,13 @@
 
 Do them in order. When done, tell Claude "done, continue".
 
+## Waiting on your OK: desktop 0.6.70 with PC storage
+PC storage needs a new desktop app on your PC. Reply "publish 0.6.70" and Claude builds and publishes it. Then:
+1. On your PC, install it from https://moonlightc.vercel.app/download.
+2. In MoonlightC on the PC: Settings > PC storage > switch on "Let my other devices store files on this PC".
+3. On your Chromebook, open https://moonlightc.vercel.app/app, sign in, open Cowork, click your PC under "Your computers".
+4. Click "Open storage", then Upload. Your files land in "MoonlightC Storage" on the PC, in a folder for your Chromebook.
+
 ## Done (Nov 18, 2026): desktop 0.6.69 published
 Install it from https://moonlightc.vercel.app/download (or run the new installer over the old one). It has this
 round's features. Draft 0.6.68 (missing Linux x64) stays unpublished; it can be deleted with your OK.

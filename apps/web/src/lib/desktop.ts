@@ -118,6 +118,22 @@ export interface MooncBridge {
   /** API keys already set up on this computer (standard environment variables). */
   keys: { scan(): Promise<{ provider: string; source: string; value: string; masked: string }[]> };
   /** Remote control of this PC from your other devices (every call is checked against what the person allowed). */
+  /** PC storage (desktop/src/storage.mjs). Paths are "/"-separated and relative to the MoonlightC Storage folder. */
+  storage?: {
+    settings(): Promise<{ on: boolean; maxGB: number; dir: string; used: number; free: number }>;
+    setSettings(next: { on: boolean; maxGB: number }): Promise<{ on: boolean; maxGB: number; dir: string; used: number; free: number }>;
+    openFolder(): Promise<string>;
+    list(clientId: string, rel: string): Promise<StorageListing>;
+    mkdir(clientId: string, rel: string, name: string): Promise<{ ok: true }>;
+    remove(clientId: string, rel: string): Promise<{ ok: true }>;
+    rename(clientId: string, rel: string, name: string): Promise<{ ok: true }>;
+    begin(clientId: string, rel: string, name: string, size: number): Promise<{ id: string }>;
+    write(clientId: string, id: string, offset: number, data: Uint8Array): Promise<{ got: number }>;
+    finish(clientId: string, id: string): Promise<{ name: string }>;
+    cancel(clientId: string, id: string): Promise<{ ok: true }>;
+    stat(clientId: string, rel: string): Promise<{ name: string; size: number }>;
+    read(clientId: string, rel: string, offset: number, length: number): Promise<Uint8Array>;
+  };
   remote: {
     connect(client: { id: string; name: string }, tiers: string[], where?: unknown, account?: { level: number; uid: string }): Promise<{ allowed: boolean; tiers?: string[]; reason?: string }>;
     places(): Promise<Places>;
@@ -182,3 +198,5 @@ declare global {
 export type RemoteSession = { clientId: string; name: string; tiers: string[]; startedAt: number };
 
 export const desktop = (): MooncBridge | undefined => (typeof window === "undefined" ? undefined : window.moonc);
+
+export type StorageListing = { path: string; entries: { name: string; dir: boolean; size?: number; at: number }[]; used: number; max: number; free: number };

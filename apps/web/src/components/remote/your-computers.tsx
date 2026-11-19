@@ -13,7 +13,7 @@ export function useDevices() {
     const load = () =>
       supabase()
         .from("devices")
-        .select("id, name, os, remote_enabled, local_models, app_version, last_seen")
+        .select("id, name, os, remote_enabled, storage_on, local_models, app_version, last_seen")
         .order("last_seen", { ascending: false })
         .then(({ data }) => setDevices((data as Device[]) ?? []));
     load();

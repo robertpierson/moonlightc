@@ -7,12 +7,12 @@ import { supabase } from "./supabase/client";
 // Requests carry the asking device's id; the PC answers with a matching "res". Terminal output and chat text stream
 // as separate events addressed to that device.
 
-export type Tier = "view" | "control" | "files" | "terminal" | "chat";
-export const TIER_LABELS: Record<Tier, string> = { view: "See the screen and hear its sound", control: "Use the mouse and keyboard", files: "Files in the home folder", terminal: "Terminal", chat: "Chat with its AI models" };
+export type Tier = "view" | "control" | "files" | "terminal" | "chat" | "storage";
+export const TIER_LABELS: Record<Tier, string> = { view: "See the screen and hear its sound", control: "Use the mouse and keyboard", files: "Files in the home folder", terminal: "Terminal", chat: "Chat with its AI models", storage: "Keep files in its MoonlightC Storage folder" };
 
 export type Req = { id: string; from: string; fromName: string; method: string; params?: Record<string, unknown> };
 export type Res = { id: string; to: string; ok: boolean; result?: unknown; error?: string };
-export type Device = { id: string; name: string; os: string | null; remote_enabled: boolean; local_models: string[]; app_version: string | null; last_seen: string; is_home?: boolean };
+export type Device = { id: string; name: string; os: string | null; remote_enabled: boolean; storage_on?: boolean; local_models: string[]; app_version: string | null; last_seen: string; is_home?: boolean };
 
 export const channelName = (deviceId: string) => `device:${deviceId}`;
 export const isOnline = (d: Device, now = Date.now()) => now - Date.parse(d.last_seen) < 3 * 60_000;

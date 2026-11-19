@@ -12,7 +12,7 @@
     "bundle-web": "node scripts/bundle-web.mjs",
     "dist": "pnpm bundle-web && electron-builder --publish never",
     "typecheck": "tsc --noEmit -p .",
-    "test": "node --test src/safety.test.mjs src/credential-box.test.mjs"
+    "test": "node --test src/safety.test.mjs src/credential-box.test.mjs src/storage-core.test.mjs"
   },
   "dependencies": {
     "@jitsi/robotjs": "0.6.24",

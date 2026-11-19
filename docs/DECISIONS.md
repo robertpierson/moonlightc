@@ -211,3 +211,9 @@ Alternatives: bundle the FreeLLMAPI server in the desktop app (desktop-only, a s
 - What: the marketing site's page color is a silver-white (#eceef2) with a fine SVG grain; cards and buttons are light brushed metal. Home has two tabbed sections ("One app. Four superpowers." and "Wherever you are.") with a pill tab bar over one panel.
 - Why: the owner asked for a cleaner, grey-silver look with an iPhone-like texture, and liked the in-page tabs on claude.com's Claude Code page, but did not want a copy of it.
 - Alternatives: a side list next to the panel (too close to Claude's page); a texture image file (the inline SVG noise needs no download).
+
+## PC storage: one folder, bytes only, direct link (2026-11-19)
+- What: other devices on your account keep files in "~/MoonlightC Storage" on a PC (Settings > PC storage, off by default, switchable only at the PC). The PC only reads and writes bytes in that folder (desktop/src/storage.mjs + storage-core.mjs): names cleaned, links resolved before checking, no open/run, Windows "downloaded from the internet" mark on every file, deletes go to the Recycle Bin, a space limit plus 5 GB kept free, every change in the activity log. With remote control off, the PC answers storage requests only.
+- Transfer: requests over the PC's private channel; file bytes over a WebRTC data channel (STUN only, never the metered relay; ~24 MB/s locally). Without a direct route, files up to 25 MB go over the channel.
+- Why: the owner wants a Chromebook to use the PC's disk "like a cloud" without anything being able to run on the PC.
+- Alternatives: reusing the home-folder "files" permission (too broad, 25 MB cap); Supabase Storage (costs money, not the PC's disk); the TURN relay for big files (metered).

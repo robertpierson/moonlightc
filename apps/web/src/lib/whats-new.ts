@@ -1,6 +1,13 @@
 // "What's new" in Settings: recent changes in plain English, newest first. Only things that really shipped.
 export const WHATS_NEW: { version: string; date: string; items: string[] }[] = [
   {
+    version: "Website",
+    date: "November 19, 2026",
+    items: [
+      "Appearance: 12 more themes, and pointing at one shows it full-size before you pick it.",
+    ],
+  },
+  {
     version: "0.6.69",
     date: "November 18, 2026",
     items: [

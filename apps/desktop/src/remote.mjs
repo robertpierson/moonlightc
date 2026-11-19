@@ -9,10 +9,12 @@ import os from "node:os";
 import path from "node:path";
 import { captureJpeg, hold, pointer, releaseAll, runAction, screenPixels } from "./computer.mjs";
 import { closeBox, sendToBox } from "./credential-box.mjs";
+// (storage.mjs imports this file too; the function is only called later, so the loop is fine.)
+import { isOn as storageOn } from "./storage.mjs";
 
 const IDLE_MS = 15 * 60_000;
 const MAX_FILE = 25 * 1024 * 1024;
-export const TIERS = { view: "See the screen and hear its sound", control: "Use the mouse and keyboard", files: "Browse, download and upload files in your home folder", terminal: "Run commands in a terminal", chat: "Chat with the AI models on this PC" };
+export const TIERS = { view: "See the screen and hear its sound", control: "Use the mouse and keyboard", files: "Browse, download and upload files in your home folder", terminal: "Run commands in a terminal", chat: "Chat with the AI models on this PC", storage: "Keep files in this PC's MoonlightC Storage folder" };
 const INPUTS = new Set(["click", "double_click", "right_click", "move", "type", "key", "scroll", "key_down", "key_up", "mouse_down", "mouse_up", "move_by", "wheel"]);
 const HOLDS = new Set(["key_down", "key_up", "mouse_down", "mouse_up", "move_by", "wheel"]);
 
@@ -29,7 +31,7 @@ export const state = () => [...sessions.entries()].map(([id, s]) => ({ clientId:
 const emit = () => listeners.forEach((fn) => fn(state()));
 
 const file = (n) => path.join(app.getPath("userData"), n);
-function audit(action, detail = {}) {
+export function audit(action, detail = {}) {
   fs.appendFileSync(file("remote-audit.jsonl"), JSON.stringify({ at: new Date().toISOString(), action, ...detail }) + "\n");
 }
 export function readAudit(limit = 200) {
@@ -104,7 +106,7 @@ export function end(clientId, reason = "disconnected") {
 }
 
 // "Use this PC's AI models" only: no screen, files or keyboard, so no frame on screen and no idle cut-off.
-const modelsOnly = (tiers) => tiers.every((t) => t === "chat" || t === "files" || t === "terminal");
+const modelsOnly = (tiers) => tiers.every((t) => t === "chat" || t === "files" || t === "terminal" || t === "storage");
 const watching = () => [...sessions.values()].some((s) => !modelsOnly(s.tiers));
 
 function touch(clientId) {
@@ -184,6 +186,11 @@ export async function connect(parent, client, wanted, where, account) {
   const id = String(client?.id ?? "").slice(0, 64);
   const name = String(client?.name ?? "Another device").slice(0, 60);
   const tiers = [...new Set((Array.isArray(wanted) ? wanted : []).filter((t) => t in TIERS))];
+  // PC storage only when the person at this PC turned it on (Settings > PC storage); then it needs no prompt.
+  if (tiers.includes("storage") && !storageOn()) {
+    tiers.splice(tiers.indexOf("storage"), 1);
+    if (!tiers.length) return { allowed: false, reason: "PC storage is off on this PC. Turn it on there in Settings > PC storage." };
+  }
   if (!id || !tiers.length) throw new Error("Nothing to allow.");
   // Seeing or controlling the screen: only from allowed places, when that setting is on.
   if (tiers.some((t) => t === "view" || t === "control") && !(await fromAllowedPlace(where))) {
@@ -193,7 +200,7 @@ export async function connect(parent, client, wanted, where, account) {
   // Security level (Settings > Account on the website): some access needs the other device's two-step code, which
   // its note signed by the MoonlightC website shows (who it is, and when it last entered a code).
   const level = Number(account?.level ?? 2);
-  const needsCode = (t) => level >= 3 || (level === 1 && (t === "files" || t === "terminal"));
+  const needsCode = (t) => level >= 3 || (level === 1 && (t === "files" || t === "terminal" || t === "storage"));
   if (tiers.some(needsCode)) {
     const w = await fetch(`${SITE}/api/attest/verify`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(where ?? {}) })
       .then((r) => r.json())

@@ -1,9 +1,10 @@
 "use client";
 
-import { Brain, ChartBar, SquareSlash, Cpu, MonitorSmartphone, Download, FolderOpen, Gauge, Globe, KeyRound, Laptop, Megaphone, Moon, Sunset, Palette, Plug, Puzzle, Shield, SlidersHorizontal, Sparkles, Sun, KeySquare, Trash2, Upload, UserRound, Wand2, X } from "lucide-react";
+import { Brain, ChartBar, HardDrive, SquareSlash, Cpu, MonitorSmartphone, Download, FolderOpen, Gauge, Globe, KeyRound, Laptop, Megaphone, Moon, Sunset, Palette, Plug, Puzzle, Shield, SlidersHorizontal, Sparkles, Sun, KeySquare, Trash2, Upload, UserRound, Wand2, X } from "lucide-react";
 import { SaveBar } from "./save-bar";
 import { beginEditing, endEditing, emptyAllTrash } from "@/lib/store";
 import { RemoteSettings } from "@/components/remote/remote-settings";
+import { StorageSettings } from "@/components/remote/storage-settings";
 import dynamic from "next/dynamic";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
@@ -36,7 +37,7 @@ const Customize = dynamic(() => import("@/components/customize/customize").then(
 const ModsView = dynamic(() => import("@/components/mods/mods-view").then((m) => m.ModsView), { loading: () => <div className="flex-1" /> });
 const LocalModels = dynamic(() => import("@/components/desktop/local-models").then((m) => m.LocalModels), { loading: () => <div className="flex-1" /> });
 
-export type SettingsSection = "profile" | "account" | "general" | "usage" | "memory" | "models" | "auto" | "modes" | "commands" | "connectors" | "plugins" | "files" | "remote" | "browser" | "local" | "appearance" | "privacy" | "new" | "staff";
+export type SettingsSection = "profile" | "account" | "general" | "usage" | "memory" | "models" | "auto" | "modes" | "commands" | "connectors" | "plugins" | "files" | "remote" | "storage" | "browser" | "local" | "appearance" | "privacy" | "new" | "staff";
 
 const SECTIONS: { id: SettingsSection; label: string; icon: React.ReactNode; desktopOnly?: boolean; webOnly?: boolean; needsAccounts?: boolean; adminOnly?: boolean }[] = [
   { id: "profile", label: "Profile", icon: <UserRound /> },
@@ -52,6 +53,7 @@ const SECTIONS: { id: SettingsSection; label: string; icon: React.ReactNode; des
   { id: "plugins", label: "Plugins & mods", icon: <Puzzle /> },
   { id: "files", label: "Files", icon: <FolderOpen />, desktopOnly: true },
   { id: "remote", label: "Remote control", icon: <MonitorSmartphone />, desktopOnly: true, needsAccounts: true },
+  { id: "storage", label: "PC storage", icon: <HardDrive />, desktopOnly: true, needsAccounts: true },
   { id: "browser", label: "Chrome extension", icon: <Globe />, webOnly: true },
   { id: "local", label: "Local models", icon: <Cpu />, desktopOnly: true },
   { id: "appearance", label: "Appearance", icon: <Palette /> },
@@ -143,6 +145,11 @@ export function Settings({ section, onSection, availableViews, onClose, onChat }
         {section === "remote" && (
           <Page title="Remote control" description="Use this PC from your phone or another computer signed in to your account: see the screen, use the mouse and keyboard, a terminal, files and this PC's AI models. Off until you switch it on.">
             <RemoteSettings onSetup={() => onSection("account")} />
+          </Page>
+        )}
+        {section === "storage" && (
+          <Page title="PC storage" description="Use this PC's space from your other devices, like your own private cloud drive. Files go in one folder, and nothing in it ever runs. Off until you switch it on.">
+            <StorageSettings onSetup={() => onSection("account")} />
           </Page>
         )}
         {section === "browser" && <BrowserExtension />}

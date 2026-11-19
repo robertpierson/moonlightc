@@ -80,6 +80,21 @@ contextBridge.exposeInMainWorld("moonc", {
       return () => ipcRenderer.removeListener("claude:event", f);
     },
   },
+  storage: {
+    settings: () => invoke("storage:settings"),
+    setSettings: (next) => invoke("storage:setSettings", next),
+    openFolder: () => invoke("storage:openFolder"),
+    list: (clientId, rel) => invoke("storage:list", clientId, rel),
+    mkdir: (clientId, rel, name) => invoke("storage:mkdir", clientId, rel, name),
+    remove: (clientId, rel) => invoke("storage:remove", clientId, rel),
+    rename: (clientId, rel, name) => invoke("storage:rename", clientId, rel, name),
+    begin: (clientId, rel, name, size) => invoke("storage:begin", clientId, rel, name, size),
+    write: (clientId, id, offset, data) => invoke("storage:write", clientId, id, offset, data),
+    finish: (clientId, id) => invoke("storage:finish", clientId, id),
+    cancel: (clientId, id) => invoke("storage:cancel", clientId, id),
+    stat: (clientId, rel) => invoke("storage:stat", clientId, rel),
+    read: (clientId, rel, offset, length) => invoke("storage:read", clientId, rel, offset, length),
+  },
   remote: {
     connect: (client, tiers, where, account) => invoke("remote:connect", client, tiers, where, account),
     places: () => invoke("remote:places"),

@@ -83,6 +83,12 @@ function connectPair() {
   return { client: new RemoteClient(phone), host, killed, written };
 }
 
+// Remote control is on at this PC (with it off, the PC only answers PC storage: see pc-storage.test.ts).
+vi.mock("./store", async (load) => {
+  const real = await load<typeof import("./store")>();
+  return { ...real, getState: () => ({ ...real.getState(), remoteEnabled: true }) };
+});
+
 // The phone's id lives in localStorage; give the test a tiny one.
 const mem = new Map<string, string>();
 vi.stubGlobal("localStorage", { getItem: (k: string) => mem.get(k) ?? null, setItem: (k: string, v: string) => void mem.set(k, v) });

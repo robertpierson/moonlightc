@@ -28,6 +28,8 @@ async function mayHost() {
 export function RemoteHost() {
   const user = useUser();
   const enabled = useStore((s) => !!s.remoteEnabled);
+  // PC storage alone also needs this PC to answer (storage requests only: see remote-host.ts "connect").
+  const storageOn = useStore((s) => !!s.pcStorage);
   const [aal2, setAal2] = useState(false);
   const b = desktop();
   const uid = user?.id;
@@ -52,6 +54,7 @@ export function RemoteHost() {
         os: info.os,
         app_version: info.version,
         remote_enabled: enabled,
+        storage_on: storageOn,
         local_models: await localModels(),
         last_seen: new Date().toISOString(),
       };
@@ -64,7 +67,15 @@ export function RemoteHost() {
       stop = true;
       clearInterval(t);
     };
-  }, [b, uid, enabled]);
+  }, [b, uid, enabled, storageOn]);
+
+  // The desktop app keeps the real PC storage switch; read it once at start.
+  useEffect(() => {
+    b?.storage
+      ?.settings()
+      .then((st) => updateNow((s) => ({ ...s, pcStorage: st.on })))
+      .catch(() => {});
+  }, [b]);
 
   // Remote control on: this PC stays awake by itself, and MoonlightC starts (hidden) with Windows, so it's
   // reachable when you're away. Start-with-Windows is set once; you can still turn it off in Settings > General.
@@ -79,7 +90,7 @@ export function RemoteHost() {
 
   // Answer requests while remote control is on.
   useEffect(() => {
-    if (!b || !uid || !enabled || !aal2) return;
+    if (!b || !uid || !(enabled || storageOn) || !aal2) return;
     let ch: RealtimeChannel | undefined;
     let closed = false;
     const send = (event: string, payload: unknown) =>
@@ -125,7 +136,7 @@ export function RemoteHost() {
       b.remote.end(undefined, "remote control turned off");
       if (ch) leaveChannel(ch);
     };
-  }, [b, uid, enabled, aal2]);
+  }, [b, uid, enabled, storageOn, aal2]);
 
   return null;
 }

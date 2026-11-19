@@ -6,7 +6,8 @@ import { claudeText } from "./claude-code";
 import { relayInUse } from "./relay-stats";
 import { getState } from "./store";
 import { supabase } from "./supabase/client";
-import { gathered, hifiAudio, iceServers, noRelayReason, routeKinds, type Req } from "./remote";
+import { framed, fromBase64, STORAGE_METHODS, toBase64, type StorageMethod } from "./pc-storage";
+import { gathered, hifiAudio, ICE, iceServers, noRelayReason, routeKinds, type Req } from "./remote";
 
 const OLLAMA = "http://127.0.0.1:11434";
 
@@ -103,6 +104,44 @@ export function createHostHandler(
       .catch(() => {});
     captures.delete(id);
   };
+  // PC storage: one direct link per device for file bytes (no relay: that one is metered).
+  const storagePcs = new Map<string, RTCPeerConnection>();
+  const closeStorage = (id: string) => {
+    storagePcs.get(id)?.close();
+    storagePcs.delete(id);
+  };
+  const storageCall = async (from: string, m: unknown, p: Record<string, unknown>, bytes?: Uint8Array): Promise<{ r: unknown; bytes?: Uint8Array }> => {
+    const s = b.storage;
+    if (!s) throw new Error("MoonlightC on this PC is too old for PC storage. Update it there.");
+    const path = String(p.path ?? "");
+    const name = String(p.name ?? "");
+    const id = String(p.id ?? "");
+    switch (m as StorageMethod) {
+      case "list":
+        return { r: await s.list(from, path) };
+      case "mkdir":
+        return { r: await s.mkdir(from, path, name) };
+      case "remove":
+        return { r: await s.remove(from, path) };
+      case "rename":
+        return { r: await s.rename(from, path, name) };
+      case "begin":
+        return { r: await s.begin(from, path, name, Number(p.size)) };
+      case "write":
+        if (!bytes) throw new Error("Bad upload piece.");
+        return { r: await s.write(from, id, Number(p.offset), bytes) };
+      case "finish":
+        return { r: await s.finish(from, id) };
+      case "cancel":
+        return { r: await s.cancel(from, id) };
+      case "stat":
+        return { r: await s.stat(from, path) };
+      case "read":
+        return { r: null, bytes: await s.read(from, path, Number(p.offset), Number(p.length)) };
+      default:
+        throw new Error("Unknown request.");
+    }
+  };
   const need = async (req: Req, tier: string) => {
     if (!(await b.remote.allowed(req.from, tier)))
       throw new Error(
@@ -119,13 +158,36 @@ export function createHostHandler(
         // This account's security level and id: the PC checks the other device's signed note against them.
         const sb = supabase();
         const [lv, me] = await Promise.all([sb.rpc("security_level"), sb.auth.getUser()]);
+        const asked = Array.isArray(p.tiers) ? (p.tiers as string[]) : [];
         return b.remote.connect(
           { id: req.from, name: req.fromName },
-          Array.isArray(p.tiers) ? (p.tiers as string[]) : [],
+          // Remote control off (only PC storage on): storage is all this PC answers.
+          getState().remoteEnabled ? asked : asked.filter((t) => t === "storage"),
           p.where,
           // If the level can't be read, the strictest one applies.
           { level: typeof lv.data === "number" ? lv.data : 3, uid: me.data.user?.id ?? "" },
         );
+      }
+      case "storage.rtc": {
+        await need(req, "storage");
+        closeStorage(req.from);
+        const pc = new RTCPeerConnection({ iceServers: ICE });
+        storagePcs.set(req.from, pc);
+        pc.addEventListener("datachannel", (e) => {
+          if (e.channel.label !== "storage") return e.channel.close();
+          const send = framed(e.channel, async (h, bytes) => {
+            try {
+              const out = await storageCall(req.from, h.m, h.p ?? {}, bytes);
+              send({ id: h.id, ok: true, r: out.r }, out.bytes);
+            } catch (err) {
+              send({ id: h.id, ok: false, e: err instanceof Error ? err.message : String(err) });
+            }
+          });
+        });
+        await pc.setRemoteDescription({ type: "offer", sdp: String(p.sdp ?? "") });
+        await pc.setLocalDescription(await pc.createAnswer());
+        await gathered(pc, 5000);
+        return { sdp: pc.localDescription?.sdp };
       }
       case "rtc.offer": {
         let step = "permission";
@@ -423,8 +485,14 @@ export function createHostHandler(
         })();
         return { started: true };
       }
-      default:
-        throw new Error("Unknown request.");
+      default: {
+        // PC storage over the channel (when there's no direct link): file pieces travel as text.
+        const m = req.method.startsWith("storage.") ? req.method.slice(8) : "";
+        if (!(STORAGE_METHODS as readonly string[]).includes(m)) throw new Error("Unknown request.");
+        await need(req, "storage");
+        const out = await storageCall(req.from, m, p, typeof p.data === "string" ? fromBase64(p.data) : undefined);
+        return out.bytes ? { r: out.r, data: toBase64(out.bytes) } : { r: out.r };
+      }
     }
   };
 
@@ -433,11 +501,13 @@ export function createHostHandler(
     for (const [id, t] of terms) if (!alive.includes(t.owner)) closeTerm(id);
     for (const id of [...rtc.keys()]) if (!alive.includes(id)) closeRtc(id);
     for (const id of [...captures.keys()]) if (!alive.includes(id)) closeShot(id);
+    for (const id of [...storagePcs.keys()]) if (!alive.includes(id)) closeStorage(id);
   };
   const closeAll = () => {
     for (const id of [...terms.keys()]) closeTerm(id);
     for (const id of [...rtc.keys()]) closeRtc(id);
     for (const id of [...captures.keys()]) closeShot(id);
+    for (const id of [...storagePcs.keys()]) closeStorage(id);
   };
   return { handle, sessionsChanged, closeAll };
 }

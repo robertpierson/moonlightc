@@ -1,5 +1,6 @@
 "use client";
 
+import { PcStorage } from "./pc-storage";
 import "@xterm/xterm/css/xterm.css";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { ArrowDown, ArrowLeft, ArrowUp, Download, FileIcon, Folder, Loader2, Maximize, Minimize, Monitor, Power, Gamepad2, Upload, Volume2, VolumeX, ZoomIn, ZoomOut } from "lucide-react";
@@ -118,7 +119,11 @@ export function RemoteView({ deviceId, onSetup, extra, mini, onLive, onOpen, onC
           {!device ? (
             <p className="text-sm text-muted-foreground">Loading…</p>
           ) : !device.remote_enabled ? (
-            <p className="rounded-xl border p-4 text-sm">Remote control is off on this computer. On it, open MoonlightC and go to Settings &gt; Remote control.</p>
+            device.storage_on ? (
+              <PcStorage device={device} />
+            ) : (
+              <p className="rounded-xl border p-4 text-sm">Remote control and PC storage are off on this computer. On it, open MoonlightC and go to Settings &gt; Remote control or Settings &gt; PC storage.</p>
+            )
           ) : !client ? (
             <div className="grid justify-items-start gap-3 rounded-xl border p-4">
               {!isOnline(device) && (
@@ -166,6 +171,7 @@ export function RemoteView({ deviceId, onSetup, extra, mini, onLive, onOpen, onC
               {tab === "files" && <Files client={client} />}
             </div>
           )}
+          {device?.remote_enabled && device.storage_on && <PcStorage device={device} />}
         </TwoStepGate>
       </div>
     </div>

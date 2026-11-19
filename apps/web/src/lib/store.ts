@@ -198,6 +198,8 @@ export interface State {
   codePermission?: "ask" | "auto" | "plan" | "bypass";
   /** Desktop app: let your other devices control this PC (off until switched on in Settings > Remote control). */
   remoteEnabled?: boolean;
+  /** PC storage is on (mirrors the desktop app's own setting, Settings > PC storage; set only on this PC). */
+  pcStorage?: boolean;
   /** Remote control's on/off was carried over once from before it saved instantly (0.6.17). */
   remoteCarried?: boolean;
   /** The PIN for locked chats (salted hash; syncs with your account). */
