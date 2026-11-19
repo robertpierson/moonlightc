@@ -4,6 +4,8 @@ import { nav as go } from "./helpers";
 
 // WCAG 2.1 AA checks on every screen, in light and dark.
 async function audit(page: Page) {
+  // Colors are checked once entrance fades have finished (mid-fade text is see-through on purpose).
+  await page.evaluate(() => Promise.all(document.getAnimations().filter((a) => a.effect?.getTiming().iterations !== Infinity && !(a.timeline && !(a.timeline instanceof DocumentTimeline))).map((a) => a.finished.catch(() => {}))));
   const r = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
   return r.violations.map((v) => `${v.id}: ${v.nodes.length} (${v.nodes[0]?.target.join(" ")})`);
 }
