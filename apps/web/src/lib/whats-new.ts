@@ -1,9 +1,10 @@
 // "What's new" in Settings: recent changes in plain English, newest first. Only things that really shipped.
 export const WHATS_NEW: { version: string; date: string; items: string[] }[] = [
   {
-    version: "Website",
+    version: "0.6.70",
     date: "November 19, 2026",
     items: [
+      "PC storage: use your PC's space from your Chromebook or phone, like your own cloud drive. Turn it on at the PC in Settings > PC storage. Files stay in one folder and nothing in it ever runs.",
       "Appearance: 12 more themes, and pointing at one shows it full-size before you pick it.",
     ],
   },
